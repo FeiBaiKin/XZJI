@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 )
 
 // Defines values for ClientType.
@@ -68,6 +69,24 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for PostType.
+const (
+	Article  PostType = "article"
+	Resource PostType = "resource"
+)
+
+// Valid indicates whether the value is a known member of the PostType enum.
+func (e PostType) Valid() bool {
+	switch e {
+	case Article:
+		return true
+	case Resource:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SendEmailCodeRequestPurpose.
 const (
 	Register      SendEmailCodeRequestPurpose = "register"
@@ -104,6 +123,33 @@ func (e UserRole) Valid() bool {
 	}
 }
 
+// Defines values for ListPostsParamsSort.
+const (
+	Latest ListPostsParamsSort = "latest"
+	Views  ListPostsParamsSort = "views"
+)
+
+// Valid indicates whether the value is a known member of the ListPostsParamsSort enum.
+func (e ListPostsParamsSort) Valid() bool {
+	switch e {
+	case Latest:
+		return true
+	case Views:
+		return true
+	default:
+		return false
+	}
+}
+
+// Attr defines model for Attr.
+type Attr struct {
+	// Name Example: 兼容系统
+	Name string `json:"name"`
+
+	// Value Example: Windows 7+
+	Value string `json:"value"`
+}
+
 // AuthResult defines model for AuthResult.
 type AuthResult struct {
 	// Token 仅 client=app 时返回，之后放在 Authorization: Bearer 请求头中
@@ -111,10 +157,68 @@ type AuthResult struct {
 	User  User    `json:"user"`
 }
 
+// Author defines model for Author.
+type Author struct {
+	Id       int64  `json:"id"`
+	Nickname string `json:"nickname"`
+}
+
+// Banner defines model for Banner.
+type Banner struct {
+	ButtonText string `json:"buttonText"`
+	Image      *Image `json:"image,omitempty"`
+	Link       string `json:"link"`
+	Subtitle   string `json:"subtitle"`
+
+	// Tag 标题上方的小标签，可能为空
+	Tag string `json:"tag"`
+
+	// Title 标题，可能包含换行
+	Title string `json:"title"`
+}
+
+// CategoryList defines model for CategoryList.
+type CategoryList struct {
+	Items []CategoryNode `json:"items"`
+}
+
+// CategoryNode defines model for CategoryNode.
+type CategoryNode struct {
+	Children []CategoryNode `json:"children"`
+
+	// Color 渐变色 blue / red / orange / green / purple / gold / vip，可能为空
+	Color       string `json:"color"`
+	Description string `json:"description"`
+
+	// Icon 图标名，对应 icons.svg 中的 i-{icon}
+	Icon           string `json:"icon"`
+	Id             int64  `json:"id"`
+	Name           string `json:"name"`
+	PostCount      int64  `json:"postCount"`
+	SeoDescription string `json:"seoDescription"`
+	SeoTitle       string `json:"seoTitle"`
+	Slug           string `json:"slug"`
+}
+
+// CategoryRef defines model for CategoryRef.
+type CategoryRef struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 // ChangePasswordRequest defines model for ChangePasswordRequest.
 type ChangePasswordRequest struct {
 	NewPassword string `json:"newPassword"`
 	OldPassword string `json:"oldPassword"`
+}
+
+// ChangelogEntry defines model for ChangelogEntry.
+type ChangelogEntry struct {
+	// Date YYYY-MM-DD，可能为空
+	Date    string `json:"date"`
+	Note    string `json:"note"`
+	Version string `json:"version"`
 }
 
 // ClientType web 使用 Cookie；app 在响应体中返回令牌
@@ -158,6 +262,25 @@ type HealthDatabase string
 // HealthStatus ok 表示全部正常；degraded 表示有依赖不可用
 type HealthStatus string
 
+// Home defines model for Home.
+type Home struct {
+	Banners []Banner `json:"banners"`
+
+	// Notice 公告，按换行分段
+	Notice string `json:"notice"`
+}
+
+// Image defines model for Image.
+type Image struct {
+	// Color 主色（#RRGGBB），用于给软件图标配底色，可能为空
+	//
+	// Example: #2F6BFF
+	Color  *string `json:"color,omitempty"`
+	Height int     `json:"height"`
+	Url    string  `json:"url"`
+	Width  int     `json:"width"`
+}
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	// Client web 使用 Cookie；app 在响应体中返回令牌
@@ -168,6 +291,79 @@ type LoginRequest struct {
 	// Remember true 时 30 天内免登录；false 时关闭浏览器后失效
 	Remember *bool `json:"remember,omitempty"`
 }
+
+// PlatformCount defines model for PlatformCount.
+type PlatformCount struct {
+	Count int64  `json:"count"`
+	Name  string `json:"name"`
+}
+
+// PlatformList defines model for PlatformList.
+type PlatformList struct {
+	Items []PlatformCount `json:"items"`
+}
+
+// PostCard defines model for PostCard.
+type PostCard struct {
+	Author       Author         `json:"author"`
+	Category     CategoryRef    `json:"category"`
+	CommentCount int            `json:"commentCount"`
+	Cover        *Image         `json:"cover,omitempty"`
+	Id           int64          `json:"id"`
+	Pinned       bool           `json:"pinned"`
+	PublishedAt  time.Time      `json:"publishedAt"`
+	Resource     *ResourceBrief `json:"resource,omitempty"`
+	Summary      string         `json:"summary"`
+	Tags         []TagRef       `json:"tags"`
+	Title        string         `json:"title"`
+
+	// Type article 文章；resource 资源
+	Type      PostType `json:"type"`
+	ViewCount int      `json:"viewCount"`
+}
+
+// PostDetail defines model for PostDetail.
+type PostDetail struct {
+	Author       Author      `json:"author"`
+	Category     CategoryRef `json:"category"`
+	CommentCount int         `json:"commentCount"`
+
+	// ContentHtml 已过滤的正文 HTML，只含公开内容
+	ContentHtml    string          `json:"contentHtml"`
+	Cover          *Image          `json:"cover,omitempty"`
+	Id             int64           `json:"id"`
+	Pinned         bool            `json:"pinned"`
+	PublishedAt    time.Time       `json:"publishedAt"`
+	Resource       *ResourceDetail `json:"resource,omitempty"`
+	SeoDescription string          `json:"seoDescription"`
+	SeoKeywords    string          `json:"seoKeywords"`
+	SeoTitle       string          `json:"seoTitle"`
+	Summary        string          `json:"summary"`
+	Tags           []TagRef        `json:"tags"`
+	Title          string          `json:"title"`
+	Toc            []TocItem       `json:"toc"`
+
+	// Type article 文章；resource 资源
+	Type      PostType  `json:"type"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	ViewCount int       `json:"viewCount"`
+}
+
+// PostList defines model for PostList.
+type PostList struct {
+	Items []PostCard `json:"items"`
+}
+
+// PostPage defines model for PostPage.
+type PostPage struct {
+	Items    []PostCard `json:"items"`
+	Page     int        `json:"page"`
+	PageSize int        `json:"pageSize"`
+	Total    int64      `json:"total"`
+}
+
+// PostType article 文章；resource 资源
+type PostType string
 
 // RegisterRequest defines model for RegisterRequest.
 type RegisterRequest struct {
@@ -195,6 +391,26 @@ type ResetPasswordRequest struct {
 	Password string `json:"password"`
 }
 
+// ResourceBrief defines model for ResourceBrief.
+type ResourceBrief struct {
+	FileSize string `json:"fileSize"`
+	Icon     *Image `json:"icon,omitempty"`
+	Platform string `json:"platform"`
+	Version  string `json:"version"`
+}
+
+// ResourceDetail defines model for ResourceDetail.
+type ResourceDetail struct {
+	Attrs []Attr `json:"attrs"`
+
+	// Changelog 新的在前
+	Changelog []ChangelogEntry `json:"changelog"`
+	FileSize  string           `json:"fileSize"`
+	Icon      *Image           `json:"icon,omitempty"`
+	Platform  string           `json:"platform"`
+	Version   string           `json:"version"`
+}
+
 // SendEmailCodeRequest defines model for SendEmailCodeRequest.
 type SendEmailCodeRequest struct {
 	// Email Example: you@example.com
@@ -208,6 +424,36 @@ type SendEmailCodeRequestPurpose string
 // SessionState defines model for SessionState.
 type SessionState struct {
 	User *User `json:"user,omitempty"`
+}
+
+// Tag defines model for Tag.
+type Tag struct {
+	Id        int64  `json:"id"`
+	Name      string `json:"name"`
+	PostCount int64  `json:"postCount"`
+	Slug      string `json:"slug"`
+}
+
+// TagList defines model for TagList.
+type TagList struct {
+	Items []Tag `json:"items"`
+}
+
+// TagRef defines model for TagRef.
+type TagRef struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// TocItem defines model for TocItem.
+type TocItem struct {
+	// Id 正文中对应标题的 id
+	Id string `json:"id"`
+
+	// Level 2 或 3
+	Level int    `json:"level"`
+	Text  string `json:"text"`
 }
 
 // UpdateProfileRequest defines model for UpdateProfileRequest.
@@ -237,11 +483,55 @@ type Conflict = Error
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
 
+// NotFound defines model for NotFound.
+type NotFound = Error
+
 // TooManyRequests defines model for TooManyRequests.
 type TooManyRequests = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// ListPlatformsParams defines parameters for ListPlatforms.
+type ListPlatformsParams struct {
+	// Category 分类 slug，包含子分类
+	Category *string `form:"category,omitempty" json:"category,omitempty"`
+}
+
+// ListPostsParams defines parameters for ListPosts.
+type ListPostsParams struct {
+	Type *PostType `form:"type,omitempty" json:"type,omitempty"`
+
+	// Category 分类 slug
+	Category *string `form:"category,omitempty" json:"category,omitempty"`
+
+	// Tag 标签 slug
+	Tag *string `form:"tag,omitempty" json:"tag,omitempty"`
+
+	// Platform 资源平台，如 Windows
+	Platform *string `form:"platform,omitempty" json:"platform,omitempty"`
+
+	// Q 搜索关键词，匹配标题和摘要
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Sort latest 置顶在前，再按发布时间倒序；views 按浏览量倒序
+	Sort     *ListPostsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+	Page     *int                 `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *int                 `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// ListPostsParamsSort defines parameters for ListPosts.
+type ListPostsParamsSort string
+
+// ListRelatedPostsParams defines parameters for ListRelatedPosts.
+type ListRelatedPostsParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListTagsParams defines parameters for ListTags.
+type ListTagsParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
 
 // SendEmailCodeJSONRequestBody defines body for SendEmailCode for application/json ContentType.
 type SendEmailCodeJSONRequestBody = SendEmailCodeRequest
@@ -284,6 +574,9 @@ type ServerInterface interface {
 	// GetSession 当前登录状态
 	// (GET /auth/session)
 	GetSession(c *gin.Context)
+	// ListCategories 分类树
+	// (GET /categories)
+	ListCategories(c *gin.Context)
 	// GetHealth 健康检查
 	// (GET /health)
 	GetHealth(c *gin.Context)
@@ -296,6 +589,27 @@ type ServerInterface interface {
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(c *gin.Context)
+	// ListPlatforms 资源平台
+	// (GET /platforms)
+	ListPlatforms(c *gin.Context, params ListPlatformsParams)
+	// ListPosts 内容列表
+	// (GET /posts)
+	ListPosts(c *gin.Context, params ListPostsParams)
+	// GetPost 内容详情
+	// (GET /posts/{id})
+	GetPost(c *gin.Context, id int64)
+	// ListRelatedPosts 相关推荐
+	// (GET /posts/{id}/related)
+	ListRelatedPosts(c *gin.Context, id int64, params ListRelatedPostsParams)
+	// GetHome 首页运营位
+	// (GET /site/home)
+	GetHome(c *gin.Context)
+	// ListTags 热门标签
+	// (GET /tags)
+	ListTags(c *gin.Context, params ListTagsParams)
+	// GetTag 标签详情
+	// (GET /tags/{slug})
+	GetTag(c *gin.Context, slug string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -398,6 +712,19 @@ func (siw *ServerInterfaceWrapper) GetSession(c *gin.Context) {
 	siw.Handler.GetSession(c)
 }
 
+// ListCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListCategories(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListCategories(c)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 
@@ -450,6 +777,242 @@ func (siw *ServerInterfaceWrapper) ChangePassword(c *gin.Context) {
 	siw.Handler.ChangePassword(c)
 }
 
+// ListPlatforms operation middleware
+func (siw *ServerInterfaceWrapper) ListPlatforms(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPlatformsParams
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", c.Request.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPlatforms(c, params)
+}
+
+// ListPosts operation middleware
+func (siw *ServerInterfaceWrapper) ListPosts(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPostsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", c.Request.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter type: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", c.Request.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "tag" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag", c.Request.URL.Query(), &params.Tag, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter tag: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "platform" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "platform", c.Request.URL.Query(), &params.Platform, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter platform: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", c.Request.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter q: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sort", c.Request.URL.Query(), &params.Sort, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter sort: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPosts(c, params)
+}
+
+// GetPost operation middleware
+func (siw *ServerInterfaceWrapper) GetPost(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPost(c, id)
+}
+
+// ListRelatedPosts operation middleware
+func (siw *ServerInterfaceWrapper) ListRelatedPosts(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRelatedPostsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", c.Request.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListRelatedPosts(c, id, params)
+}
+
+// GetHome operation middleware
+func (siw *ServerInterfaceWrapper) GetHome(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetHome(c)
+}
+
+// ListTags operation middleware
+func (siw *ServerInterfaceWrapper) ListTags(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTagsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", c.Request.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListTags(c, params)
+}
+
+// GetTag operation middleware
+func (siw *ServerInterfaceWrapper) GetTag(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", c.Param("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter slug: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetTag(c, slug)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -488,6 +1051,14 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/me", wrapper.GetMe)
 	router.PATCH(options.BaseURL+"/me", wrapper.UpdateMe)
 	router.POST(options.BaseURL+"/me/password", wrapper.ChangePassword)
+	router.GET(options.BaseURL+"/site/home", wrapper.GetHome)
+	router.GET(options.BaseURL+"/categories", wrapper.ListCategories)
+	router.GET(options.BaseURL+"/posts", wrapper.ListPosts)
+	router.GET(options.BaseURL+"/posts/:id", wrapper.GetPost)
+	router.GET(options.BaseURL+"/posts/:id/related", wrapper.ListRelatedPosts)
+	router.GET(options.BaseURL+"/tags", wrapper.ListTags)
+	router.GET(options.BaseURL+"/tags/:slug", wrapper.GetTag)
+	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
 }
 
 type BadRequestJSONResponse Error
@@ -495,6 +1066,8 @@ type BadRequestJSONResponse Error
 type ConflictJSONResponse Error
 
 type ForbiddenJSONResponse Error
+
+type NotFoundJSONResponse Error
 
 type TooManyRequestsJSONResponse Error
 
@@ -801,6 +1374,27 @@ func (response GetSession200JSONResponse) VisitGetSessionResponse(w http.Respons
 	return err
 }
 
+type ListCategoriesRequestObject struct {
+}
+
+type ListCategoriesResponseObject interface {
+	VisitListCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListCategories200JSONResponse CategoryList
+
+func (response ListCategories200JSONResponse) VisitListCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -965,6 +1559,244 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type ListPlatformsRequestObject struct {
+	Params ListPlatformsParams
+}
+
+type ListPlatformsResponseObject interface {
+	VisitListPlatformsResponse(w http.ResponseWriter) error
+}
+
+type ListPlatforms200JSONResponse PlatformList
+
+func (response ListPlatforms200JSONResponse) VisitListPlatformsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlatforms404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListPlatforms404JSONResponse) VisitListPlatformsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPostsRequestObject struct {
+	Params ListPostsParams
+}
+
+type ListPostsResponseObject interface {
+	VisitListPostsResponse(w http.ResponseWriter) error
+}
+
+type ListPosts200JSONResponse PostPage
+
+func (response ListPosts200JSONResponse) VisitListPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPosts400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListPosts400JSONResponse) VisitListPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPosts404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListPosts404JSONResponse) VisitListPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPostRequestObject struct {
+	Id int64 `json:"id"`
+}
+
+type GetPostResponseObject interface {
+	VisitGetPostResponse(w http.ResponseWriter) error
+}
+
+type GetPost200JSONResponse PostDetail
+
+func (response GetPost200JSONResponse) VisitGetPostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPost404JSONResponse) VisitGetPostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRelatedPostsRequestObject struct {
+	Id     int64 `json:"id"`
+	Params ListRelatedPostsParams
+}
+
+type ListRelatedPostsResponseObject interface {
+	VisitListRelatedPostsResponse(w http.ResponseWriter) error
+}
+
+type ListRelatedPosts200JSONResponse PostList
+
+func (response ListRelatedPosts200JSONResponse) VisitListRelatedPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRelatedPosts404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListRelatedPosts404JSONResponse) VisitListRelatedPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeRequestObject struct {
+}
+
+type GetHomeResponseObject interface {
+	VisitGetHomeResponse(w http.ResponseWriter) error
+}
+
+type GetHome200JSONResponse Home
+
+func (response GetHome200JSONResponse) VisitGetHomeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTagsRequestObject struct {
+	Params ListTagsParams
+}
+
+type ListTagsResponseObject interface {
+	VisitListTagsResponse(w http.ResponseWriter) error
+}
+
+type ListTags200JSONResponse TagList
+
+func (response ListTags200JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTagRequestObject struct {
+	Slug string `json:"slug"`
+}
+
+type GetTagResponseObject interface {
+	VisitGetTagResponse(w http.ResponseWriter) error
+}
+
+type GetTag200JSONResponse Tag
+
+func (response GetTag200JSONResponse) VisitGetTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetTag404JSONResponse) VisitGetTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetCsrfToken 获取 CSRF 令牌
@@ -988,6 +1820,9 @@ type StrictServerInterface interface {
 	// GetSession 当前登录状态
 	// (GET /auth/session)
 	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
+	// ListCategories 分类树
+	// (GET /categories)
+	ListCategories(ctx context.Context, request ListCategoriesRequestObject) (ListCategoriesResponseObject, error)
 	// GetHealth 健康检查
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -1000,6 +1835,27 @@ type StrictServerInterface interface {
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// ListPlatforms 资源平台
+	// (GET /platforms)
+	ListPlatforms(ctx context.Context, request ListPlatformsRequestObject) (ListPlatformsResponseObject, error)
+	// ListPosts 内容列表
+	// (GET /posts)
+	ListPosts(ctx context.Context, request ListPostsRequestObject) (ListPostsResponseObject, error)
+	// GetPost 内容详情
+	// (GET /posts/{id})
+	GetPost(ctx context.Context, request GetPostRequestObject) (GetPostResponseObject, error)
+	// ListRelatedPosts 相关推荐
+	// (GET /posts/{id}/related)
+	ListRelatedPosts(ctx context.Context, request ListRelatedPostsRequestObject) (ListRelatedPostsResponseObject, error)
+	// GetHome 首页运营位
+	// (GET /site/home)
+	GetHome(ctx context.Context, request GetHomeRequestObject) (GetHomeResponseObject, error)
+	// ListTags 热门标签
+	// (GET /tags)
+	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// GetTag 标签详情
+	// (GET /tags/{slug})
+	GetTag(ctx context.Context, request GetTagRequestObject) (GetTagResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *gin.Context, request any) (any, error)
@@ -1255,6 +2111,30 @@ func (sh *strictHandler) GetSession(ctx *gin.Context) {
 	}
 }
 
+// ListCategories operation middleware
+func (sh *strictHandler) ListCategories(ctx *gin.Context) {
+	var request ListCategoriesRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCategories(ctx, request.(ListCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCategories")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListCategoriesResponseObject); ok {
+		if err := validResponse.VisitListCategoriesResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHealth operation middleware
 func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 	var request GetHealthRequestObject
@@ -1358,6 +2238,187 @@ func (sh *strictHandler) ChangePassword(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
 		if err := validResponse.VisitChangePasswordResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPlatforms operation middleware
+func (sh *strictHandler) ListPlatforms(ctx *gin.Context, params ListPlatformsParams) {
+	var request ListPlatformsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPlatforms(ctx, request.(ListPlatformsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPlatforms")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListPlatformsResponseObject); ok {
+		if err := validResponse.VisitListPlatformsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPosts operation middleware
+func (sh *strictHandler) ListPosts(ctx *gin.Context, params ListPostsParams) {
+	var request ListPostsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPosts(ctx, request.(ListPostsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPosts")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListPostsResponseObject); ok {
+		if err := validResponse.VisitListPostsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPost operation middleware
+func (sh *strictHandler) GetPost(ctx *gin.Context, id int64) {
+	var request GetPostRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPost(ctx, request.(GetPostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPostResponseObject); ok {
+		if err := validResponse.VisitGetPostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRelatedPosts operation middleware
+func (sh *strictHandler) ListRelatedPosts(ctx *gin.Context, id int64, params ListRelatedPostsParams) {
+	var request ListRelatedPostsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRelatedPosts(ctx, request.(ListRelatedPostsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRelatedPosts")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListRelatedPostsResponseObject); ok {
+		if err := validResponse.VisitListRelatedPostsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHome operation middleware
+func (sh *strictHandler) GetHome(ctx *gin.Context) {
+	var request GetHomeRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHome(ctx, request.(GetHomeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHome")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetHomeResponseObject); ok {
+		if err := validResponse.VisitGetHomeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTags operation middleware
+func (sh *strictHandler) ListTags(ctx *gin.Context, params ListTagsParams) {
+	var request ListTagsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTags(ctx, request.(ListTagsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTags")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
+		if err := validResponse.VisitListTagsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTag operation middleware
+func (sh *strictHandler) GetTag(ctx *gin.Context, slug string) {
+	var request GetTagRequestObject
+
+	request.Slug = slug
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTag(ctx, request.(GetTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTag")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetTagResponseObject); ok {
+		if err := validResponse.VisitGetTagResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

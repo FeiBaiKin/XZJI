@@ -20,6 +20,8 @@ import (
 	"xzji/internal/httpapi"
 	"xzji/internal/module/adminlog"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/content"
+	"xzji/internal/module/media"
 	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
@@ -28,6 +30,7 @@ import (
 	"xzji/internal/platform/mail"
 	"xzji/internal/platform/ratelimit"
 	"xzji/internal/platform/scheduler"
+	"xzji/internal/platform/storage"
 )
 
 // Services 所有业务服务，服务进程、命令行和测试共用同一套装配。
@@ -39,16 +42,21 @@ type Services struct {
 	Auth     *auth.Service
 	AdminLog *adminlog.Service
 	Limiter  *ratelimit.Memory
+	Media    *media.Service
+	Content  *content.Service
+	Home     *setting.HomeService
 }
 
-func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger) (*Services, error) {
+func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, mediaCfg config.Media) (*Services, error) {
 	q := dbgen.New(db)
 	s := &Services{
 		Settings: setting.NewService(q),
 		Sessions: session.NewService(q),
 		AdminLog: adminlog.NewService(q),
 		Limiter:  ratelimit.NewMemory(),
+		Media:    media.NewService(q, storage.NewLocal(mediaCfg.Dir), mediaCfg.BaseURL, int64(mediaCfg.MaxSizeMB)<<20),
 	}
+	s.Home = setting.NewHomeService(s.Settings, s.Media)
 	users, err := user.NewService(q, user.NewHasher(4), s.Sessions, s.AdminLog)
 	if err != nil {
 		return nil, err
@@ -63,6 +71,7 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger) (*Services, e
 	}
 	s.Codes = verifycode.NewService(q, mailer, s.Limiter, siteName, log)
 	s.Auth = auth.NewService(s.Users, s.Sessions, s.Codes, s.Limiter)
+	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog)
 	return s, nil
 }
 
@@ -70,6 +79,7 @@ func NewRouter(cfg *config.Config, db *sql.DB, log *slog.Logger, s *Services) (*
 	return httpapi.NewRouter(httpapi.Deps{
 		Config: cfg, DB: db, Log: log,
 		Settings: s.Settings, Auth: s.Auth, Users: s.Users, Sessions: s.Sessions,
+		Media: s.Media, Content: s.Content, Home: s.Home,
 	})
 }
 
@@ -94,7 +104,7 @@ func Serve(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	svc, err := NewServices(db, mailer, log)
+	svc, err := NewServices(db, mailer, log, cfg.Media)
 	if err != nil {
 		return err
 	}

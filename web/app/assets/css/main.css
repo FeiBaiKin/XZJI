@@ -65,3 +65,54 @@
     @apply size-4 shrink-0 fill-none stroke-current stroke-[1.9] [stroke-linecap:round] [stroke-linejoin:round];
   }
 }
+
+/* 封面、软件图标、排行榜等设计稿组件，参照 design/xzji.css */
+@layer components {
+  /* 没有封面图时，用主色（--c）调出浅色底 */
+  .cover-tint {
+    background:
+      radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--c) 26%, #fff) 0 22%, transparent 23%),
+      radial-gradient(circle at 12% 92%, color-mix(in srgb, var(--c) 18%, #fff) 0 18%, transparent 19%),
+      color-mix(in srgb, var(--c) 10%, #fff);
+  }
+  .app-tile {
+    @apply grid shrink-0 place-items-center overflow-hidden rounded-[24%] text-white;
+    background: var(--c);
+    box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--c) 70%, transparent);
+  }
+  .rank-no {
+    @apply grid size-5 shrink-0 place-items-center rounded-[5px] bg-soft text-xs font-bold text-muted;
+  }
+  li:nth-child(1) > .rank-no { @apply bg-jb-red text-white; }
+  li:nth-child(2) > .rank-no { @apply bg-jb-orange text-white; }
+  li:nth-child(3) > .rank-no { @apply bg-jb-gold text-[#5B3A00]; }
+  .sec-title {
+    @apply relative pl-3 text-[17px] leading-[1.3] font-bold text-title before:absolute before:inset-y-0.5 before:left-0 before:w-1 before:rounded before:bg-theme;
+  }
+}
+
+/* 正文排版：内容由后台编辑器生成，只能用元素选择器 */
+@layer components {
+  .prose-x {
+    @apply text-[15px] leading-[1.9] text-body break-words;
+  }
+  .prose-x > * + * { margin-top: .9em; }
+  .prose-x h2 {
+    @apply relative mt-[26px] mb-2.5 scroll-mt-20 pl-3.5 text-[19px] leading-[1.4] font-bold text-title before:absolute before:inset-y-[3px] before:left-0 before:w-1 before:rounded before:bg-theme;
+  }
+  .prose-x h3 { @apply mt-6 mb-2 scroll-mt-20 text-[17px] leading-[1.45] font-bold text-title; }
+  .prose-x h4 { @apply mt-5 mb-1.5 text-[15px] font-bold text-title; }
+  .prose-x a { @apply text-theme underline decoration-theme/30 underline-offset-2 hover:decoration-theme; }
+  .prose-x ul { @apply list-disc pl-[1.4em]; }
+  .prose-x ol { @apply list-decimal pl-[1.4em]; }
+  .prose-x li { @apply my-0.5 marker:text-theme; }
+  .prose-x img { @apply mx-auto h-auto max-w-full rounded-lg border border-line; }
+  .prose-x blockquote { @apply rounded-r-md border-l-4 border-[#D6E2FF] bg-[#F6F8FC] px-4 py-2 text-[#6B7280]; }
+  .prose-x hr { @apply my-6 border-line; }
+  .prose-x code { @apply rounded bg-[#F2F3F5] px-1.5 py-px text-[.9em] text-[#D6336C]; }
+  .prose-x pre { @apply overflow-x-auto rounded-lg bg-[#22262E] px-4 py-3 text-[13px] leading-[1.7] text-[#E6E8EB]; }
+  .prose-x pre code { @apply bg-transparent p-0 text-inherit; }
+  .prose-x table { @apply block w-full overflow-x-auto border-collapse text-sm md:table; }
+  .prose-x th, .prose-x td { @apply border border-line px-3 py-1.5 text-left align-top; }
+  .prose-x th { @apply bg-soft font-semibold text-title; }
+}

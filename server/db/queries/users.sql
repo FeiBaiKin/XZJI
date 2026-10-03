@@ -33,3 +33,6 @@ SELECT COUNT(*) FROM users
 WHERE (sqlc.narg(keyword) IS NULL OR email LIKE sqlc.narg(keyword) OR nickname LIKE sqlc.narg(keyword))
   AND (sqlc.narg(role) IS NULL OR role = sqlc.narg(role))
   AND (sqlc.narg(status) IS NULL OR status = sqlc.narg(status));
+
+-- name: ListUserNicknames :many
+SELECT id, nickname FROM users WHERE id IN (sqlc.slice(ids));

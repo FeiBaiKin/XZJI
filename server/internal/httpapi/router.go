@@ -18,6 +18,8 @@ import (
 	"xzji/internal/httpapi/middleware"
 	"xzji/internal/httpapi/public"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/content"
+	"xzji/internal/module/media"
 	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
@@ -41,6 +43,9 @@ type Deps struct {
 	Auth     *auth.Service
 	Users    *user.Service
 	Sessions *session.Service
+	Media    *media.Service
+	Content  *content.Service
+	Home     *setting.HomeService
 }
 
 func NewRouter(d Deps) (*gin.Engine, error) {
@@ -87,6 +92,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	pubHandler := public.NewHandler(public.Deps{
 		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
+		Content: d.Content, Home: d.Home,
 	})
 	pubapi.RegisterHandlersWithOptions(r,
 		pubapi.NewStrictHandlerWithOptions(pubHandler, []pubapi.StrictMiddlewareFunc{requirePublic}, pubapi.StrictGinServerOptions{
@@ -103,6 +109,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	adminHandler := admin.NewHandler(admin.Deps{
 		DB: d.DB, Log: d.Log, Settings: d.Settings, Auth: d.Auth, Users: d.Users, Realm: adminRealm, CSRF: adminCSRF,
+		Media: d.Media, Content: d.Content, Home: d.Home,
 	})
 	adminapi.RegisterHandlersWithOptions(r,
 		adminapi.NewStrictHandlerWithOptions(adminHandler, []adminapi.StrictMiddlewareFunc{requireAdmin}, adminapi.StrictGinServerOptions{
@@ -118,6 +125,13 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 	)
 
 	adminui.Mount(r)
+	if d.Config.Media.Serve {
+		uploads := r.Group("/uploads", func(c *gin.Context) {
+			c.Header("X-Content-Type-Options", "nosniff")
+			c.Header("Cache-Control", "public, max-age=2592000, immutable")
+		})
+		uploads.StaticFS("/", gin.Dir(d.Config.Media.Dir, false))
+	}
 	return r, nil
 }
 

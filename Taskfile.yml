@@ -46,7 +46,7 @@ tasks:
     desc: 检查生成代码是否与契约和 SQL 一致（提交前或 CI 使用）
     cmds:
       - task: gen
-      - git diff --exit-code -- server/internal/apigen server/internal/dbgen packages/api-client/src/gen
+      - git --no-pager diff --exit-code -- server/internal/apigen server/internal/dbgen packages/api-client/src/gen
 
   # ---------- 开发 ----------
   dev:server:

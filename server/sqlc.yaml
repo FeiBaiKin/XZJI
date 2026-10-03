@@ -10,3 +10,11 @@ sql:
         emit_interface: true
         emit_empty_slices: true
         emit_exact_table_names: false
+        rename:
+          medium: Media
+        overrides:
+          # Go 1.27 的 json.RawMessage 不能接收 NULL，可空的 JSON 列改用 []byte
+          - db_type: json
+            nullable: true
+            go_type:
+              type: "[]byte"

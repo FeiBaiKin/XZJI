@@ -14,6 +14,8 @@ import (
 	"xzji/internal/buildinfo"
 	"xzji/internal/httpapi/authn"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/content"
+	"xzji/internal/module/media"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	platformdb "xzji/internal/platform/db"
@@ -27,6 +29,9 @@ type Deps struct {
 	Users    *user.Service
 	Realm    *authn.Realm
 	CSRF     *authn.CSRF
+	Media    *media.Service
+	Content  *content.Service
+	Home     *setting.HomeService
 }
 
 type Handler struct {

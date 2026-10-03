@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -74,6 +75,11 @@ func ServerVersion(ctx context.Context, db *sql.DB) (string, error) {
 	var v string
 	err := db.QueryRowContext(ctx, "SELECT VERSION()").Scan(&v)
 	return v, err
+}
+
+// LikeContains 生成"包含 s"的 LIKE 模式，转义 s 中的通配符。
+func LikeContains(s string) string {
+	return "%" + strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s) + "%"
 }
 
 // IsDuplicate 判断是否违反唯一索引（MySQL 错误 1062）。

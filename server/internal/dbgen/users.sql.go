@@ -8,6 +8,7 @@ package dbgen
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const countUsers = `-- name: CountUsers :one
@@ -115,6 +116,48 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listUserNicknames = `-- name: ListUserNicknames :many
+SELECT id, nickname FROM users WHERE id IN (/*SLICE:ids*/?)
+`
+
+type ListUserNicknamesRow struct {
+	ID       int64
+	Nickname string
+}
+
+func (q *Queries) ListUserNicknames(ctx context.Context, ids []int64) ([]ListUserNicknamesRow, error) {
+	query := listUserNicknames
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserNicknamesRow{}
+	for rows.Next() {
+		var i ListUserNicknamesRow
+		if err := rows.Scan(&i.ID, &i.Nickname); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many

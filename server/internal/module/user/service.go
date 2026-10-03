@@ -216,7 +216,7 @@ func (s *Service) List(ctx context.Context, f ListFilter) ([]User, int64, error)
 	}
 	var keyword, role, status sql.NullString
 	if k := strings.TrimSpace(f.Keyword); k != "" {
-		keyword = sql.NullString{String: "%" + escapeLike(k) + "%", Valid: true}
+		keyword = sql.NullString{String: platformdb.LikeContains(k), Valid: true}
 	}
 	if f.Role != "" {
 		role = sql.NullString{String: string(f.Role), Valid: true}
@@ -240,10 +240,6 @@ func (s *Service) List(ctx context.Context, f ListFilter) ([]User, int64, error)
 		users[i] = fromRow(r)
 	}
 	return users, total, nil
-}
-
-func escapeLike(s string) string {
-	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }
 
 type AdminChange struct {
@@ -299,4 +295,20 @@ func (s *Service) AdminUpdate(ctx context.Context, actor Actor, id int64, ch Adm
 	}
 	u.Role, u.Status = role, status
 	return u, nil
+}
+
+// Nicknames 批量查询昵称，用于展示内容作者。不存在的 ID 不出现在结果里。
+func (s *Service) Nicknames(ctx context.Context, ids []int64) (map[int64]string, error) {
+	out := make(map[int64]string, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := s.q.ListUserNicknames(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("批量查询昵称：%w", err)
+	}
+	for _, r := range rows {
+		out[r.ID] = r.Nickname
+	}
+	return out, nil
 }

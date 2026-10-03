@@ -15,6 +15,12 @@ tags:
     description: 系统
   - name: users
     description: 用户管理
+  - name: content
+    description: 分类、标签与内容
+  - name: media
+    description: 图片上传
+  - name: settings
+    description: 站点设置
 paths:
   /auth/csrf:
     get:
@@ -210,12 +216,469 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /media:
+    post:
+      operationId: uploadMedia
+      summary: 上传图片
+      description: 只接受 JPEG、PNG、GIF、WebP，按文件内容判断类型；大小上限为配置项 media.max_size_mb。
+      tags: [media]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Media"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /categories:
+    get:
+      operationId: listCategories
+      summary: 分类列表
+      description: 按排序值返回全部分类（平铺，由 parentId 组成树）。postCount 为该分类自身未删除的内容数。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategoryList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createCategory
+      summary: 新建分类
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: 新建的分类
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategory"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /categories/{id}:
+    put:
+      operationId: updateCategory
+      summary: 修改分类
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: 修改后的分类
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCategory"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteCategory
+      summary: 删除分类
+      description: 分类下还有子分类或内容（包括回收站）时不能删除。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已删除
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tags:
+    get:
+      operationId: listTags
+      summary: 标签列表
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          description: 按名称或 slug 模糊搜索
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 标签分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTagPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTag
+      summary: 新建标签
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagInput"
+      responses:
+        "201":
+          description: 新建的标签
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tags/{id}:
+    put:
+      operationId: updateTag
+      summary: 修改标签
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagInput"
+      responses:
+        "200":
+          description: 修改后的标签
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteTag
+      summary: 删除标签
+      description: 同时解除与内容的关联，内容本身不受影响。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已删除
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts:
+    get:
+      operationId: listPosts
+      summary: 内容列表
+      description: 不传 status 时返回回收站以外的全部内容。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/PostType"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PostStatus"
+        - name: categoryId
+          in: query
+          description: 包含子分类
+          schema:
+            type: integer
+            format: int64
+        - name: keyword
+          in: query
+          description: 按标题模糊搜索
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 内容分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPostPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createPost
+      summary: 新建内容
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: 新建的内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPost"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      summary: 内容详情
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: 内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPost"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updatePost
+      summary: 修改内容
+      description: 整体替换。回收站里的内容需要先恢复才能修改。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "200":
+          description: 修改后的内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPost"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deletePost
+      summary: 删除内容
+      description: 默认移入回收站；permanent=true 时彻底删除，只能删除回收站里的内容，操作会写入后台日志。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - name: permanent
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: 已删除
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{id}/restore:
+    post:
+      operationId: restorePost
+      summary: 从回收站恢复
+      description: 恢复为草稿。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已恢复
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /platforms:
+    get:
+      operationId: listPlatforms
+      summary: 已使用的资源平台
+      description: 用于编辑资源时提示可选值。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 平台名称
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformNames"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /settings/home:
+    get:
+      operationId: getHomeSettings
+      summary: 首页设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 首页设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updateHomeSettings
+      summary: 修改首页设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HomeSettingsInput"
+      responses:
+        "200":
+          description: 修改后的首页设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     adminCookieAuth:
       type: apiKey
       in: cookie
       name: xzji_admin_session
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
 
   responses:
     BadRequest:
@@ -232,6 +695,12 @@ components:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: 不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: 与现有数据冲突
       content:
         application/json:
           schema:
@@ -382,6 +851,459 @@ components:
           type: integer
           format: int64
           description: 当前数据库迁移版本号
+
+    PostType:
+      type: string
+      enum: [article, resource]
+
+    PostStatus:
+      type: string
+      enum: [draft, published, trash]
+
+    EditableStatus:
+      type: string
+      enum: [draft, published]
+      description: 移入回收站和恢复使用单独的接口
+
+    Media:
+      type: object
+      required: [id, url, width, height, mime, size, color]
+      properties:
+        id:
+          type: integer
+          format: int64
+        url:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        mime:
+          type: string
+        size:
+          type: integer
+          format: int64
+        color:
+          type: string
+          description: 主色（#RRGGBB），图片过大时为空
+
+    AdminCategory:
+      type: object
+      required: [id, parentId, name, slug, icon, color, description, sort, seoTitle, seoDescription, postCount]
+      properties:
+        id:
+          type: integer
+          format: int64
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        description:
+          type: string
+        sort:
+          type: integer
+        seoTitle:
+          type: string
+        seoDescription:
+          type: string
+        postCount:
+          type: integer
+          format: int64
+
+    AdminCategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCategory"
+
+    CategoryInput:
+      type: object
+      required: [name, slug]
+      properties:
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 只支持两级，父分类必须是顶级分类
+        name:
+          type: string
+        slug:
+          type: string
+          description: 小写字母、数字和短横线，用于网址 /category/{slug}/
+        icon:
+          type: string
+        color:
+          type: string
+          description: blue / red / orange / green / purple / gold / vip，留空使用默认色
+        description:
+          type: string
+        sort:
+          type: integer
+          description: 越小越靠前
+        seoTitle:
+          type: string
+        seoDescription:
+          type: string
+
+    AdminTag:
+      type: object
+      required: [id, name, slug, postCount, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+        postCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminTagPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTag"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    TagInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+          description: 用于网址 /tag/{slug}/，留空时由名称生成
+
+    CategoryRef:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+
+    Author:
+      type: object
+      required: [id, nickname]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+
+    AdminPostItem:
+      type: object
+      required: [id, type, title, status, pinned, category, author, viewCount, commentCount, publishedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/PostType"
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/PostStatus"
+        pinned:
+          type: boolean
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        author:
+          $ref: "#/components/schemas/Author"
+        cover:
+          $ref: "#/components/schemas/Media"
+        viewCount:
+          type: integer
+        commentCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminPostPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPostItem"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    Attr:
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+
+    ChangelogEntry:
+      type: object
+      required: [version, date, note]
+      properties:
+        version:
+          type: string
+        date:
+          type: string
+          description: YYYY-MM-DD，可以为空
+        note:
+          type: string
+
+    AdminResource:
+      type: object
+      required: [platform, version, fileSize, attrs, changelog]
+      properties:
+        platform:
+          type: string
+        version:
+          type: string
+        fileSize:
+          type: string
+        icon:
+          $ref: "#/components/schemas/Media"
+        attrs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attr"
+        changelog:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChangelogEntry"
+
+    AdminPost:
+      type: object
+      required: [id, type, title, summary, contentHtml, categoryId, tags, status, pinned, seoTitle, seoKeywords, seoDescription, publishedAt, author, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/PostType"
+        title:
+          type: string
+        summary:
+          type: string
+        contentHtml:
+          type: string
+        cover:
+          $ref: "#/components/schemas/Media"
+        categoryId:
+          type: integer
+          format: int64
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/PostStatus"
+        pinned:
+          type: boolean
+        seoTitle:
+          type: string
+        seoKeywords:
+          type: string
+        seoDescription:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        author:
+          $ref: "#/components/schemas/Author"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resource:
+          $ref: "#/components/schemas/AdminResource"
+
+    ResourceInput:
+      type: object
+      properties:
+        platform:
+          type: string
+        version:
+          type: string
+        fileSize:
+          type: string
+        iconId:
+          type: integer
+          format: int64
+          nullable: true
+        attrs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attr"
+        changelog:
+          type: array
+          description: 新的在前
+          items:
+            $ref: "#/components/schemas/ChangelogEntry"
+
+    PostInput:
+      type: object
+      required: [type, title, contentHtml, categoryId, status]
+      properties:
+        type:
+          $ref: "#/components/schemas/PostType"
+        title:
+          type: string
+        summary:
+          type: string
+          description: 留空时从正文开头截取
+        contentHtml:
+          type: string
+          description: 编辑器输出的 HTML，保存时按白名单过滤
+        coverId:
+          type: integer
+          format: int64
+          nullable: true
+        categoryId:
+          type: integer
+          format: int64
+        tags:
+          type: array
+          description: 标签名称，不存在的会自动创建
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/EditableStatus"
+        pinned:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 发布时留空则取当前时间；填写将来的时间即为定时发布
+        seoTitle:
+          type: string
+        seoKeywords:
+          type: string
+        seoDescription:
+          type: string
+        resource:
+          $ref: "#/components/schemas/ResourceInput"
+
+    PlatformNames:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+
+    BannerSetting:
+      type: object
+      required: [tag, title, subtitle, buttonText, link]
+      properties:
+        tag:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        buttonText:
+          type: string
+        link:
+          type: string
+        image:
+          $ref: "#/components/schemas/Media"
+
+    HomeSettings:
+      type: object
+      required: [banners, notice]
+      properties:
+        banners:
+          type: array
+          items:
+            $ref: "#/components/schemas/BannerSetting"
+        notice:
+          type: string
+
+    BannerInput:
+      type: object
+      required: [title, link]
+      properties:
+        tag:
+          type: string
+          description: 标题上方的小标签
+        title:
+          type: string
+          description: 可以换行
+        subtitle:
+          type: string
+        buttonText:
+          type: string
+        link:
+          type: string
+          description: 站内路径（/ 开头）或 http(s) 网址
+        imageId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 背景图，留空使用默认渐变
+
+    HomeSettingsInput:
+      type: object
+      required: [banners, notice]
+      properties:
+        banners:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/BannerInput"
+        notice:
+          type: string
+          description: 公告，按换行分段
 
     Error:
       type: object

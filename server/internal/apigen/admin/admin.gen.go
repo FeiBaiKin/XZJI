@@ -8,11 +8,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for DatabaseStatusStatus.
@@ -27,6 +29,63 @@ func (e DatabaseStatusStatus) Valid() bool {
 	case Down:
 		return true
 	case Up:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EditableStatus.
+const (
+	EditableStatusDraft     EditableStatus = "draft"
+	EditableStatusPublished EditableStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the EditableStatus enum.
+func (e EditableStatus) Valid() bool {
+	switch e {
+	case EditableStatusDraft:
+		return true
+	case EditableStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PostStatus.
+const (
+	PostStatusDraft     PostStatus = "draft"
+	PostStatusPublished PostStatus = "published"
+	PostStatusTrash     PostStatus = "trash"
+)
+
+// Valid indicates whether the value is a known member of the PostStatus enum.
+func (e PostStatus) Valid() bool {
+	switch e {
+	case PostStatusDraft:
+		return true
+	case PostStatusPublished:
+		return true
+	case PostStatusTrash:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PostType.
+const (
+	Article  PostType = "article"
+	Resource PostType = "resource"
+)
+
+// Valid indicates whether the value is a known member of the PostType enum.
+func (e PostType) Valid() bool {
+	switch e {
+	case Article:
+		return true
+	case Resource:
 		return true
 	default:
 		return false
@@ -69,6 +128,73 @@ func (e UserStatus) Valid() bool {
 	}
 }
 
+// AdminCategory defines model for AdminCategory.
+type AdminCategory struct {
+	Color          string `json:"color"`
+	Description    string `json:"description"`
+	Icon           string `json:"icon"`
+	Id             int64  `json:"id"`
+	Name           string `json:"name"`
+	ParentId       *int64 `json:"parentId"`
+	PostCount      int64  `json:"postCount"`
+	SeoDescription string `json:"seoDescription"`
+	SeoTitle       string `json:"seoTitle"`
+	Slug           string `json:"slug"`
+	Sort           int    `json:"sort"`
+}
+
+// AdminCategoryList defines model for AdminCategoryList.
+type AdminCategoryList struct {
+	Items []AdminCategory `json:"items"`
+}
+
+// AdminPost defines model for AdminPost.
+type AdminPost struct {
+	Author         Author         `json:"author"`
+	CategoryId     int64          `json:"categoryId"`
+	ContentHtml    string         `json:"contentHtml"`
+	Cover          *Media         `json:"cover,omitempty"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	Id             int64          `json:"id"`
+	Pinned         bool           `json:"pinned"`
+	PublishedAt    *time.Time     `json:"publishedAt"`
+	Resource       *AdminResource `json:"resource,omitempty"`
+	SeoDescription string         `json:"seoDescription"`
+	SeoKeywords    string         `json:"seoKeywords"`
+	SeoTitle       string         `json:"seoTitle"`
+	Status         PostStatus     `json:"status"`
+	Summary        string         `json:"summary"`
+	Tags           []string       `json:"tags"`
+	Title          string         `json:"title"`
+	Type           PostType       `json:"type"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+}
+
+// AdminPostItem defines model for AdminPostItem.
+type AdminPostItem struct {
+	Author       Author      `json:"author"`
+	Category     CategoryRef `json:"category"`
+	CommentCount int         `json:"commentCount"`
+	Cover        *Media      `json:"cover,omitempty"`
+	CreatedAt    time.Time   `json:"createdAt"`
+	Id           int64       `json:"id"`
+	Pinned       bool        `json:"pinned"`
+	PublishedAt  *time.Time  `json:"publishedAt"`
+	Status       PostStatus  `json:"status"`
+	Title        string      `json:"title"`
+	Type         PostType    `json:"type"`
+	UpdatedAt    time.Time   `json:"updatedAt"`
+	ViewCount    int         `json:"viewCount"`
+}
+
+// AdminPostPage defines model for AdminPostPage.
+type AdminPostPage struct {
+	Items    []AdminPostItem `json:"items"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"pageSize"`
+	Total    int64           `json:"total"`
+}
+
 // AdminProfile defines model for AdminProfile.
 type AdminProfile struct {
 	Email    string `json:"email"`
@@ -76,10 +202,112 @@ type AdminProfile struct {
 	Nickname string `json:"nickname"`
 }
 
+// AdminResource defines model for AdminResource.
+type AdminResource struct {
+	Attrs     []Attr           `json:"attrs"`
+	Changelog []ChangelogEntry `json:"changelog"`
+	FileSize  string           `json:"fileSize"`
+	Icon      *Media           `json:"icon,omitempty"`
+	Platform  string           `json:"platform"`
+	Version   string           `json:"version"`
+}
+
+// AdminTag defines model for AdminTag.
+type AdminTag struct {
+	CreatedAt time.Time `json:"createdAt"`
+	Id        int64     `json:"id"`
+	Name      string    `json:"name"`
+	PostCount int64     `json:"postCount"`
+	Slug      string    `json:"slug"`
+}
+
+// AdminTagPage defines model for AdminTagPage.
+type AdminTagPage struct {
+	Items    []AdminTag `json:"items"`
+	Page     int        `json:"page"`
+	PageSize int        `json:"pageSize"`
+	Total    int64      `json:"total"`
+}
+
+// Attr defines model for Attr.
+type Attr struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// Author defines model for Author.
+type Author struct {
+	Id       int64  `json:"id"`
+	Nickname string `json:"nickname"`
+}
+
+// BannerInput defines model for BannerInput.
+type BannerInput struct {
+	ButtonText *string `json:"buttonText,omitempty"`
+
+	// ImageId 背景图，留空使用默认渐变
+	ImageId *int64 `json:"imageId,omitempty"`
+
+	// Link 站内路径（/ 开头）或 http(s) 网址
+	Link     string  `json:"link"`
+	Subtitle *string `json:"subtitle,omitempty"`
+
+	// Tag 标题上方的小标签
+	Tag *string `json:"tag,omitempty"`
+
+	// Title 可以换行
+	Title string `json:"title"`
+}
+
+// BannerSetting defines model for BannerSetting.
+type BannerSetting struct {
+	ButtonText string `json:"buttonText"`
+	Image      *Media `json:"image,omitempty"`
+	Link       string `json:"link"`
+	Subtitle   string `json:"subtitle"`
+	Tag        string `json:"tag"`
+	Title      string `json:"title"`
+}
+
+// CategoryInput defines model for CategoryInput.
+type CategoryInput struct {
+	// Color blue / red / orange / green / purple / gold / vip，留空使用默认色
+	Color       *string `json:"color,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Icon        *string `json:"icon,omitempty"`
+	Name        string  `json:"name"`
+
+	// ParentId 只支持两级，父分类必须是顶级分类
+	ParentId       *int64  `json:"parentId,omitempty"`
+	SeoDescription *string `json:"seoDescription,omitempty"`
+	SeoTitle       *string `json:"seoTitle,omitempty"`
+
+	// Slug 小写字母、数字和短横线，用于网址 /category/{slug}/
+	Slug string `json:"slug"`
+
+	// Sort 越小越靠前
+	Sort *int `json:"sort,omitempty"`
+}
+
+// CategoryRef defines model for CategoryRef.
+type CategoryRef struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 // ChangePasswordRequest defines model for ChangePasswordRequest.
 type ChangePasswordRequest struct {
 	NewPassword string `json:"newPassword"`
 	OldPassword string `json:"oldPassword"`
+}
+
+// ChangelogEntry defines model for ChangelogEntry.
+type ChangelogEntry struct {
+	// Date YYYY-MM-DD，可以为空
+	Date    string `json:"date"`
+	Note    string `json:"note"`
+	Version string `json:"version"`
 }
 
 // CsrfToken defines model for CsrfToken.
@@ -102,6 +330,9 @@ type DatabaseStatus struct {
 // DatabaseStatusStatus defines model for DatabaseStatus.Status.
 type DatabaseStatusStatus string
 
+// EditableStatus 移入回收站和恢复使用单独的接口
+type EditableStatus string
+
 // Error defines model for Error.
 type Error struct {
 	Error struct {
@@ -113,10 +344,87 @@ type Error struct {
 	} `json:"error"`
 }
 
+// HomeSettings defines model for HomeSettings.
+type HomeSettings struct {
+	Banners []BannerSetting `json:"banners"`
+	Notice  string          `json:"notice"`
+}
+
+// HomeSettingsInput defines model for HomeSettingsInput.
+type HomeSettingsInput struct {
+	Banners []BannerInput `json:"banners"`
+
+	// Notice 公告，按换行分段
+	Notice string `json:"notice"`
+}
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+// Media defines model for Media.
+type Media struct {
+	// Color 主色（#RRGGBB），图片过大时为空
+	Color  string `json:"color"`
+	Height int    `json:"height"`
+	Id     int64  `json:"id"`
+	Mime   string `json:"mime"`
+	Size   int64  `json:"size"`
+	Url    string `json:"url"`
+	Width  int    `json:"width"`
+}
+
+// PlatformNames defines model for PlatformNames.
+type PlatformNames struct {
+	Items []string `json:"items"`
+}
+
+// PostInput defines model for PostInput.
+type PostInput struct {
+	CategoryId int64 `json:"categoryId"`
+
+	// ContentHtml 编辑器输出的 HTML，保存时按白名单过滤
+	ContentHtml string `json:"contentHtml"`
+	CoverId     *int64 `json:"coverId,omitempty"`
+	Pinned      *bool  `json:"pinned,omitempty"`
+
+	// PublishedAt 发布时留空则取当前时间；填写将来的时间即为定时发布
+	PublishedAt    *time.Time     `json:"publishedAt,omitempty"`
+	Resource       *ResourceInput `json:"resource,omitempty"`
+	SeoDescription *string        `json:"seoDescription,omitempty"`
+	SeoKeywords    *string        `json:"seoKeywords,omitempty"`
+	SeoTitle       *string        `json:"seoTitle,omitempty"`
+
+	// Status 移入回收站和恢复使用单独的接口
+	Status EditableStatus `json:"status"`
+
+	// Summary 留空时从正文开头截取
+	Summary *string `json:"summary,omitempty"`
+
+	// Tags 标签名称，不存在的会自动创建
+	Tags  *[]string `json:"tags,omitempty"`
+	Title string    `json:"title"`
+	Type  PostType  `json:"type"`
+}
+
+// PostStatus defines model for PostStatus.
+type PostStatus string
+
+// PostType defines model for PostType.
+type PostType string
+
+// ResourceInput defines model for ResourceInput.
+type ResourceInput struct {
+	Attrs *[]Attr `json:"attrs,omitempty"`
+
+	// Changelog 新的在前
+	Changelog *[]ChangelogEntry `json:"changelog,omitempty"`
+	FileSize  *string           `json:"fileSize,omitempty"`
+	IconId    *int64            `json:"iconId,omitempty"`
+	Platform  *string           `json:"platform,omitempty"`
+	Version   *string           `json:"version,omitempty"`
 }
 
 // Role defines model for Role.
@@ -140,6 +448,14 @@ type SystemStatus struct {
 
 	// Version Example: 0.1.0
 	Version string `json:"version"`
+}
+
+// TagInput defines model for TagInput.
+type TagInput struct {
+	Name string `json:"name"`
+
+	// Slug 用于网址 /tag/{slug}/，留空时由名称生成
+	Slug *string `json:"slug,omitempty"`
 }
 
 // UpdateUserRequest defines model for UpdateUserRequest.
@@ -172,8 +488,20 @@ type UserPage struct {
 // UserStatus defines model for UserStatus.
 type UserStatus string
 
+// IdPath defines model for IdPath.
+type IdPath = int64
+
+// Page defines model for Page.
+type Page = int
+
+// PageSize defines model for PageSize.
+type PageSize = int
+
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // NotFound defines model for NotFound.
 type NotFound = Error
@@ -183,6 +511,38 @@ type TooManyRequests = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// UploadMediaMultipartBody defines parameters for UploadMedia.
+type UploadMediaMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
+
+// ListPostsParams defines parameters for ListPosts.
+type ListPostsParams struct {
+	Type   *PostType   `form:"type,omitempty" json:"type,omitempty"`
+	Status *PostStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// CategoryId 包含子分类
+	CategoryId *int64 `form:"categoryId,omitempty" json:"categoryId,omitempty"`
+
+	// Keyword 按标题模糊搜索
+	Keyword  *string   `form:"keyword,omitempty" json:"keyword,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// DeletePostParams defines parameters for DeletePost.
+type DeletePostParams struct {
+	Permanent *bool `form:"permanent,omitempty" json:"permanent,omitempty"`
+}
+
+// ListTagsParams defines parameters for ListTags.
+type ListTagsParams struct {
+	// Keyword 按名称或 slug 模糊搜索
+	Keyword  *string   `form:"keyword,omitempty" json:"keyword,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
 
 // ListUsersParams defines parameters for ListUsers.
 type ListUsersParams struct {
@@ -197,8 +557,32 @@ type ListUsersParams struct {
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody = CategoryInput
+
+// UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
+type UpdateCategoryJSONRequestBody = CategoryInput
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
+
+// UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
+type UploadMediaMultipartRequestBody UploadMediaMultipartBody
+
+// CreatePostJSONRequestBody defines body for CreatePost for application/json ContentType.
+type CreatePostJSONRequestBody = PostInput
+
+// UpdatePostJSONRequestBody defines body for UpdatePost for application/json ContentType.
+type UpdatePostJSONRequestBody = PostInput
+
+// UpdateHomeSettingsJSONRequestBody defines body for UpdateHomeSettings for application/json ContentType.
+type UpdateHomeSettingsJSONRequestBody = HomeSettingsInput
+
+// CreateTagJSONRequestBody defines body for CreateTag for application/json ContentType.
+type CreateTagJSONRequestBody = TagInput
+
+// UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
+type UpdateTagJSONRequestBody = TagInput
 
 // UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
 type UpdateUserJSONRequestBody = UpdateUserRequest
@@ -217,15 +601,69 @@ type ServerInterface interface {
 	// GetSession 当前登录状态
 	// (GET /auth/session)
 	GetSession(c *gin.Context)
+	// ListCategories 分类列表
+	// (GET /categories)
+	ListCategories(c *gin.Context)
+	// CreateCategory 新建分类
+	// (POST /categories)
+	CreateCategory(c *gin.Context)
+	// DeleteCategory 删除分类
+	// (DELETE /categories/{id})
+	DeleteCategory(c *gin.Context, id IdPath)
+	// UpdateCategory 修改分类
+	// (PUT /categories/{id})
+	UpdateCategory(c *gin.Context, id IdPath)
 	// GetMe 当前管理员
 	// (GET /me)
 	GetMe(c *gin.Context)
 	// ChangePassword 修改自己的密码
 	// (POST /me/password)
 	ChangePassword(c *gin.Context)
+	// UploadMedia 上传图片
+	// (POST /media)
+	UploadMedia(c *gin.Context)
+	// ListPlatforms 已使用的资源平台
+	// (GET /platforms)
+	ListPlatforms(c *gin.Context)
+	// ListPosts 内容列表
+	// (GET /posts)
+	ListPosts(c *gin.Context, params ListPostsParams)
+	// CreatePost 新建内容
+	// (POST /posts)
+	CreatePost(c *gin.Context)
+	// DeletePost 删除内容
+	// (DELETE /posts/{id})
+	DeletePost(c *gin.Context, id IdPath, params DeletePostParams)
+	// GetPost 内容详情
+	// (GET /posts/{id})
+	GetPost(c *gin.Context, id IdPath)
+	// UpdatePost 修改内容
+	// (PUT /posts/{id})
+	UpdatePost(c *gin.Context, id IdPath)
+	// RestorePost 从回收站恢复
+	// (POST /posts/{id}/restore)
+	RestorePost(c *gin.Context, id IdPath)
+	// GetHomeSettings 首页设置
+	// (GET /settings/home)
+	GetHomeSettings(c *gin.Context)
+	// UpdateHomeSettings 修改首页设置
+	// (PUT /settings/home)
+	UpdateHomeSettings(c *gin.Context)
 	// GetSystemStatus 系统状态
 	// (GET /system/status)
 	GetSystemStatus(c *gin.Context)
+	// ListTags 标签列表
+	// (GET /tags)
+	ListTags(c *gin.Context, params ListTagsParams)
+	// CreateTag 新建标签
+	// (POST /tags)
+	CreateTag(c *gin.Context)
+	// DeleteTag 删除标签
+	// (DELETE /tags/{id})
+	DeleteTag(c *gin.Context, id IdPath)
+	// UpdateTag 修改标签
+	// (PUT /tags/{id})
+	UpdateTag(c *gin.Context, id IdPath)
 	// ListUsers 用户列表
 	// (GET /users)
 	ListUsers(c *gin.Context, params ListUsersParams)
@@ -295,6 +733,82 @@ func (siw *ServerInterfaceWrapper) GetSession(c *gin.Context) {
 	siw.Handler.GetSession(c)
 }
 
+// ListCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListCategories(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListCategories(c)
+}
+
+// CreateCategory operation middleware
+func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCategory(c)
+}
+
+// DeleteCategory operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCategory(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteCategory(c, id)
+}
+
+// UpdateCategory operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateCategory(c, id)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 
@@ -321,6 +835,249 @@ func (siw *ServerInterfaceWrapper) ChangePassword(c *gin.Context) {
 	siw.Handler.ChangePassword(c)
 }
 
+// UploadMedia operation middleware
+func (siw *ServerInterfaceWrapper) UploadMedia(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UploadMedia(c)
+}
+
+// ListPlatforms operation middleware
+func (siw *ServerInterfaceWrapper) ListPlatforms(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPlatforms(c)
+}
+
+// ListPosts operation middleware
+func (siw *ServerInterfaceWrapper) ListPosts(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPostsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", c.Request.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter type: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", c.Request.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "categoryId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "categoryId", c.Request.URL.Query(), &params.CategoryId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter categoryId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", c.Request.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter keyword: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListPosts(c, params)
+}
+
+// CreatePost operation middleware
+func (siw *ServerInterfaceWrapper) CreatePost(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreatePost(c)
+}
+
+// DeletePost operation middleware
+func (siw *ServerInterfaceWrapper) DeletePost(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeletePostParams
+
+	// ------------- Optional query parameter "permanent" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "permanent", c.Request.URL.Query(), &params.Permanent, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter permanent: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeletePost(c, id, params)
+}
+
+// GetPost operation middleware
+func (siw *ServerInterfaceWrapper) GetPost(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPost(c, id)
+}
+
+// UpdatePost operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePost(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdatePost(c, id)
+}
+
+// RestorePost operation middleware
+func (siw *ServerInterfaceWrapper) RestorePost(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RestorePost(c, id)
+}
+
+// GetHomeSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetHomeSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetHomeSettings(c)
+}
+
+// UpdateHomeSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateHomeSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateHomeSettings(c)
+}
+
 // GetSystemStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSystemStatus(c *gin.Context) {
 
@@ -332,6 +1089,112 @@ func (siw *ServerInterfaceWrapper) GetSystemStatus(c *gin.Context) {
 	}
 
 	siw.Handler.GetSystemStatus(c)
+}
+
+// ListTags operation middleware
+func (siw *ServerInterfaceWrapper) ListTags(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTagsParams
+
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", c.Request.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter keyword: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListTags(c, params)
+}
+
+// CreateTag operation middleware
+func (siw *ServerInterfaceWrapper) CreateTag(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateTag(c)
+}
+
+// DeleteTag operation middleware
+func (siw *ServerInterfaceWrapper) DeleteTag(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteTag(c, id)
+}
+
+// UpdateTag operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTag(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateTag(c, id)
 }
 
 // ListUsers operation middleware
@@ -454,9 +1317,29 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/system/status", wrapper.GetSystemStatus)
 	router.GET(options.BaseURL+"/users", wrapper.ListUsers)
 	router.PATCH(options.BaseURL+"/users/:id", wrapper.UpdateUser)
+	router.POST(options.BaseURL+"/media", wrapper.UploadMedia)
+	router.GET(options.BaseURL+"/categories", wrapper.ListCategories)
+	router.POST(options.BaseURL+"/categories", wrapper.CreateCategory)
+	router.DELETE(options.BaseURL+"/categories/:id", wrapper.DeleteCategory)
+	router.PUT(options.BaseURL+"/categories/:id", wrapper.UpdateCategory)
+	router.GET(options.BaseURL+"/tags", wrapper.ListTags)
+	router.POST(options.BaseURL+"/tags", wrapper.CreateTag)
+	router.DELETE(options.BaseURL+"/tags/:id", wrapper.DeleteTag)
+	router.PUT(options.BaseURL+"/tags/:id", wrapper.UpdateTag)
+	router.GET(options.BaseURL+"/posts", wrapper.ListPosts)
+	router.POST(options.BaseURL+"/posts", wrapper.CreatePost)
+	router.DELETE(options.BaseURL+"/posts/:id", wrapper.DeletePost)
+	router.GET(options.BaseURL+"/posts/:id", wrapper.GetPost)
+	router.PUT(options.BaseURL+"/posts/:id", wrapper.UpdatePost)
+	router.POST(options.BaseURL+"/posts/:id/restore", wrapper.RestorePost)
+	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
+	router.GET(options.BaseURL+"/settings/home", wrapper.GetHomeSettings)
+	router.PUT(options.BaseURL+"/settings/home", wrapper.UpdateHomeSettings)
 }
 
 type BadRequestJSONResponse Error
+
+type ConflictJSONResponse Error
 
 type NotFoundJSONResponse Error
 
@@ -571,6 +1454,242 @@ func (response GetSession200JSONResponse) VisitGetSessionResponse(w http.Respons
 	return err
 }
 
+type ListCategoriesRequestObject struct {
+}
+
+type ListCategoriesResponseObject interface {
+	VisitListCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListCategories200JSONResponse AdminCategoryList
+
+func (response ListCategories200JSONResponse) VisitListCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCategories401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCategories401JSONResponse) VisitListCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCategoryRequestObject struct {
+	Body *CreateCategoryJSONRequestBody
+}
+
+type CreateCategoryResponseObject interface {
+	VisitCreateCategoryResponse(w http.ResponseWriter) error
+}
+
+type CreateCategory201JSONResponse AdminCategory
+
+func (response CreateCategory201JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCategory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCategory400JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCategory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCategory401JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCategory409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateCategory409JSONResponse) VisitCreateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCategoryRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type DeleteCategoryResponseObject interface {
+	VisitDeleteCategoryResponse(w http.ResponseWriter) error
+}
+
+type DeleteCategory204Response struct {
+}
+
+func (response DeleteCategory204Response) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCategory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteCategory401JSONResponse) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCategory404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteCategory404JSONResponse) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCategory409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteCategory409JSONResponse) VisitDeleteCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCategoryRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdateCategoryJSONRequestBody
+}
+
+type UpdateCategoryResponseObject interface {
+	VisitUpdateCategoryResponse(w http.ResponseWriter) error
+}
+
+type UpdateCategory200JSONResponse AdminCategory
+
+func (response UpdateCategory200JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCategory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCategory400JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCategory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateCategory401JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCategory404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateCategory404JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCategory409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateCategory409JSONResponse) VisitUpdateCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -650,6 +1769,494 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type UploadMediaRequestObject struct {
+	Body *multipart.Reader
+}
+
+type UploadMediaResponseObject interface {
+	VisitUploadMediaResponse(w http.ResponseWriter) error
+}
+
+type UploadMedia201JSONResponse Media
+
+func (response UploadMedia201JSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadMedia400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UploadMedia400JSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadMedia401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UploadMedia401JSONResponse) VisitUploadMediaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlatformsRequestObject struct {
+}
+
+type ListPlatformsResponseObject interface {
+	VisitListPlatformsResponse(w http.ResponseWriter) error
+}
+
+type ListPlatforms200JSONResponse PlatformNames
+
+func (response ListPlatforms200JSONResponse) VisitListPlatformsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPlatforms401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListPlatforms401JSONResponse) VisitListPlatformsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPostsRequestObject struct {
+	Params ListPostsParams
+}
+
+type ListPostsResponseObject interface {
+	VisitListPostsResponse(w http.ResponseWriter) error
+}
+
+type ListPosts200JSONResponse AdminPostPage
+
+func (response ListPosts200JSONResponse) VisitListPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPosts401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListPosts401JSONResponse) VisitListPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePostRequestObject struct {
+	Body *CreatePostJSONRequestBody
+}
+
+type CreatePostResponseObject interface {
+	VisitCreatePostResponse(w http.ResponseWriter) error
+}
+
+type CreatePost201JSONResponse AdminPost
+
+func (response CreatePost201JSONResponse) VisitCreatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePost400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreatePost400JSONResponse) VisitCreatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreatePost401JSONResponse) VisitCreatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePostRequestObject struct {
+	Id     IdPath `json:"id"`
+	Params DeletePostParams
+}
+
+type DeletePostResponseObject interface {
+	VisitDeletePostResponse(w http.ResponseWriter) error
+}
+
+type DeletePost204Response struct {
+}
+
+func (response DeletePost204Response) VisitDeletePostResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePost400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeletePost400JSONResponse) VisitDeletePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeletePost401JSONResponse) VisitDeletePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeletePost404JSONResponse) VisitDeletePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPostRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type GetPostResponseObject interface {
+	VisitGetPostResponse(w http.ResponseWriter) error
+}
+
+type GetPost200JSONResponse AdminPost
+
+func (response GetPost200JSONResponse) VisitGetPostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetPost401JSONResponse) VisitGetPostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPost404JSONResponse) VisitGetPostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePostRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdatePostJSONRequestBody
+}
+
+type UpdatePostResponseObject interface {
+	VisitUpdatePostResponse(w http.ResponseWriter) error
+}
+
+type UpdatePost200JSONResponse AdminPost
+
+func (response UpdatePost200JSONResponse) VisitUpdatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePost400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdatePost400JSONResponse) VisitUpdatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdatePost401JSONResponse) VisitUpdatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdatePost404JSONResponse) VisitUpdatePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestorePostRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type RestorePostResponseObject interface {
+	VisitRestorePostResponse(w http.ResponseWriter) error
+}
+
+type RestorePost204Response struct {
+}
+
+func (response RestorePost204Response) VisitRestorePostResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RestorePost400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RestorePost400JSONResponse) VisitRestorePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestorePost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RestorePost401JSONResponse) VisitRestorePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestorePost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RestorePost404JSONResponse) VisitRestorePostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeSettingsRequestObject struct {
+}
+
+type GetHomeSettingsResponseObject interface {
+	VisitGetHomeSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetHomeSettings200JSONResponse HomeSettings
+
+func (response GetHomeSettings200JSONResponse) VisitGetHomeSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetHomeSettings401JSONResponse) VisitGetHomeSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHomeSettingsRequestObject struct {
+	Body *UpdateHomeSettingsJSONRequestBody
+}
+
+type UpdateHomeSettingsResponseObject interface {
+	VisitUpdateHomeSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateHomeSettings200JSONResponse HomeSettings
+
+func (response UpdateHomeSettings200JSONResponse) VisitUpdateHomeSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHomeSettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateHomeSettings400JSONResponse) VisitUpdateHomeSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateHomeSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateHomeSettings401JSONResponse) VisitUpdateHomeSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSystemStatusRequestObject struct {
 }
 
@@ -681,6 +2288,229 @@ func (response GetSystemStatus401JSONResponse) VisitGetSystemStatusResponse(w ht
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTagsRequestObject struct {
+	Params ListTagsParams
+}
+
+type ListTagsResponseObject interface {
+	VisitListTagsResponse(w http.ResponseWriter) error
+}
+
+type ListTags200JSONResponse AdminTagPage
+
+func (response ListTags200JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTags401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListTags401JSONResponse) VisitListTagsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTagRequestObject struct {
+	Body *CreateTagJSONRequestBody
+}
+
+type CreateTagResponseObject interface {
+	VisitCreateTagResponse(w http.ResponseWriter) error
+}
+
+type CreateTag201JSONResponse AdminTag
+
+func (response CreateTag201JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateTag400JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateTag401JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateTag409JSONResponse) VisitCreateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteTagRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type DeleteTagResponseObject interface {
+	VisitDeleteTagResponse(w http.ResponseWriter) error
+}
+
+type DeleteTag204Response struct {
+}
+
+func (response DeleteTag204Response) VisitDeleteTagResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteTag401JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteTag404JSONResponse) VisitDeleteTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTagRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdateTagJSONRequestBody
+}
+
+type UpdateTagResponseObject interface {
+	VisitUpdateTagResponse(w http.ResponseWriter) error
+}
+
+type UpdateTag200JSONResponse AdminTag
+
+func (response UpdateTag200JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTag400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTag400JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTag401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTag401JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTag404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTag404JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTag409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateTag409JSONResponse) VisitUpdateTagResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -800,15 +2630,69 @@ type StrictServerInterface interface {
 	// GetSession 当前登录状态
 	// (GET /auth/session)
 	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
+	// ListCategories 分类列表
+	// (GET /categories)
+	ListCategories(ctx context.Context, request ListCategoriesRequestObject) (ListCategoriesResponseObject, error)
+	// CreateCategory 新建分类
+	// (POST /categories)
+	CreateCategory(ctx context.Context, request CreateCategoryRequestObject) (CreateCategoryResponseObject, error)
+	// DeleteCategory 删除分类
+	// (DELETE /categories/{id})
+	DeleteCategory(ctx context.Context, request DeleteCategoryRequestObject) (DeleteCategoryResponseObject, error)
+	// UpdateCategory 修改分类
+	// (PUT /categories/{id})
+	UpdateCategory(ctx context.Context, request UpdateCategoryRequestObject) (UpdateCategoryResponseObject, error)
 	// GetMe 当前管理员
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
 	// ChangePassword 修改自己的密码
 	// (POST /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// UploadMedia 上传图片
+	// (POST /media)
+	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
+	// ListPlatforms 已使用的资源平台
+	// (GET /platforms)
+	ListPlatforms(ctx context.Context, request ListPlatformsRequestObject) (ListPlatformsResponseObject, error)
+	// ListPosts 内容列表
+	// (GET /posts)
+	ListPosts(ctx context.Context, request ListPostsRequestObject) (ListPostsResponseObject, error)
+	// CreatePost 新建内容
+	// (POST /posts)
+	CreatePost(ctx context.Context, request CreatePostRequestObject) (CreatePostResponseObject, error)
+	// DeletePost 删除内容
+	// (DELETE /posts/{id})
+	DeletePost(ctx context.Context, request DeletePostRequestObject) (DeletePostResponseObject, error)
+	// GetPost 内容详情
+	// (GET /posts/{id})
+	GetPost(ctx context.Context, request GetPostRequestObject) (GetPostResponseObject, error)
+	// UpdatePost 修改内容
+	// (PUT /posts/{id})
+	UpdatePost(ctx context.Context, request UpdatePostRequestObject) (UpdatePostResponseObject, error)
+	// RestorePost 从回收站恢复
+	// (POST /posts/{id}/restore)
+	RestorePost(ctx context.Context, request RestorePostRequestObject) (RestorePostResponseObject, error)
+	// GetHomeSettings 首页设置
+	// (GET /settings/home)
+	GetHomeSettings(ctx context.Context, request GetHomeSettingsRequestObject) (GetHomeSettingsResponseObject, error)
+	// UpdateHomeSettings 修改首页设置
+	// (PUT /settings/home)
+	UpdateHomeSettings(ctx context.Context, request UpdateHomeSettingsRequestObject) (UpdateHomeSettingsResponseObject, error)
 	// GetSystemStatus 系统状态
 	// (GET /system/status)
 	GetSystemStatus(ctx context.Context, request GetSystemStatusRequestObject) (GetSystemStatusResponseObject, error)
+	// ListTags 标签列表
+	// (GET /tags)
+	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
+	// CreateTag 新建标签
+	// (POST /tags)
+	CreateTag(ctx context.Context, request CreateTagRequestObject) (CreateTagResponseObject, error)
+	// DeleteTag 删除标签
+	// (DELETE /tags/{id})
+	DeleteTag(ctx context.Context, request DeleteTagRequestObject) (DeleteTagResponseObject, error)
+	// UpdateTag 修改标签
+	// (PUT /tags/{id})
+	UpdateTag(ctx context.Context, request UpdateTagRequestObject) (UpdateTagResponseObject, error)
 	// ListUsers 用户列表
 	// (GET /users)
 	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
@@ -977,6 +2861,120 @@ func (sh *strictHandler) GetSession(ctx *gin.Context) {
 	}
 }
 
+// ListCategories operation middleware
+func (sh *strictHandler) ListCategories(ctx *gin.Context) {
+	var request ListCategoriesRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCategories(ctx, request.(ListCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCategories")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListCategoriesResponseObject); ok {
+		if err := validResponse.VisitListCategoriesResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCategory operation middleware
+func (sh *strictHandler) CreateCategory(ctx *gin.Context) {
+	var request CreateCategoryRequestObject
+
+	var body CreateCategoryJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCategory(ctx, request.(CreateCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCategoryResponseObject); ok {
+		if err := validResponse.VisitCreateCategoryResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCategory operation middleware
+func (sh *strictHandler) DeleteCategory(ctx *gin.Context, id IdPath) {
+	var request DeleteCategoryRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCategory(ctx, request.(DeleteCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteCategoryResponseObject); ok {
+		if err := validResponse.VisitDeleteCategoryResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCategory operation middleware
+func (sh *strictHandler) UpdateCategory(ctx *gin.Context, id IdPath) {
+	var request UpdateCategoryRequestObject
+
+	request.Id = id
+
+	var body UpdateCategoryJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCategory(ctx, request.(UpdateCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCategory")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateCategoryResponseObject); ok {
+		if err := validResponse.VisitUpdateCategoryResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	var request GetMeRequestObject
@@ -1032,6 +3030,285 @@ func (sh *strictHandler) ChangePassword(ctx *gin.Context) {
 	}
 }
 
+// UploadMedia operation middleware
+func (sh *strictHandler) UploadMedia(ctx *gin.Context) {
+	var request UploadMediaRequestObject
+
+	if reader, err := ctx.Request.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UploadMedia(ctx, request.(UploadMediaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UploadMedia")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UploadMediaResponseObject); ok {
+		if err := validResponse.VisitUploadMediaResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPlatforms operation middleware
+func (sh *strictHandler) ListPlatforms(ctx *gin.Context) {
+	var request ListPlatformsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPlatforms(ctx, request.(ListPlatformsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPlatforms")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListPlatformsResponseObject); ok {
+		if err := validResponse.VisitListPlatformsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPosts operation middleware
+func (sh *strictHandler) ListPosts(ctx *gin.Context, params ListPostsParams) {
+	var request ListPostsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPosts(ctx, request.(ListPostsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPosts")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListPostsResponseObject); ok {
+		if err := validResponse.VisitListPostsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePost operation middleware
+func (sh *strictHandler) CreatePost(ctx *gin.Context) {
+	var request CreatePostRequestObject
+
+	var body CreatePostJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePost(ctx, request.(CreatePostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreatePostResponseObject); ok {
+		if err := validResponse.VisitCreatePostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeletePost operation middleware
+func (sh *strictHandler) DeletePost(ctx *gin.Context, id IdPath, params DeletePostParams) {
+	var request DeletePostRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePost(ctx, request.(DeletePostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeletePostResponseObject); ok {
+		if err := validResponse.VisitDeletePostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPost operation middleware
+func (sh *strictHandler) GetPost(ctx *gin.Context, id IdPath) {
+	var request GetPostRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPost(ctx, request.(GetPostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPostResponseObject); ok {
+		if err := validResponse.VisitGetPostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePost operation middleware
+func (sh *strictHandler) UpdatePost(ctx *gin.Context, id IdPath) {
+	var request UpdatePostRequestObject
+
+	request.Id = id
+
+	var body UpdatePostJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePost(ctx, request.(UpdatePostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdatePostResponseObject); ok {
+		if err := validResponse.VisitUpdatePostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RestorePost operation middleware
+func (sh *strictHandler) RestorePost(ctx *gin.Context, id IdPath) {
+	var request RestorePostRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RestorePost(ctx, request.(RestorePostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RestorePost")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RestorePostResponseObject); ok {
+		if err := validResponse.VisitRestorePostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHomeSettings operation middleware
+func (sh *strictHandler) GetHomeSettings(ctx *gin.Context) {
+	var request GetHomeSettingsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHomeSettings(ctx, request.(GetHomeSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHomeSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetHomeSettingsResponseObject); ok {
+		if err := validResponse.VisitGetHomeSettingsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateHomeSettings operation middleware
+func (sh *strictHandler) UpdateHomeSettings(ctx *gin.Context) {
+	var request UpdateHomeSettingsRequestObject
+
+	var body UpdateHomeSettingsJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateHomeSettings(ctx, request.(UpdateHomeSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateHomeSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateHomeSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateHomeSettingsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSystemStatus operation middleware
 func (sh *strictHandler) GetSystemStatus(ctx *gin.Context) {
 	var request GetSystemStatusRequestObject
@@ -1049,6 +3326,122 @@ func (sh *strictHandler) GetSystemStatus(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetSystemStatusResponseObject); ok {
 		if err := validResponse.VisitGetSystemStatusResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTags operation middleware
+func (sh *strictHandler) ListTags(ctx *gin.Context, params ListTagsParams) {
+	var request ListTagsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTags(ctx, request.(ListTagsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTags")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListTagsResponseObject); ok {
+		if err := validResponse.VisitListTagsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateTag operation middleware
+func (sh *strictHandler) CreateTag(ctx *gin.Context) {
+	var request CreateTagRequestObject
+
+	var body CreateTagJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateTag(ctx, request.(CreateTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateTag")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateTagResponseObject); ok {
+		if err := validResponse.VisitCreateTagResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteTag operation middleware
+func (sh *strictHandler) DeleteTag(ctx *gin.Context, id IdPath) {
+	var request DeleteTagRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteTag(ctx, request.(DeleteTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteTag")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteTagResponseObject); ok {
+		if err := validResponse.VisitDeleteTagResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateTag operation middleware
+func (sh *strictHandler) UpdateTag(ctx *gin.Context, id IdPath) {
+	var request UpdateTagRequestObject
+
+	request.Id = id
+
+	var body UpdateTagJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateTag(ctx, request.(UpdateTagRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateTag")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateTagResponseObject); ok {
+		if err := validResponse.VisitUpdateTagResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

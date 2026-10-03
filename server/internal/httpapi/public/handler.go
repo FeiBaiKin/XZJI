@@ -13,16 +13,20 @@ import (
 	"xzji/internal/buildinfo"
 	"xzji/internal/httpapi/authn"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/content"
+	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 )
 
 type Deps struct {
-	DB    *sql.DB
-	Log   *slog.Logger
-	Auth  *auth.Service
-	Users *user.Service
-	Realm *authn.Realm
-	CSRF  *authn.CSRF
+	DB      *sql.DB
+	Log     *slog.Logger
+	Auth    *auth.Service
+	Users   *user.Service
+	Realm   *authn.Realm
+	CSRF    *authn.CSRF
+	Content *content.Service
+	Home    *setting.HomeService
 }
 
 type Handler struct {

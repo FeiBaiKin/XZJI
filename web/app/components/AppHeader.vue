@@ -1,15 +1,25 @@
 <script setup lang="ts">
 const route = useRoute()
 const { user, ready } = useAuth()
+const { tree } = await useCategories()
 
-const nav = [
-  { label: '首页', to: '/' },
-  { label: '安卓软件', to: '/category/android' },
-  { label: '电脑软件', to: '/category/pc', badge: { text: '热门', class: 'bg-jb-red' } },
-  { label: '主题源码', to: '/category/theme' },
-  { label: '建站教程', to: '/category/tutorial', badge: { text: '上新', class: 'bg-jb-green' } },
-  { label: '会员专区', to: '/vip' },
-]
+// 导航：首页 + 顶级分类 + 会员专区。当前页属于某个顶级分类（含子分类）时，该项高亮
+const nav = computed(() => [
+  { label: '首页', to: '/', match: (p: string) => p === '/' },
+  ...tree.value.map(c => ({
+    label: c.name,
+    to: categoryUrl(c.slug),
+    match: (p: string) => [c, ...c.children].some(x => p.startsWith(`/category/${x.slug}/`) || p === `/category/${x.slug}`),
+  })),
+  { label: '会员专区', to: '/vip', match: (p: string) => p.startsWith('/vip') },
+])
+// 详情页的网址不含分类，由详情页通过 useNavActive 指定高亮项，只对当前路径有效。
+// 页头可能先于页面渲染，挂载后才采用这个指定，避免服务端与浏览器渲染结果不一致
+const navActive = useState<{ path: string, to: string } | null>('nav:active', () => null)
+const mounted = ref(false)
+onMounted(() => { mounted.value = true })
+const isActive = (item: { to: string, match: (p: string) => boolean }) =>
+  mounted.value && navActive.value?.path === route.path ? navActive.value.to === item.to : item.match(route.path)
 const loginLink = computed(() => ({ path: '/login', query: route.path === '/' ? {} : { redirect: route.fullPath } }))
 </script>
 
@@ -23,16 +33,15 @@ const loginLink = computed(() => ({ path: '/login', query: route.path === '/' ? 
           :key="item.to"
           :to="item.to"
           class="relative flex items-center px-3 text-[15px] hover:text-theme"
-          :class="route.path === item.to ? 'text-theme after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t after:bg-theme' : 'text-body'"
+          :class="isActive(item) ? 'text-theme after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t after:bg-theme' : 'text-body'"
         >
           {{ item.label }}
-          <sup v-if="item.badge" class="absolute top-2.5 -right-1.5 rounded rounded-bl-none px-1 py-0.5 text-[10px] leading-none font-semibold text-white" :class="item.badge.class">{{ item.badge.text }}</sup>
         </NuxtLink>
       </nav>
       <div class="ml-auto flex items-center gap-1.5">
-        <button class="grid size-9 place-items-center rounded-full text-body hover:bg-soft hover:text-theme" aria-label="搜索">
+        <NuxtLink to="/search" class="grid size-9 place-items-center rounded-full text-body hover:bg-soft hover:text-theme" aria-label="搜索">
           <Icon name="search" class="size-[18px]" />
-        </button>
+        </NuxtLink>
         <NuxtLink to="/vip" class="mx-1.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-jb-vip px-3.5 text-[13px] font-semibold text-vip">
           <Icon name="crown" class="size-[15px] text-vip-gold" />开通会员
         </NuxtLink>
@@ -41,7 +50,7 @@ const loginLink = computed(() => ({ path: '/login', query: route.path === '/' ? 
             <span class="grid size-8 place-items-center rounded-full bg-jb-orange text-sm font-bold text-white">{{ user.nickname.slice(0, 1) }}</span>
             <span class="max-w-[8em] truncate max-md:hidden">{{ user.nickname }}</span>
           </NuxtLink>
-          <NuxtLink v-else-if="ready" :to="loginLink" class="text-sm text-body hover:text-theme">登录 / 注册</NuxtLink>
+          <NuxtLink v-else-if="ready" :to="loginLink" class="text-sm text-body hover:text-theme max-md:hidden">登录 / 注册</NuxtLink>
           <template #fallback>
             <span class="w-16" />
           </template>

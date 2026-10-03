@@ -166,6 +166,211 @@ export interface paths {
         patch: operations["updateUser"];
         trace?: never;
     };
+    "/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上传图片
+         * @description 只接受 JPEG、PNG、GIF、WebP，按文件内容判断类型；大小上限为配置项 media.max_size_mb。
+         */
+        post: operations["uploadMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 分类列表
+         * @description 按排序值返回全部分类（平铺，由 parentId 组成树）。postCount 为该分类自身未删除的内容数。
+         */
+        get: operations["listCategories"];
+        put?: never;
+        /** 新建分类 */
+        post: operations["createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 修改分类 */
+        put: operations["updateCategory"];
+        post?: never;
+        /**
+         * 删除分类
+         * @description 分类下还有子分类或内容（包括回收站）时不能删除。
+         */
+        delete: operations["deleteCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 标签列表 */
+        get: operations["listTags"];
+        put?: never;
+        /** 新建标签 */
+        post: operations["createTag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 修改标签 */
+        put: operations["updateTag"];
+        post?: never;
+        /**
+         * 删除标签
+         * @description 同时解除与内容的关联，内容本身不受影响。
+         */
+        delete: operations["deleteTag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 内容列表
+         * @description 不传 status 时返回回收站以外的全部内容。
+         */
+        get: operations["listPosts"];
+        put?: never;
+        /** 新建内容 */
+        post: operations["createPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 内容详情 */
+        get: operations["getPost"];
+        /**
+         * 修改内容
+         * @description 整体替换。回收站里的内容需要先恢复才能修改。
+         */
+        put: operations["updatePost"];
+        post?: never;
+        /**
+         * 删除内容
+         * @description 默认移入回收站；permanent=true 时彻底删除，只能删除回收站里的内容，操作会写入后台日志。
+         */
+        delete: operations["deletePost"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 从回收站恢复
+         * @description 恢复为草稿。
+         */
+        post: operations["restorePost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 已使用的资源平台
+         * @description 用于编辑资源时提示可选值。
+         */
+        get: operations["listPlatforms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 首页设置 */
+        get: operations["getHomeSettings"];
+        /** 修改首页设置 */
+        put: operations["updateHomeSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -245,6 +450,236 @@ export interface components {
              */
             migration: number;
         };
+        /** @enum {string} */
+        PostType: "article" | "resource";
+        /** @enum {string} */
+        PostStatus: "draft" | "published" | "trash";
+        /**
+         * @description 移入回收站和恢复使用单独的接口
+         * @enum {string}
+         */
+        EditableStatus: "draft" | "published";
+        Media: {
+            /** Format: int64 */
+            id: number;
+            url: string;
+            width: number;
+            height: number;
+            mime: string;
+            /** Format: int64 */
+            size: number;
+            /** @description 主色（#RRGGBB），图片过大时为空 */
+            color: string;
+        };
+        AdminCategory: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            parentId: number | null;
+            name: string;
+            slug: string;
+            icon: string;
+            color: string;
+            description: string;
+            sort: number;
+            seoTitle: string;
+            seoDescription: string;
+            /** Format: int64 */
+            postCount: number;
+        };
+        AdminCategoryList: {
+            items: components["schemas"]["AdminCategory"][];
+        };
+        CategoryInput: {
+            /**
+             * Format: int64
+             * @description 只支持两级，父分类必须是顶级分类
+             */
+            parentId?: number | null;
+            name: string;
+            /** @description 小写字母、数字和短横线，用于网址 /category/{slug}/ */
+            slug: string;
+            icon?: string;
+            /** @description blue / red / orange / green / purple / gold / vip，留空使用默认色 */
+            color?: string;
+            description?: string;
+            /** @description 越小越靠前 */
+            sort?: number;
+            seoTitle?: string;
+            seoDescription?: string;
+        };
+        AdminTag: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+            /** Format: int64 */
+            postCount: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminTagPage: {
+            items: components["schemas"]["AdminTag"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        TagInput: {
+            name: string;
+            /** @description 用于网址 /tag/{slug}/，留空时由名称生成 */
+            slug?: string;
+        };
+        CategoryRef: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+        };
+        Author: {
+            /** Format: int64 */
+            id: number;
+            nickname: string;
+        };
+        AdminPostItem: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["PostType"];
+            title: string;
+            status: components["schemas"]["PostStatus"];
+            pinned: boolean;
+            category: components["schemas"]["CategoryRef"];
+            author: components["schemas"]["Author"];
+            cover?: components["schemas"]["Media"];
+            viewCount: number;
+            commentCount: number;
+            /** Format: date-time */
+            publishedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminPostPage: {
+            items: components["schemas"]["AdminPostItem"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        Attr: {
+            name: string;
+            value: string;
+        };
+        ChangelogEntry: {
+            version: string;
+            /** @description YYYY-MM-DD，可以为空 */
+            date: string;
+            note: string;
+        };
+        AdminResource: {
+            platform: string;
+            version: string;
+            fileSize: string;
+            icon?: components["schemas"]["Media"];
+            attrs: components["schemas"]["Attr"][];
+            changelog: components["schemas"]["ChangelogEntry"][];
+        };
+        AdminPost: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["PostType"];
+            title: string;
+            summary: string;
+            contentHtml: string;
+            cover?: components["schemas"]["Media"];
+            /** Format: int64 */
+            categoryId: number;
+            tags: string[];
+            status: components["schemas"]["PostStatus"];
+            pinned: boolean;
+            seoTitle: string;
+            seoKeywords: string;
+            seoDescription: string;
+            /** Format: date-time */
+            publishedAt: string | null;
+            author: components["schemas"]["Author"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            resource?: components["schemas"]["AdminResource"];
+        };
+        ResourceInput: {
+            platform?: string;
+            version?: string;
+            fileSize?: string;
+            /** Format: int64 */
+            iconId?: number | null;
+            attrs?: components["schemas"]["Attr"][];
+            /** @description 新的在前 */
+            changelog?: components["schemas"]["ChangelogEntry"][];
+        };
+        PostInput: {
+            type: components["schemas"]["PostType"];
+            title: string;
+            /** @description 留空时从正文开头截取 */
+            summary?: string;
+            /** @description 编辑器输出的 HTML，保存时按白名单过滤 */
+            contentHtml: string;
+            /** Format: int64 */
+            coverId?: number | null;
+            /** Format: int64 */
+            categoryId: number;
+            /** @description 标签名称，不存在的会自动创建 */
+            tags?: string[];
+            status: components["schemas"]["EditableStatus"];
+            pinned?: boolean;
+            /**
+             * Format: date-time
+             * @description 发布时留空则取当前时间；填写将来的时间即为定时发布
+             */
+            publishedAt?: string | null;
+            seoTitle?: string;
+            seoKeywords?: string;
+            seoDescription?: string;
+            resource?: components["schemas"]["ResourceInput"];
+        };
+        PlatformNames: {
+            items: string[];
+        };
+        BannerSetting: {
+            tag: string;
+            title: string;
+            subtitle: string;
+            buttonText: string;
+            link: string;
+            image?: components["schemas"]["Media"];
+        };
+        HomeSettings: {
+            banners: components["schemas"]["BannerSetting"][];
+            notice: string;
+        };
+        BannerInput: {
+            /** @description 标题上方的小标签 */
+            tag?: string;
+            /** @description 可以换行 */
+            title: string;
+            subtitle?: string;
+            buttonText?: string;
+            /** @description 站内路径（/ 开头）或 http(s) 网址 */
+            link: string;
+            /**
+             * Format: int64
+             * @description 背景图，留空使用默认渐变
+             */
+            imageId?: number | null;
+        };
+        HomeSettingsInput: {
+            banners: components["schemas"]["BannerInput"][];
+            /** @description 公告，按换行分段 */
+            notice: string;
+        };
         Error: {
             error: {
                 /** @example UNAUTHORIZED */
@@ -282,6 +717,15 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description 与现有数据冲突 */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description 操作太频繁 */
         TooManyRequests: {
             headers: {
@@ -292,7 +736,11 @@ export interface components {
             };
         };
     };
-    parameters: never;
+    parameters: {
+        IdPath: number;
+        Page: number;
+        PageSize: number;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -504,6 +952,466 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    uploadMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 上传成功 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Media"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 分类列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategoryList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description 新建的分类 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategory"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的分类 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCategory"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listTags: {
+        parameters: {
+            query?: {
+                /** @description 按名称或 slug 模糊搜索 */
+                keyword?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 标签分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTagPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagInput"];
+            };
+        };
+        responses: {
+            /** @description 新建的标签 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTag"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的标签 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTag"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPosts: {
+        parameters: {
+            query?: {
+                type?: components["schemas"]["PostType"];
+                status?: components["schemas"]["PostStatus"];
+                /** @description 包含子分类 */
+                categoryId?: number;
+                /** @description 按标题模糊搜索 */
+                keyword?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 内容分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPostPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostInput"];
+            };
+        };
+        responses: {
+            /** @description 新建的内容 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 内容 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updatePost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的内容 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPost"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deletePost: {
+        parameters: {
+            query?: {
+                permanent?: boolean;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    restorePost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已恢复 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPlatforms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 平台名称 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformNames"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getHomeSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 首页设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateHomeSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HomeSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的首页设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
 }

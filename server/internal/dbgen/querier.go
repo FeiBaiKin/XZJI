@@ -6,34 +6,72 @@ package dbgen
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"time"
 )
 
 type Querier interface {
+	AddPostTag(ctx context.Context, arg AddPostTagParams) error
+	CountActivePostsByCategory(ctx context.Context) ([]CountActivePostsByCategoryRow, error)
+	CountChildCategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
+	CountPostsInCategory(ctx context.Context, categoryID int64) (int64, error)
+	CountPublishedPostsByCategory(ctx context.Context, publishedAt sql.NullTime) ([]CountPublishedPostsByCategoryRow, error)
+	CountPublishedPostsByTag(ctx context.Context, arg CountPublishedPostsByTagParams) (int64, error)
+	CountTags(ctx context.Context, arg CountTagsParams) (int64, error)
 	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
 	CreateAdminLog(ctx context.Context, arg CreateAdminLogParams) error
+	CreateCategory(ctx context.Context, arg CreateCategoryParams) (int64, error)
 	CreateEmailCode(ctx context.Context, arg CreateEmailCodeParams) error
+	CreateMedia(ctx context.Context, arg CreateMediaParams) (int64, error)
+	CreatePost(ctx context.Context, arg CreatePostParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
+	CreateTag(ctx context.Context, arg CreateTagParams) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (int64, error)
+	DeleteCategory(ctx context.Context, id int64) error
 	DeleteExpiredEmailCodes(ctx context.Context, expiresAt time.Time) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) (int64, error)
+	DeletePost(ctx context.Context, id int64) error
+	DeletePostTags(ctx context.Context, postID int64) error
+	DeletePostTagsByTag(ctx context.Context, tagID int64) error
+	DeleteResource(ctx context.Context, postID int64) error
 	DeleteSession(ctx context.Context, id string) error
+	DeleteTag(ctx context.Context, id int64) error
 	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) error
 	ExtendSession(ctx context.Context, arg ExtendSessionParams) error
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
+	GetCategory(ctx context.Context, id int64) (Category, error)
 	GetLatestEmailCode(ctx context.Context, arg GetLatestEmailCodeParams) (EmailCode, error)
+	GetMedia(ctx context.Context, id int64) (Media, error)
+	GetPost(ctx context.Context, id int64) (Post, error)
+	GetResource(ctx context.Context, postID int64) (Resource, error)
 	GetSetting(ctx context.Context, key string) (json.RawMessage, error)
+	GetTag(ctx context.Context, id int64) (Tag, error)
+	GetTagByName(ctx context.Context, name string) (Tag, error)
+	GetTagBySlug(ctx context.Context, slug string) (Tag, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	IncrEmailCodeAttempts(ctx context.Context, id int64) error
 	InvalidateEmailCodes(ctx context.Context, arg InvalidateEmailCodesParams) error
+	ListCategories(ctx context.Context) ([]Category, error)
+	ListHotTags(ctx context.Context, arg ListHotTagsParams) ([]ListHotTagsRow, error)
+	ListMediaByIDs(ctx context.Context, ids []int64) ([]Media, error)
+	ListPlatformNames(ctx context.Context) ([]string, error)
+	ListTagsByNames(ctx context.Context, names []string) ([]Tag, error)
+	ListTagsByPostIDs(ctx context.Context, postIds []int64) ([]ListTagsByPostIDsRow, error)
+	ListTagsWithCount(ctx context.Context, arg ListTagsWithCountParams) ([]ListTagsWithCountRow, error)
+	ListUserNicknames(ctx context.Context, ids []int64) ([]ListUserNicknamesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	MarkEmailCodeUsed(ctx context.Context, arg MarkEmailCodeUsedParams) (int64, error)
+	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
+	UpdatePost(ctx context.Context, arg UpdatePostParams) error
+	UpdatePostStatus(ctx context.Context, arg UpdatePostStatusParams) (int64, error)
+	UpdateTag(ctx context.Context, arg UpdateTagParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserNickname(ctx context.Context, arg UpdateUserNicknameParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserRoleStatus(ctx context.Context, arg UpdateUserRoleStatusParams) error
+	UpsertResource(ctx context.Context, arg UpsertResourceParams) error
 	UpsertSetting(ctx context.Context, arg UpsertSettingParams) error
 }
 

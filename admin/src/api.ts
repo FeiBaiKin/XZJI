@@ -1,4 +1,4 @@
-import { createAdminClient } from '@xzji/api-client/admin'
+import { createAdminClient, errorMessage, type AdminSchemas } from '@xzji/api-client/admin'
 
 // 后台接口与页面同源（开发时经 Vite 代理），登录 Cookie 只作用于后台域名
 export const api = createAdminClient({ baseUrl: '/admin-api/v1' })
@@ -19,4 +19,15 @@ export function formatTime(value?: string | null) {
   const d = new Date(value)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export type Media = AdminSchemas['Media']
+
+// 上传一张图片，失败时抛出可直接展示的错误提示
+export async function uploadImage(file: File): Promise<Media> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data, error } = await api.POST('/media', { body: { file: '' }, bodySerializer: () => form })
+  if (!data) throw new Error(errorMessage(error, '上传失败，请稍后重试'))
+  return data
 }

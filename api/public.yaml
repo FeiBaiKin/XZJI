@@ -17,6 +17,10 @@ tags:
     description: 注册、登录与找回密码
   - name: me
     description: 当前登录用户
+  - name: site
+    description: 站点与运营位
+  - name: content
+    description: 分类、标签与内容
 paths:
   /health:
     get:
@@ -234,6 +238,216 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /site/home:
+    get:
+      operationId: getHome
+      summary: 首页运营位
+      description: 横幅和公告，在后台“首页设置”中修改。
+      tags: [site]
+      responses:
+        "200":
+          description: 首页运营位
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Home"
+
+  /categories:
+    get:
+      operationId: listCategories
+      summary: 分类树
+      description: 按排序值返回全部分类。postCount 为已发布的内容数，包含子分类。
+      tags: [content]
+      responses:
+        "200":
+          description: 分类树
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryList"
+
+  /posts:
+    get:
+      operationId: listPosts
+      summary: 内容列表
+      description: 只返回已发布的内容。按分类筛选时包含子分类。
+      tags: [content]
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/PostType"
+        - name: category
+          in: query
+          description: 分类 slug
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: 标签 slug
+          schema:
+            type: string
+        - name: platform
+          in: query
+          description: 资源平台，如 Windows
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: 搜索关键词，匹配标题和摘要
+          schema:
+            type: string
+            maxLength: 50
+        - name: sort
+          in: query
+          description: latest 置顶在前，再按发布时间倒序；views 按浏览量倒序
+          schema:
+            type: string
+            enum: [latest, views]
+            default: latest
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 12
+      responses:
+        "200":
+          description: 内容分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      summary: 内容详情
+      description: 只包含公开部分，未发布的内容返回 404。
+      tags: [content]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 内容详情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{id}/related:
+    get:
+      operationId: listRelatedPosts
+      summary: 相关推荐
+      description: 同分类下最新发布的其他内容。
+      tags: [content]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            default: 6
+      responses:
+        "200":
+          description: 相关内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tags:
+    get:
+      operationId: listTags
+      summary: 热门标签
+      description: 按已发布的内容数倒序。
+      tags: [content]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        "200":
+          description: 标签列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagList"
+
+  /tags/{slug}:
+    get:
+      operationId: getTag
+      summary: 标签详情
+      tags: [content]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 标签
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tag"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /platforms:
+    get:
+      operationId: listPlatforms
+      summary: 资源平台
+      description: 已发布资源中出现过的平台及数量，用于列表页筛选。
+      tags: [content]
+      parameters:
+        - name: category
+          in: query
+          description: 分类 slug，包含子分类
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 平台列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -259,6 +473,12 @@ components:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: 没有权限
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 不存在
       content:
         application/json:
           schema:
@@ -418,6 +638,356 @@ components:
         token:
           type: string
           description: "仅 client=app 时返回，之后放在 Authorization: Bearer 请求头中"
+
+    PostType:
+      type: string
+      enum: [article, resource]
+      description: article 文章；resource 资源
+
+    Image:
+      type: object
+      required: [url, width, height]
+      properties:
+        url:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        color:
+          type: string
+          description: 主色（#RRGGBB），用于给软件图标配底色，可能为空
+          example: "#2F6BFF"
+
+    Banner:
+      type: object
+      required: [tag, title, subtitle, buttonText, link]
+      properties:
+        tag:
+          type: string
+          description: 标题上方的小标签，可能为空
+        title:
+          type: string
+          description: 标题，可能包含换行
+        subtitle:
+          type: string
+        buttonText:
+          type: string
+        link:
+          type: string
+        image:
+          $ref: "#/components/schemas/Image"
+
+    Home:
+      type: object
+      required: [banners, notice]
+      properties:
+        banners:
+          type: array
+          items:
+            $ref: "#/components/schemas/Banner"
+        notice:
+          type: string
+          description: 公告，按换行分段
+
+    CategoryNode:
+      type: object
+      required: [id, name, slug, icon, color, description, seoTitle, seoDescription, postCount, children]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+          description: 图标名，对应 icons.svg 中的 i-{icon}
+        color:
+          type: string
+          description: 渐变色 blue / red / orange / green / purple / gold / vip，可能为空
+        description:
+          type: string
+        seoTitle:
+          type: string
+        seoDescription:
+          type: string
+        postCount:
+          type: integer
+          format: int64
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryNode"
+
+    CategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryNode"
+
+    CategoryRef:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+
+    TagRef:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+
+    Author:
+      type: object
+      required: [id, nickname]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+
+    ResourceBrief:
+      type: object
+      required: [platform, version, fileSize]
+      properties:
+        platform:
+          type: string
+        version:
+          type: string
+        fileSize:
+          type: string
+        icon:
+          $ref: "#/components/schemas/Image"
+
+    PostCard:
+      type: object
+      required: [id, type, title, summary, category, tags, author, pinned, viewCount, commentCount, publishedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/PostType"
+        title:
+          type: string
+        summary:
+          type: string
+        cover:
+          $ref: "#/components/schemas/Image"
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagRef"
+        author:
+          $ref: "#/components/schemas/Author"
+        pinned:
+          type: boolean
+        viewCount:
+          type: integer
+        commentCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        resource:
+          $ref: "#/components/schemas/ResourceBrief"
+
+    PostPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostCard"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    PostList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PostCard"
+
+    TocItem:
+      type: object
+      required: [id, text, level]
+      properties:
+        id:
+          type: string
+          description: 正文中对应标题的 id
+        text:
+          type: string
+        level:
+          type: integer
+          description: 2 或 3
+
+    Attr:
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          type: string
+          example: 兼容系统
+        value:
+          type: string
+          example: Windows 7+
+
+    ChangelogEntry:
+      type: object
+      required: [version, date, note]
+      properties:
+        version:
+          type: string
+        date:
+          type: string
+          description: YYYY-MM-DD，可能为空
+        note:
+          type: string
+
+    ResourceDetail:
+      type: object
+      required: [platform, version, fileSize, attrs, changelog]
+      properties:
+        platform:
+          type: string
+        version:
+          type: string
+        fileSize:
+          type: string
+        icon:
+          $ref: "#/components/schemas/Image"
+        attrs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attr"
+        changelog:
+          type: array
+          description: 新的在前
+          items:
+            $ref: "#/components/schemas/ChangelogEntry"
+
+    PostDetail:
+      type: object
+      required: [id, type, title, summary, contentHtml, toc, category, tags, author, pinned, viewCount, commentCount, seoTitle, seoKeywords, seoDescription, publishedAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          $ref: "#/components/schemas/PostType"
+        title:
+          type: string
+        summary:
+          type: string
+        contentHtml:
+          type: string
+          description: 已过滤的正文 HTML，只含公开内容
+        toc:
+          type: array
+          items:
+            $ref: "#/components/schemas/TocItem"
+        cover:
+          $ref: "#/components/schemas/Image"
+        category:
+          $ref: "#/components/schemas/CategoryRef"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagRef"
+        author:
+          $ref: "#/components/schemas/Author"
+        pinned:
+          type: boolean
+        viewCount:
+          type: integer
+        commentCount:
+          type: integer
+        seoTitle:
+          type: string
+        seoKeywords:
+          type: string
+        seoDescription:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        resource:
+          $ref: "#/components/schemas/ResourceDetail"
+
+    Tag:
+      type: object
+      required: [id, name, slug, postCount]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        slug:
+          type: string
+        postCount:
+          type: integer
+          format: int64
+
+    TagList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+
+    PlatformCount:
+      type: object
+      required: [name, count]
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+          format: int64
+
+    PlatformList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformCount"
 
     Error:
       type: object

@@ -17,9 +17,28 @@ type AdminLog struct {
 	Action     string
 	TargetType string
 	TargetID   int64
-	Detail     json.RawMessage
+	Detail     []byte
 	Ip         string
 	CreatedAt  time.Time
+}
+
+// 分类（文章和资源共用）
+type Category struct {
+	ID       int64
+	ParentID sql.NullInt64
+	Name     string
+	Slug     string
+	// 图标名，对应前台 icons.svg
+	Icon string
+	// 渐变色：blue / red / orange / green / purple / gold / vip
+	Color       string
+	Description string
+	// 越小越靠前
+	Sort           int32
+	SeoTitle       string
+	SeoDescription string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // 邮箱验证码
@@ -36,6 +55,77 @@ type EmailCode struct {
 	// 已使用或已作废的时间
 	UsedAt    sql.NullTime
 	CreatedAt time.Time
+}
+
+// 上传文件
+type Media struct {
+	ID     int64
+	UserID int64
+	// 相对上传目录的路径，对外地址 = media.base_url + path
+	Path   string
+	Mime   string
+	Size   int64
+	Width  int32
+	Height int32
+	// 主色，如 #2F6BFF，用于给软件图标配底色
+	Color string
+	// 各尺寸缩略图路径
+	Variants  []byte
+	CreatedAt time.Time
+}
+
+// 内容（文章和资源）
+type Post struct {
+	ID int64
+	// article / resource
+	Type    string
+	Title   string
+	Summary string
+	// 摘要由正文自动截取，修改正文时重新生成
+	SummaryAuto bool
+	// 过滤后的正文，图片地址以 @media/ 开头，输出时替换为 media.base_url
+	ContentHtml string
+	// 正文目录，保存时从标题提取
+	Toc          []byte
+	CoverMediaID sql.NullInt64
+	CategoryID   int64
+	AuthorID     int64
+	// draft / published / trash
+	Status string
+	// 置顶
+	Pinned         bool
+	ViewCount      int32
+	CommentCount   int32
+	SeoTitle       string
+	SeoKeywords    string
+	SeoDescription string
+	// 发布时间，晚于当前时间表示定时发布
+	PublishedAt sql.NullTime
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// 内容与标签
+type PostTag struct {
+	PostID int64
+	TagID  int64
+	// 标签在这篇内容里的顺序
+	Sort int32
+}
+
+// 资源扩展信息
+type Resource struct {
+	PostID int64
+	// Android / Windows / macOS / 源码 等
+	Platform string
+	Version  string
+	FileSize string
+	// 方形软件图标，没有封面图时显示
+	IconMediaID sql.NullInt64
+	// 自定义属性 [{name, value}]
+	Attrs []byte
+	// 更新日志 [{version, date, note}]，新的在前
+	Changelog []byte
 }
 
 // 登录会话
@@ -58,6 +148,14 @@ type Setting struct {
 	Key       string
 	Value     json.RawMessage
 	UpdatedAt time.Time
+}
+
+// 标签
+type Tag struct {
+	ID        int64
+	Name      string
+	Slug      string
+	CreatedAt time.Time
 }
 
 // 用户

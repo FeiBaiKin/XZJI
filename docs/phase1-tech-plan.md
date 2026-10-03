@@ -221,7 +221,7 @@ web/
 | 首页 | `/` | 服务端渲染 + 缓存 |
 | 内容详情（文章、资源统一） | `/{id}.html` | 服务端渲染 + 缓存 |
 | 分类 | `/category/{slug}/`，分页 `/category/{slug}/page/{n}/` | 服务端渲染 + 缓存 |
-| 标签 | `/tag/{slug}/` | 服务端渲染 + 缓存 |
+| 标签 | `/tag/{slug}/`，分页 `/tag/{slug}/page/{n}/` | 服务端渲染 + 缓存 |
 | 搜索 | `/search?q=` | 服务端渲染，短时缓存 |
 | 用户中心 | `/user/*` | 仅浏览器端渲染 |
 | sitemap | `/sitemap.xml` | Nuxt 服务端路由，数据从后端获取 |
@@ -276,34 +276,41 @@ email_codes              邮箱验证码
 ### 4.2 内容
 
 ```
-categories               分类（文章和资源共用一棵分类树）
+categories               分类（文章和资源共用一棵分类树，最多两级）
   id                     BIGINT PK
   parent_id              BIGINT NULL
   name / slug(UNIQUE)
-  sort                   INT
+  icon                   VARCHAR(32)         图标名，对应前台 icons.svg
+  color                  VARCHAR(16)         渐变色：blue / red / orange / green / purple / gold / vip
+  description            VARCHAR(255)
+  sort                   INT                 越小越靠前；顶级分类按此顺序出现在导航和首页入口
   seo_title / seo_description
 
 tags                     标签
-  id / name / slug(UNIQUE)
+  id / name(UNIQUE) / slug(UNIQUE)          slug 可以是中文，留空时由名称生成
 
 posts                    内容主表（文章和资源共用）
   id                     BIGINT PK
   type                   VARCHAR(16)         article / resource
   title                  VARCHAR(255)
   summary                VARCHAR(500)
-  content_html           MEDIUMTEXT          公开版正文，隐藏块只保留占位符
-  cover_media_id         BIGINT NULL
+  summary_auto           TINYINT             摘要由正文自动截取，修改正文时重新生成
+  content_html           MEDIUMTEXT          公开版正文，隐藏块只保留占位符；本站图片地址存为 @media/ 前缀
+  toc                    JSON                正文目录，保存时从二、三级标题提取
+  cover_media_id         BIGINT NULL         16:10 封面图
   category_id            BIGINT INDEX
   author_id              BIGINT
   status                 VARCHAR(16)         draft / published / trash
-  paid_rule              JSON                付费设置，见 4.4
+  pinned                 TINYINT             置顶
+  paid_rule              JSON                付费设置，见 4.4（M3 加入）
   view_count / comment_count  INT
   seo_title / seo_keywords / seo_description
-  published_at           DATETIME INDEX
+  published_at           DATETIME INDEX      晚于当前时间即为定时发布
   created_at / updated_at
 
 post_tags                内容与标签的关联
   post_id / tag_id       联合主键
+  sort                   INT                 标签在这篇内容里的顺序
 
 post_hidden_blocks       隐藏内容块（保存时从正文中拆出单独存放）
   id                     BIGINT PK
@@ -317,9 +324,10 @@ resources                资源扩展信息（与 posts 一对一，仅 type=res
   platform               VARCHAR(32)         可选值在后台配置：安卓 / Windows / macOS / 源码 / 主题 等
   version                VARCHAR(64)
   file_size              VARCHAR(32)
-  attrs                  JSON                自定义属性（语言、官网、系统要求等），前台以表格展示
-  update_log             TEXT
-  download_cond          VARCHAR(32)         下载区的解锁条件
+  icon_media_id          BIGINT NULL         方形软件图标；没有封面图时，前台按图标主色配底色显示
+  attrs                  JSON                自定义属性 [{name, value}]（语言、官网、系统要求等），前台以表格展示
+  changelog              JSON                更新日志 [{version, date, note}]，新的在前，前台以时间线展示
+  download_cond          VARCHAR(32)         下载区的解锁条件（M3 加入）
 
 resource_links           下载地址
   id                     BIGINT PK
@@ -349,9 +357,10 @@ download_logs            下载记录（用于统计和每日次数限制）
 ```
 media                    上传文件
   id / user_id
-  path                   VARCHAR(255)        随机文件名；对外地址 = 配置中的 media.base_url + path
+  path                   VARCHAR(255)        年/月/随机文件名；对外地址 = 配置中的 media.base_url + path
   mime / size / width / height
-  variants               JSON                各尺寸的 WebP 缩略图路径
+  color                  CHAR(7)             主色，上传时提取，用于给软件图标配底色
+  variants               JSON                各尺寸的 WebP 缩略图路径（M5 生成）
   created_at
 
 comments                 评论
@@ -373,6 +382,9 @@ admin_logs               后台操作日志（调整余额、修改订单等敏�
   ip
   created_at
 ```
+
+- 首页横幅（最多 5 张轮播）和公告存在 `settings` 的 `home` 键，在后台“首页设置”修改。
+- 上传只接受 JPEG、PNG、GIF、WebP，按文件内容判断类型，单边不超过 10000 像素，大小上限为 `media.max_size_mb`。开发环境由后端在 `/uploads/` 下直接提供文件（`media.serve: true`），生产由 Nginx 提供。
 
 ### 4.4 访问规则
 

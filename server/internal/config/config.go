@@ -6,19 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Env  string `yaml:"env"`
-	HTTP HTTP   `yaml:"http"`
-	DB   DB     `yaml:"db"`
-	Log  Log    `yaml:"log"`
-	CORS CORS   `yaml:"cors"`
-	Auth Auth   `yaml:"auth"`
-	Mail Mail   `yaml:"mail"`
+	Env   string `yaml:"env"`
+	HTTP  HTTP   `yaml:"http"`
+	DB    DB     `yaml:"db"`
+	Log   Log    `yaml:"log"`
+	CORS  CORS   `yaml:"cors"`
+	Auth  Auth   `yaml:"auth"`
+	Mail  Mail   `yaml:"mail"`
+	Media Media  `yaml:"media"`
 }
 
 type HTTP struct {
@@ -68,6 +70,17 @@ type SMTP struct {
 	ImplicitTLS bool `yaml:"implicit_tls"`
 }
 
+type Media struct {
+	// Dir 上传文件的保存目录
+	Dir string `yaml:"dir"`
+	// BaseURL 上传文件的对外地址前缀，生产一般是图片域名，如 https://img.example.com
+	BaseURL string `yaml:"base_url"`
+	// MaxSizeMB 单个文件的大小上限
+	MaxSizeMB int `yaml:"max_size_mb"`
+	// Serve 由后端在 /uploads/ 下直接提供上传文件，开发用；生产由 Nginx 提供
+	Serve bool `yaml:"serve"`
+}
+
 const (
 	EnvDev  = "dev"
 	EnvProd = "prod"
@@ -96,11 +109,12 @@ func Load(path string) (*Config, error) {
 
 func defaults() *Config {
 	return &Config{
-		Env:  EnvDev,
-		HTTP: HTTP{Addr: "127.0.0.1:8080", TrustedProxies: []string{"127.0.0.1", "::1"}},
-		DB:   DB{MaxOpenConns: 20, MaxIdleConns: 10, ConnMaxLifetime: 30 * time.Minute, AutoMigrate: true},
-		Log:  Log{Level: "info", Format: "text"},
-		Mail: Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
+		Env:   EnvDev,
+		HTTP:  HTTP{Addr: "127.0.0.1:8080", TrustedProxies: []string{"127.0.0.1", "::1"}},
+		DB:    DB{MaxOpenConns: 20, MaxIdleConns: 10, ConnMaxLifetime: 30 * time.Minute, AutoMigrate: true},
+		Log:   Log{Level: "info", Format: "text"},
+		Mail:  Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
+		Media: Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
 	}
 }
 
@@ -135,6 +149,18 @@ func (c *Config) validate() error {
 		}
 	default:
 		errs = append(errs, errors.New("mail.driver 只能是 log 或 smtp"))
+	}
+	if !strings.HasPrefix(c.Media.BaseURL, "http://") && !strings.HasPrefix(c.Media.BaseURL, "https://") {
+		errs = append(errs, errors.New("media.base_url 必须是 http(s) 开头的完整地址"))
+	}
+	if strings.HasSuffix(c.Media.BaseURL, "/") {
+		errs = append(errs, errors.New("media.base_url 末尾不要带 /"))
+	}
+	if c.Media.Dir == "" {
+		errs = append(errs, errors.New("media.dir 不能为空"))
+	}
+	if c.Media.MaxSizeMB < 1 || c.Media.MaxSizeMB > 100 {
+		errs = append(errs, errors.New("media.max_size_mb 需要在 1 到 100 之间"))
 	}
 	if c.IsProd() {
 		if !c.Auth.CookieSecure {

@@ -10,6 +10,12 @@ export const router = createRouter({
       component: () => import('../layouts/AdminLayout.vue'),
       children: [
         { path: '', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { title: '仪表盘' } },
+        { path: 'posts', name: 'posts', component: () => import('../views/Posts.vue'), meta: { title: '内容列表', menu: '/posts' } },
+        { path: 'posts/new', name: 'post-new', component: () => import('../views/PostEdit.vue'), meta: { title: '新建内容', menu: '/posts' } },
+        { path: 'posts/:id(\\d+)', name: 'post-edit', component: () => import('../views/PostEdit.vue'), meta: { title: '编辑内容', menu: '/posts' } },
+        { path: 'categories', name: 'categories', component: () => import('../views/Categories.vue'), meta: { title: '分类管理' } },
+        { path: 'tags', name: 'tags', component: () => import('../views/Tags.vue'), meta: { title: '标签管理' } },
+        { path: 'settings/home', name: 'settings-home', component: () => import('../views/HomeSettings.vue'), meta: { title: '首页设置' } },
         { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { title: '用户管理' } },
       ],
     },

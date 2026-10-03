@@ -39,3 +39,9 @@ mail:
     username: ""
     password: "" # 也可以用环境变量 XZJI_SMTP_PASSWORD
     from: XZJI <noreply@example.com>
+
+media:
+  dir: data/uploads # 上传文件的保存目录
+  base_url: http://localhost:8080/uploads # 上传文件的对外地址前缀，末尾不带 /
+  max_size_mb: 10
+  serve: true # 由后端直接提供上传文件（开发用），生产改为 false 交给 Nginx

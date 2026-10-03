@@ -33,3 +33,9 @@ mail:
     username: noreply@example.com
     password: "" # 建议用环境变量 XZJI_SMTP_PASSWORD
     from: XZJI <noreply@example.com>
+
+media:
+  dir: data/uploads
+  base_url: https://img.example.com # 图片域名，由 Nginx 直接提供 data/uploads
+  max_size_mb: 10
+  serve: false

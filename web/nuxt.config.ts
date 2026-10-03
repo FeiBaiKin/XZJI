@@ -13,6 +13,8 @@ export default defineNuxtConfig({
     public: {
       // 浏览器直连的接口地址，需与前台同一主域（环境变量 NUXT_PUBLIC_API_BASE）
       apiBase: 'http://localhost:8080/api/v1',
+      // 站点名称，用于页面标题（环境变量 NUXT_PUBLIC_SITE_NAME）
+      siteName: 'XZJI',
     },
   },
   routeRules: {

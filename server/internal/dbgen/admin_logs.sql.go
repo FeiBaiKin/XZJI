@@ -7,7 +7,6 @@ package dbgen
 
 import (
 	"context"
-	"encoding/json"
 )
 
 const createAdminLog = `-- name: CreateAdminLog :exec
@@ -20,7 +19,7 @@ type CreateAdminLogParams struct {
 	Action     string
 	TargetType string
 	TargetID   int64
-	Detail     json.RawMessage
+	Detail     []byte
 	Ip         string
 }
 

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -62,14 +63,15 @@ type env struct {
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	db := testutil.DB(t)
-	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	log := slog.New(slog.NewTextHandler(testLog{t}, &slog.HandlerOptions{Level: slog.LevelError}))
 	cfg := &config.Config{
-		Env:  config.EnvDev,
-		HTTP: config.HTTP{TrustedProxies: []string{"127.0.0.1"}},
-		CORS: config.CORS{AllowOrigins: []string{testOrigin}},
+		Env:   config.EnvDev,
+		HTTP:  config.HTTP{TrustedProxies: []string{"127.0.0.1"}},
+		CORS:  config.CORS{AllowOrigins: []string{testOrigin}},
+		Media: config.Media{Dir: t.TempDir(), BaseURL: "http://img.test", MaxSizeMB: 2},
 	}
 	mailer := &fakeMailer{sent: map[string][]mail.Message{}}
-	svc, err := NewServices(db, mailer, log)
+	svc, err := NewServices(db, mailer, log, cfg.Media)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,6 +91,14 @@ type browser struct {
 	http   *http.Client
 	csrf   map[string]string
 	origin string
+}
+
+// testLog 把服务端错误日志写进测试输出，只在测试失败或 -v 时显示。
+type testLog struct{ t *testing.T }
+
+func (w testLog) Write(p []byte) (int, error) {
+	w.t.Log(strings.TrimRight(string(p), "\n"))
+	return len(p), nil
 }
 
 func (e *env) browser(t *testing.T) *browser {
@@ -112,14 +122,21 @@ func (r resp) code() string {
 func (b *browser) do(method, path string, body any, withCSRF bool, header map[string]string) resp {
 	b.t.Helper()
 	var rd io.Reader
+	h := map[string]string{}
 	if body != nil {
 		buf, _ := json.Marshal(body)
 		rd = bytes.NewReader(buf)
+		h["Content-Type"] = "application/json"
 	}
-	req, _ := http.NewRequest(method, b.base+path, rd)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	for k, v := range header {
+		h[k] = v
 	}
+	return b.send(method, path, rd, withCSRF, h)
+}
+
+func (b *browser) send(method, path string, body io.Reader, withCSRF bool, header map[string]string) resp {
+	b.t.Helper()
+	req, _ := http.NewRequest(method, b.base+path, body)
 	if b.origin != "" {
 		req.Header.Set("Origin", b.origin)
 	}

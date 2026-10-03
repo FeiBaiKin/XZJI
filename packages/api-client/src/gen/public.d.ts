@@ -193,6 +193,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/site/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 首页运营位
+         * @description 横幅和公告，在后台“首页设置”中修改。
+         */
+        get: operations["getHome"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 分类树
+         * @description 按排序值返回全部分类。postCount 为已发布的内容数，包含子分类。
+         */
+        get: operations["listCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 内容列表
+         * @description 只返回已发布的内容。按分类筛选时包含子分类。
+         */
+        get: operations["listPosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 内容详情
+         * @description 只包含公开部分，未发布的内容返回 404。
+         */
+        get: operations["getPost"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 相关推荐
+         * @description 同分类下最新发布的其他内容。
+         */
+        get: operations["listRelatedPosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 热门标签
+         * @description 按已发布的内容数倒序。
+         */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tags/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 标签详情 */
+        get: operations["getTag"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platforms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 资源平台
+         * @description 已发布资源中出现过的平台及数量，用于列表页筛选。
+         */
+        get: operations["listPlatforms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -281,6 +438,177 @@ export interface components {
             /** @description 仅 client=app 时返回，之后放在 Authorization: Bearer 请求头中 */
             token?: string;
         };
+        /**
+         * @description article 文章；resource 资源
+         * @enum {string}
+         */
+        PostType: "article" | "resource";
+        Image: {
+            url: string;
+            width: number;
+            height: number;
+            /**
+             * @description 主色（#RRGGBB），用于给软件图标配底色，可能为空
+             * @example #2F6BFF
+             */
+            color?: string;
+        };
+        Banner: {
+            /** @description 标题上方的小标签，可能为空 */
+            tag: string;
+            /** @description 标题，可能包含换行 */
+            title: string;
+            subtitle: string;
+            buttonText: string;
+            link: string;
+            image?: components["schemas"]["Image"];
+        };
+        Home: {
+            banners: components["schemas"]["Banner"][];
+            /** @description 公告，按换行分段 */
+            notice: string;
+        };
+        CategoryNode: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+            /** @description 图标名，对应 icons.svg 中的 i-{icon} */
+            icon: string;
+            /** @description 渐变色 blue / red / orange / green / purple / gold / vip，可能为空 */
+            color: string;
+            description: string;
+            seoTitle: string;
+            seoDescription: string;
+            /** Format: int64 */
+            postCount: number;
+            children: components["schemas"]["CategoryNode"][];
+        };
+        CategoryList: {
+            items: components["schemas"]["CategoryNode"][];
+        };
+        CategoryRef: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+        };
+        TagRef: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+        };
+        Author: {
+            /** Format: int64 */
+            id: number;
+            nickname: string;
+        };
+        ResourceBrief: {
+            platform: string;
+            version: string;
+            fileSize: string;
+            icon?: components["schemas"]["Image"];
+        };
+        PostCard: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["PostType"];
+            title: string;
+            summary: string;
+            cover?: components["schemas"]["Image"];
+            category: components["schemas"]["CategoryRef"];
+            tags: components["schemas"]["TagRef"][];
+            author: components["schemas"]["Author"];
+            pinned: boolean;
+            viewCount: number;
+            commentCount: number;
+            /** Format: date-time */
+            publishedAt: string;
+            resource?: components["schemas"]["ResourceBrief"];
+        };
+        PostPage: {
+            items: components["schemas"]["PostCard"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        PostList: {
+            items: components["schemas"]["PostCard"][];
+        };
+        TocItem: {
+            /** @description 正文中对应标题的 id */
+            id: string;
+            text: string;
+            /** @description 2 或 3 */
+            level: number;
+        };
+        Attr: {
+            /** @example 兼容系统 */
+            name: string;
+            /** @example Windows 7+ */
+            value: string;
+        };
+        ChangelogEntry: {
+            version: string;
+            /** @description YYYY-MM-DD，可能为空 */
+            date: string;
+            note: string;
+        };
+        ResourceDetail: {
+            platform: string;
+            version: string;
+            fileSize: string;
+            icon?: components["schemas"]["Image"];
+            attrs: components["schemas"]["Attr"][];
+            /** @description 新的在前 */
+            changelog: components["schemas"]["ChangelogEntry"][];
+        };
+        PostDetail: {
+            /** Format: int64 */
+            id: number;
+            type: components["schemas"]["PostType"];
+            title: string;
+            summary: string;
+            /** @description 已过滤的正文 HTML，只含公开内容 */
+            contentHtml: string;
+            toc: components["schemas"]["TocItem"][];
+            cover?: components["schemas"]["Image"];
+            category: components["schemas"]["CategoryRef"];
+            tags: components["schemas"]["TagRef"][];
+            author: components["schemas"]["Author"];
+            pinned: boolean;
+            viewCount: number;
+            commentCount: number;
+            seoTitle: string;
+            seoKeywords: string;
+            seoDescription: string;
+            /** Format: date-time */
+            publishedAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            resource?: components["schemas"]["ResourceDetail"];
+        };
+        Tag: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            slug: string;
+            /** Format: int64 */
+            postCount: number;
+        };
+        TagList: {
+            items: components["schemas"]["Tag"][];
+        };
+        PlatformCount: {
+            name: string;
+            /** Format: int64 */
+            count: number;
+        };
+        PlatformList: {
+            items: components["schemas"]["PlatformCount"][];
+        };
         Error: {
             error: {
                 /**
@@ -317,6 +645,15 @@ export interface components {
         };
         /** @description 没有权限 */
         Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 不存在 */
+        NotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -610,6 +947,199 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getHome: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 首页运营位 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Home"];
+                };
+            };
+        };
+    };
+    listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 分类树 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryList"];
+                };
+            };
+        };
+    };
+    listPosts: {
+        parameters: {
+            query?: {
+                type?: components["schemas"]["PostType"];
+                /** @description 分类 slug */
+                category?: string;
+                /** @description 标签 slug */
+                tag?: string;
+                /** @description 资源平台，如 Windows */
+                platform?: string;
+                /** @description 搜索关键词，匹配标题和摘要 */
+                q?: string;
+                /** @description latest 置顶在前，再按发布时间倒序；views 按浏览量倒序 */
+                sort?: "latest" | "views";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 内容分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 内容详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRelatedPosts: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 相关内容 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTags: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 标签列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagList"];
+                };
+            };
+        };
+    };
+    getTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 标签 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tag"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPlatforms: {
+        parameters: {
+            query?: {
+                /** @description 分类 slug，包含子分类 */
+                category?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 平台列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
 }
