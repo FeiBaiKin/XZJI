@@ -1,0 +1,26 @@
+# 前台服务：放到 /etc/systemd/system/，然后 systemctl enable --now xzji-web
+[Unit]
+Description=XZJI 前台服务（Nuxt）
+After=network.target
+
+[Service]
+Type=simple
+User=xzji
+Group=xzji
+WorkingDirectory=/opt/xzji/web
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+# 服务端渲染调用接口的地址；分机部署时改成后端服务器内网地址
+Environment=NUXT_API_INTERNAL_BASE=http://127.0.0.1:8080/api/v1
+# 浏览器直连的接口地址
+Environment=NUXT_PUBLIC_API_BASE=https://api.example.com/api/v1
+ExecStart=/usr/bin/node /opt/xzji/web/.output/server/index.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XZJI 首页与资源详情</title>
+<link rel="stylesheet" href="xzji.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#home"><i><b></b><b></b><b></b><b></b></i>XZJI</a>
+    <nav class="nav" aria-label="主导航">
+      <a href="#home" class="on">首页</a>
+      <a href="#home">安卓软件</a>
+      <a href="#home">电脑软件<sup class="hot">热门</sup></a>
+      <a href="#home">主题源码</a>
+      <a href="#home">建站教程<sup class="new">上新</sup></a>
+      <a href="#home">会员专区</a>
+    </nav>
+    <div class="top-r">
+      <button class="icon-btn" aria-label="搜索"><svg class="i"><use href="icons.svg#i-search"/></svg></button>
+      <button class="icon-btn" aria-label="切换深色模式"><svg class="i"><use href="icons.svg#i-moon"/></svg></button>
+      <a class="vip-btn" href="vip.html"><svg class="i"><use href="icons.svg#i-crown"/></svg>开通会员</a>
+      <a class="login-link" href="login.html">登录 / 注册</a>
+    </div>
+  </div>
+</header>
+
+<!-- 首页 -->
+<main data-page="home">
+  <section class="hero wrap">
+    <a class="banner" href="#detail">
+      <span>
+        <span class="b-tag">装机必备合集</span>
+        <h1>重装系统后，<br>先装这 12 个软件</h1>
+        <p>Everything、Snipaste、Bandizip……全部是便携版，解压即用，不用一个个找。</p>
+        <span class="btn jb-white">查看合集</span>
+      </span>
+      <span class="b-art" aria-hidden="true">
+        <span class="app" style="--c:#EB7419"><svg class="i"><use href="icons.svg#i-search"/></svg></span>
+        <span class="app" style="--c:#2D7FF0"><svg class="i"><use href="icons.svg#i-crop"/></svg></span>
+        <span class="app" style="--c:#1E9AB5"><svg class="i"><use href="icons.svg#i-box"/></svg></span>
+        <span class="app" style="--c:#F2B321"><svg class="i"><use href="icons.svg#i-play"/></svg></span>
+        <span class="app" style="--c:#23A55A"><svg class="i"><use href="icons.svg#i-camera"/></svg></span>
+        <span class="app" style="--c:#1F9D6B"><svg class="i"><use href="icons.svg#i-usb"/></svg></span>
+      </span>
+      <span class="b-dots"><i class="on"></i><i></i><i></i><i></i></span>
+    </a>
+    <aside class="ucard box">
+      <div class="band"></div>
+      <div class="avatar"><svg class="i"><use href="icons.svg#i-user"/></svg></div>
+      <h3>Hi，欢迎来到 XZJI</h3>
+      <p>登录后可以收藏资源、查看已购和下载记录</p>
+      <div class="acts"><a class="btn jb-blue" href="#home">登录</a><a class="btn jb-orange" href="#home">注册</a></div>
+      <div class="perks">
+        <span><b style="background:var(--jb-red)"><svg class="i"><use href="icons.svg#i-gift"/></svg></b>新人礼包</span>
+        <span><b style="background:var(--jb-vip);color:#F6C76B"><svg class="i"><use href="icons.svg#i-crown"/></svg></b>会员免费</span>
+        <span><b style="background:var(--jb-green)"><svg class="i"><use href="icons.svg#i-refresh"/></svg></b>失效补链</span>
+      </div>
+    </aside>
+  </section>
+
+  <section class="entries wrap">
+    <a class="entry" href="#home" style="background:var(--jb-green)"><b>安卓软件</b><small>2,431 个资源</small><svg class="i"><use href="icons.svg#i-android"/></svg></a>
+    <a class="entry" href="#home" style="background:var(--jb-blue)"><b>电脑软件</b><small>3,906 个资源</small><svg class="i"><use href="icons.svg#i-monitor"/></svg></a>
+    <a class="entry" href="#home" style="background:var(--jb-purple)"><b>主题源码</b><small>1,127 个资源</small><svg class="i"><use href="icons.svg#i-code"/></svg></a>
+    <a class="entry" href="#home" style="background:var(--jb-orange)"><b>建站教程</b><small>948 篇教程</small><svg class="i"><use href="icons.svg#i-book"/></svg></a>
+    <a class="entry" href="#home" style="background:var(--jb-vip);color:#F3E3C3"><b>会员专区</b><small>2,300+ 免费下载</small><svg class="i"><use href="icons.svg#i-crown"/></svg></a>
+    <a class="entry" href="#home" style="background:var(--jb-red)"><b>推广返佣</b><small>邀请好友赚佣金</small><svg class="i"><use href="icons.svg#i-gift"/></svg></a>
+  </section>
+
+  <div class="layout wrap">
+    <div>
+      <section class="sec">
+        <div class="sec-h">
+          <h2>最新资源</h2>
+          <nav class="tabs"><a href="#home" class="on">全部</a><a href="#home">安卓软件</a><a href="#home">电脑软件</a></nav>
+          <a class="more" href="#home">更多<svg class="i"><use href="icons.svg#i-right"/></svg></a>
+        </div>
+        <div class="cards">
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#EB7419"><span class="pin">置顶</span><span class="ribbon free">免费</span><span class="app"><svg class="i"><use href="icons.svg#i-search"/></svg></span><span class="plat">Windows</span></span>
+            <span class="c-body">
+              <b class="c-title">Everything 便携版 <em>v1.4.1.1026</em> 按文件名秒搜整个硬盘</b>
+              <span class="chips"><span class="chip">系统工具</span><span class="tag"># 文件搜索</span><span class="tag"># 绿色软件</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>3 小时前</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>1.2万</span><span class="r">1.7 MB</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#2F3A4A"><span class="ribbon vip">VIP 免费</span><span class="app"><svg class="i"><use href="icons.svg#i-folder"/></svg></span><span class="plat">Android</span></span>
+            <span class="c-body">
+              <b class="c-title">MT管理器 <em>v2.18.4</em> 安卓文件管理和 APK 编辑工具</b>
+              <span class="chips"><span class="chip">系统工具</span><span class="tag"># 文件管理</span><span class="tag"># 逆向</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>5 小时前</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>8,642</span><span class="r">24.1 MB</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#2D7FF0"><span class="ribbon free">免费</span><span class="app"><svg class="i"><use href="icons.svg#i-crop"/></svg></span><span class="plat">Windows</span></span>
+            <span class="c-body">
+              <b class="c-title">Snipaste <em>v2.10.3</em> 截图后把图片贴在屏幕上</b>
+              <span class="chips"><span class="chip">截图工具</span><span class="tag"># 截图</span><span class="tag"># 效率</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>昨天</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>2.3万</span><span class="r">18.6 MB</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#1F9D6B"><span class="ribbon login">登录下载</span><span class="app"><svg class="i"><use href="icons.svg#i-usb"/></svg></span><span class="plat">Windows</span></span>
+            <span class="c-body">
+              <b class="c-title">Ventoy <em>v1.1.05</em> 一个 U 盘放多个系统镜像</b>
+              <span class="chips"><span class="chip">装机工具</span><span class="tag"># 启动盘</span><span class="tag"># 重装系统</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>昨天</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>1.6万</span><span class="r">16.2 MB</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#1E9AB5"><span class="ribbon paid">¥3.90</span><span class="app"><svg class="i"><use href="icons.svg#i-box"/></svg></span><span class="plat">Windows</span></span>
+            <span class="c-body">
+              <b class="c-title">Bandizip 便携版 <em>v7.40</em> 解压速度快，右键菜单清爽</b>
+              <span class="chips"><span class="chip">压缩解压</span><span class="tag"># 解压缩</span><span class="tag"># 绿色软件</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>2 天前</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>9,851</span><span class="r">7.5 MB</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover" style="--c:#6B5BE0"><span class="ribbon free">免费</span><span class="app"><svg class="i"><use href="icons.svg#i-layers"/></svg></span><span class="plat">Android</span></span>
+            <span class="c-body">
+              <b class="c-title">LibChecker <em>v2.5.1</em> 查看应用用了哪些库和框架</b>
+              <span class="chips"><span class="chip">开发工具</span><span class="tag"># 应用分析</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>3 天前</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-down"/></svg>4,120</span><span class="r">9.8 MB</span></span>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-h">
+          <h2>主题源码</h2>
+          <nav class="tabs"><a href="#home" class="on">全部</a><a href="#home">博客主题</a><a href="#home">网站源码</a></nav>
+          <a class="more" href="#home">更多<svg class="i"><use href="icons.svg#i-right"/></svg></a>
+        </div>
+        <div class="cards">
+          <a class="card box" href="#detail">
+            <span class="cover theme-cover" style="--c:#12B087"><span class="ribbon paid">¥19.90</span><span class="shot s-blog"><i class="d"></i><i class="c" style="--k:#9CD8C1"></i><i></i><i></i></span></span>
+            <span class="c-body">
+              <b class="c-title">栖木 Typecho 博客主题 <em>v3.2.0</em> 双栏杂志布局，自带暗色模式</b>
+              <span class="chips"><span class="chip">Typecho</span><span class="tag"># 博客主题</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>今天</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-eye"/></svg>3,210</span><span class="r">已售 186</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover theme-cover" style="--c:#E8A317"><span class="ribbon vip">VIP 免费</span><span class="shot s-nav"><i class="d"></i><i class="c" style="--k:#F2C46B"></i><i></i><i></i><i></i><i></i><i class="c" style="--k:#9DB8F2"></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+            <span class="c-body">
+              <b class="c-title">航标导航站源码 <em>v2.1.4</em> 后台可拖拽排序站点</b>
+              <span class="chips"><span class="chip">PHP 源码</span><span class="tag"># 导航站</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>4 天前</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-eye"/></svg>5,064</span><span class="r">已售 92</span></span>
+            </span>
+          </a>
+          <a class="card box" href="#detail">
+            <span class="cover theme-cover" style="--c:#E85D8A"><span class="ribbon free">免费</span><span class="shot s-hexo"><i class="d"></i><i class="c" style="--k:#F4B8C9"></i><i></i><i></i><i></i></span></span>
+            <span class="c-body">
+              <b class="c-title">纸鸢 Hexo 主题 <em>v1.8.0</em> 单栏阅读，加载不到 40 KB</b>
+              <span class="chips"><span class="chip">Hexo</span><span class="tag"># 博客主题</span></span>
+              <span class="meta"><span><svg class="i"><use href="icons.svg#i-clock"/></svg>9月28日</span><span class="hide-m"><svg class="i"><use href="icons.svg#i-eye"/></svg>2,887</span><span class="r">免费</span></span>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-h">
+          <h2>建站教程</h2>
+          <a class="more" href="#home">更多<svg class="i"><use href="icons.svg#i-right"/></svg></a>
+        </div>
+        <div class="tlist box">
+          <a class="titem" href="#detail">
+            <span class="tthumb" style="background:var(--jb-blue)"><span>性能优化</span><svg class="i"><use href="icons.svg#i-gauge"/></svg></span>
+            <span><b>宝塔面板开启 Brotli 压缩，静态资源再小一截</b><p>从编译模块到验证生效，一步步操作，附带和 gzip 的体积对比。CSS 和 JS 平均能再小 15% 左右。</p><span class="meta"><span class="mini-av">X</span><span>XZJI 编辑部</span><span><svg class="i"><use href="icons.svg#i-clock"/></svg>10月3日</span><span><svg class="i"><use href="icons.svg#i-eye"/></svg>1,862</span><span><svg class="i"><use href="icons.svg#i-chat"/></svg>24</span></span></span>
+          </a>
+          <a class="titem" href="#detail">
+            <span class="tthumb" style="background:var(--jb-purple)"><span>服务器</span><svg class="i"><use href="icons.svg#i-cache"/></svg></span>
+            <span><b>Nginx 反向代理缓存：让动态页面也能秒开</b><p>proxy_cache 的配置写法、缓存清除，以及怎么让登录用户绕过缓存。</p><span class="meta"><span class="mini-av">X</span><span>XZJI 编辑部</span><span><svg class="i"><use href="icons.svg#i-clock"/></svg>10月1日</span><span><svg class="i"><use href="icons.svg#i-eye"/></svg>3,405</span><span><svg class="i"><use href="icons.svg#i-chat"/></svg>41</span></span></span>
+          </a>
+          <a class="titem" href="#detail">
+            <span class="tthumb" style="background:var(--jb-orange)"><span>网站美化</span><svg class="i"><use href="icons.svg#i-moon"/></svg></span>
+            <span><b>给博客加上暗色模式，只改 30 行 CSS</b><p>用 CSS 变量和 prefers-color-scheme 实现，不引入任何脚本，还能跟随系统自动切换。</p><span class="meta"><span class="mini-av">X</span><span>XZJI 编辑部</span><span><svg class="i"><use href="icons.svg#i-clock"/></svg>9月28日</span><span><svg class="i"><use href="icons.svg#i-eye"/></svg>2,190</span><span><svg class="i"><use href="icons.svg#i-chat"/></svg>17</span></span></span>
+          </a>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="vipcard box">
+        <h3><svg class="i"><use href="icons.svg#i-crown"/></svg>XZJI 会员</h3>
+        <p>开通后全站 2,300+ 资源免费下载</p>
+        <ul>
+          <li><svg class="i"><use href="icons.svg#i-check"/></svg>VIP 资源免费</li>
+          <li><svg class="i"><use href="icons.svg#i-check"/></svg>付费资源 8 折</li>
+          <li><svg class="i"><use href="icons.svg#i-check"/></svg>每天 20 次下载</li>
+          <li><svg class="i"><use href="icons.svg#i-check"/></svg>专属会员标识</li>
+        </ul>
+        <div class="price"><b>¥39</b><small>/ 年起</small></div>
+        <a class="btn jb-gold" href="#home">立即开通</a>
+      </section>
+
+      <section class="box">
+        <div class="w-h"><svg class="i"><use href="icons.svg#i-fire"/></svg>下载排行<nav class="tabs"><a href="#home" class="on">本周</a><a href="#home">本月</a></nav></div>
+        <ol class="rank">
+          <li><span class="no">1</span><a href="#detail"><span class="app" style="--c:#2D7FF0"><svg class="i"><use href="icons.svg#i-crop"/></svg></span><span><b>Snipaste</b><small>下载 2.3万 次</small></span></a></li>
+          <li><span class="no">2</span><a href="#detail"><span class="app" style="--c:#1F9D6B"><svg class="i"><use href="icons.svg#i-usb"/></svg></span><span><b>Ventoy</b><small>下载 1.6万 次</small></span></a></li>
+          <li><span class="no">3</span><a href="#detail"><span class="app" style="--c:#EB7419"><svg class="i"><use href="icons.svg#i-search"/></svg></span><span><b>Everything 便携版</b><small>下载 1.2万 次</small></span></a></li>
+          <li><span class="no">4</span><a href="#detail"><span class="app" style="--c:#1E9AB5"><svg class="i"><use href="icons.svg#i-box"/></svg></span><span><b>Bandizip 便携版</b><small>下载 9,851 次</small></span></a></li>
+          <li><span class="no">5</span><a href="#detail"><span class="app" style="--c:#2F3A4A"><svg class="i"><use href="icons.svg#i-folder"/></svg></span><span><b>MT管理器</b><small>下载 8,642 次</small></span></a></li>
+        </ol>
+      </section>
+
+      <section class="box">
+        <div class="w-h"><svg class="i"><use href="icons.svg#i-tag"/></svg>热门标签</div>
+        <div class="cloud">
+          <a href="#home" style="--k:#2F6BFF">绿色软件</a><a href="#home" style="--k:#12B087">装机必备</a><a href="#home" style="--k:#E8590C">效率工具</a><a href="#home" style="--k:#7457F5">Typecho</a><a href="#home" style="--k:#D6336C">博客主题</a><a href="#home" style="--k:#0C8599">截图</a><a href="#home" style="--k:#E8A317">网站优化</a><a href="#home" style="--k:#2F6BFF">宝塔面板</a><a href="#home" style="--k:#12B087">Nginx</a><a href="#home" style="--k:#7457F5">导航站</a>
+        </div>
+      </section>
+
+      <section class="box">
+        <div class="w-h"><svg class="i"><use href="icons.svg#i-horn"/></svg>本站公告</div>
+        <div class="notice">
+          <p>国庆期间年卡会员 <b>¥39</b>，10月7日恢复原价。</p>
+          <p>遇到下载地址失效，在资源页点"链接失效"反馈，一般 24 小时内补上。</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<!-- 资源详情页 -->
+<main data-page="detail" hidden>
+  <div class="layout wrap" style="padding-top:0">
+    <div>
+      <nav class="crumb" aria-label="当前位置"><svg class="i"><use href="icons.svg#i-home"/></svg><a href="#home">首页</a>/<a href="#home">电脑软件</a>/<a href="#home">系统工具</a>/<span>正文</span></nav>
+      <article class="article box">
+        <h1>Everything 便携版 1.4.1.1026，按文件名秒搜整个硬盘</h1>
+        <div class="author">
+          <span class="mini-av">X</span>
+          <span><b>XZJI 编辑部<em>官方</em></b><small>3 小时前更新</small></span>
+          <span class="stats"><span><svg class="i"><use href="icons.svg#i-eye"/></svg>3.6万</span><span><svg class="i"><use href="icons.svg#i-like"/></svg>412</span><span><svg class="i"><use href="icons.svg#i-chat"/></svg>36</span></span>
+        </div>
+
+        <div class="paybox">
+          <span class="pb-label"><svg class="i"><use href="icons.svg#i-down"/></svg>付费资源</span>
+          <span class="pb-sold">已售 1,280</span>
+          <span class="cover pb-cover" style="--c:#EB7419"><span class="app"><svg class="i"><use href="icons.svg#i-search"/></svg></span><span class="plat">Windows</span></span>
+          <div>
+            <b class="pb-title">Everything 便携版 1.4.1.1026</b>
+            <p class="pb-desc">官方便携版，解压即用，已通过安全检测</p>
+            <div class="pb-price"><small>¥</small><strong>3.90</strong><del>¥9.90</del><span class="sale">限时特惠</span></div>
+            <div class="pb-vip"><span class="v1"><svg class="i"><use href="icons.svg#i-crown"/></svg>VIP 免费</span><span class="v2"><svg class="i"><use href="icons.svg#i-gem"/></svg>SVIP 免费</span></div>
+            <div class="pb-acts"><a class="btn jb-red" href="#detail" data-open="buy">立即购买</a><a class="btn jb-vip" href="#home">开通 VIP，免费下载</a></div>
+            <p class="pb-tip">购买后可以在"个人中心 - 已购资源"里随时重新下载。</p>
+          </div>
+        </div>
+        <div class="pb-svc"><span><svg class="i"><use href="icons.svg#i-shield"/></svg>安全检测</span><span><svg class="i"><use href="icons.svg#i-box"/></svg>解压即用</span><span><svg class="i"><use href="icons.svg#i-refresh"/></svg>失效补链</span><span><svg class="i"><use href="icons.svg#i-bolt"/></svg>付款后立即下载</span></div>
+        <dl class="pb-info">
+          <div><dt>资源大小</dt><dd>1.7 MB</dd></div>
+          <div><dt>最近更新</dt><dd>2026-10-03</dd></div>
+          <div><dt>兼容系统</dt><dd>Windows 7+</dd></div>
+          <div><dt>资源语言</dt><dd>简体中文</dd></div>
+        </dl>
+        <div class="pb-links">
+          <span class="dl-btn"><i style="--k:#2F80ED">蓝</i>蓝奏云<svg class="i"><use href="icons.svg#i-lock"/></svg></span>
+          <span class="dl-btn"><i style="--k:#6C5CE7">夸</i>夸克网盘<svg class="i"><use href="icons.svg#i-lock"/></svg></span>
+          <span class="dl-btn"><i style="--k:#E03131">百</i>百度网盘<svg class="i"><use href="icons.svg#i-lock"/></svg></span>
+          <a class="dl-report" href="#detail"><svg class="i"><use href="icons.svg#i-flag"/></svg>链接失效反馈</a>
+        </div>
+
+        <div class="content">
+          <h2 id="intro">资源介绍</h2>
+          <p>Everything 只按文件名建立索引，第一次扫描几十万个文件只要几秒。之后在搜索框里输入，结果随打随出，支持通配符、正则和按路径过滤。</p>
+          <h2 id="diff">便携版和安装版的区别</h2>
+          <ul>
+            <li>解压到任意文件夹就能运行，不写注册表，不留残余。</li>
+            <li>设置和索引数据库都保存在程序目录，拷到 U 盘换台电脑照样用。</li>
+            <li>不安装后台服务，需要以管理员身份运行，才能实时索引 NTFS 磁盘的变动。</li>
+          </ul>
+          <div class="hidebox">
+            <span class="lk"><svg class="i"><use href="icons.svg#i-lock"/></svg></span>
+            <b>常用搜索语法速查</b>
+            <p>这部分内容需要开通 VIP 后查看，包括 20 条最常用的语法和推荐设置</p>
+            <div class="acts"><a class="btn jb-vip" href="#home">开通 VIP</a><a class="btn btn-soft" href="#home">登录</a></div>
+          </div>
+          <h2 id="shots">软件截图</h2>
+          <div class="win" role="img" aria-label="Everything 搜索 psd 文件的界面截图">
+            <div class="win-bar"><span>*.psd size:&gt;10mb - Everything</span><em>—</em><em>□</em><em>×</em></div>
+            <div class="win-q">*.psd size:&gt;10mb</div>
+            <div class="scroll"><table>
+              <thead><tr><th>名称</th><th>路径</th><th>大小</th><th>修改时间</th></tr></thead>
+              <tbody>
+                <tr class="sel"><td>首页改版-v3.psd</td><td>D:\Work\XZJI\design</td><td>42 MB</td><td>2026/10/2 22:15</td></tr>
+                <tr><td>国庆海报.psd</td><td>D:\设计\2026</td><td>86 MB</td><td>2026/9/28 14:02</td></tr>
+                <tr><td>封面合集.psd</td><td>E:\素材\封面</td><td>128 MB</td><td>2026/8/11 09:40</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+          <h2 id="log">更新日志</h2>
+          <ol class="logs">
+            <li><b>1.4.1.1026</b><time>2026-10-03</time><p>修复中文路径下按名称排序错乱的问题；搜索框支持 Ctrl+Backspace 删除整个词。</p></li>
+            <li><b>1.4.1.1024</b><time>2026-06-12</time><p>改进 NTFS 磁盘的变动监听，空闲时内存占用更低。</p></li>
+          </ol>
+        </div>
+        <div class="tagline"><span class="chip">系统工具</span><span class="tag"># 文件搜索</span><span class="tag"># 效率工具</span><span class="tag"># 绿色软件</span></div>
+      </article>
+
+      <section class="related box">
+        <div class="sec-h"><h2>相关推荐</h2></div>
+        <div class="cards">
+          <a class="card box" href="#detail"><span class="cover" style="--c:#3A3F9C"><span class="ribbon free">免费</span><span class="app"><svg class="i"><use href="icons.svg#i-bolt"/></svg></span><span class="plat">Windows</span></span><span class="c-body"><b class="c-title">Listary <em>v6.3</em> 双击 Ctrl 搜索并启动程序</b><span class="meta"><span><svg class="i"><use href="icons.svg#i-down"/></svg>6,320</span><span class="r">12.4 MB</span></span></span></a>
+          <a class="card box" href="#detail"><span class="cover" style="--c:#2D7FF0"><span class="ribbon free">免费</span><span class="app"><svg class="i"><use href="icons.svg#i-crop"/></svg></span><span class="plat">Windows</span></span><span class="c-body"><b class="c-title">Snipaste <em>v2.10.3</em> 截图后把图片贴在屏幕上</b><span class="meta"><span><svg class="i"><use href="icons.svg#i-down"/></svg>2.3万</span><span class="r">18.6 MB</span></span></span></a>
+          <a class="card box" href="#detail"><span class="cover" style="--c:#1E9AB5"><span class="ribbon paid">¥3.90</span><span class="app"><svg class="i"><use href="icons.svg#i-box"/></svg></span><span class="plat">Windows</span></span><span class="c-body"><b class="c-title">Bandizip 便携版 <em>v7.40</em> 解压速度快</b><span class="meta"><span><svg class="i"><use href="icons.svg#i-down"/></svg>9,851</span><span class="r">7.5 MB</span></span></span></a>
+        </div>
+      </section>
+
+      <section class="comments box">
+        <div class="sec-h"><h2>评论 36</h2></div>
+        <div class="c-input"><span class="mini-av"><svg class="i"><use href="icons.svg#i-user"/></svg></span><div>登录后发表评论，审核通过后可以查看"评论可见"的内容</div></div>
+        <div class="c-item"><span class="mini-av" style="background:var(--jb-orange)">林</span><div><b>林间小路<em>VIP</em></b><p>便携版放 U 盘里太方便了，去客户那边排查问题必备。</p><small>2 小时前</small></div></div>
+        <div class="c-item"><span class="mini-av" style="background:var(--jb-purple)">阿</span><div><b>阿哲</b><p>请问便携版能不能索引移动硬盘？</p><small>5 小时前</small></div></div>
+      </section>
+    </div>
+
+    <aside class="side" style="padding-top:49px">
+      <section class="pw box">
+        <div class="top-band"><span>付费资源</span><b><small>¥</small>3.90<del>¥9.90</del></b></div>
+        <div class="rows">
+          <div class="vrow"><span class="v1">VIP<b>免费</b></span><span class="v2">SVIP<b>免费</b></span></div>
+          <a class="btn jb-red" href="#detail" data-open="buy">立即购买</a>
+          <a class="btn jb-vip" href="#home">开通 VIP，免费下载</a>
+          <dl class="kv"><dt>资源大小</dt><dd>1.7 MB</dd><dt>最近更新</dt><dd>2026-10-03</dd><dt>下载次数</dt><dd>12,846</dd></dl>
+        </div>
+      </section>
+      <section class="box">
+        <div class="w-h"><svg class="i"><use href="icons.svg#i-list"/></svg>文章目录</div>
+        <ol class="toc">
+          <li><a class="on" href="#detail">资源介绍</a></li>
+          <li><a href="#detail">便携版和安装版的区别</a></li>
+          <li class="sub"><a href="#detail">常用搜索语法速查</a></li>
+          <li><a href="#detail">软件截图</a></li>
+          <li><a href="#detail">更新日志</a></li>
+        </ol>
+      </section>
+      <section class="box">
+        <div class="w-h"><svg class="i"><use href="icons.svg#i-fire"/></svg>同类热门</div>
+        <ol class="rank">
+          <li><span class="no">1</span><a href="#detail"><span class="app" style="--c:#2D7FF0"><svg class="i"><use href="icons.svg#i-crop"/></svg></span><span><b>Snipaste</b><small>下载 2.3万 次</small></span></a></li>
+          <li><span class="no">2</span><a href="#detail"><span class="app" style="--c:#3A3F9C"><svg class="i"><use href="icons.svg#i-bolt"/></svg></span><span><b>Listary</b><small>下载 6,320 次</small></span></a></li>
+          <li><span class="no">3</span><a href="#detail"><span class="app" style="--c:#1E9AB5"><svg class="i"><use href="icons.svg#i-box"/></svg></span><span><b>Bandizip 便携版</b><small>下载 9,851 次</small></span></a></li>
+        </ol>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="about"><h4>XZJI</h4><p>整理安卓、电脑软件和建站资源。版本号写清楚，下载地址失效了就补。</p></div>
+    <div><h4>资源分类</h4><nav><a href="#home">安卓软件</a><a href="#home">电脑软件</a><a href="#home">主题源码</a><a href="#home">建站教程</a></nav></div>
+    <div><h4>帮助</h4><nav><a href="#home">会员说明</a><a href="#home">失效反馈</a><a href="#home">常见问题</a></nav></div>
+    <div><h4>关于</h4><nav><a href="#home">关于本站</a><a href="#home">联系我们</a><a href="#home">免责声明</a></nav></div>
+    <div class="copy"><span>© 2026 XZJI</span><span>ICP 备案号</span></div>
+  </div>
+</footer>
+
+<!-- 支付弹窗：购买单个资源（余额支付） -->
+<div class="modal" id="buy" hidden role="dialog" aria-modal="true" aria-labelledby="buy-t">
+  <div class="dialog box">
+    <button class="x" data-close aria-label="关闭"><svg class="i"><use href="icons.svg#i-x"/></svg></button>
+    <div class="pay-h"><b id="buy-t">确认订单</b><span>订单将在 <em>30:00</em> 后自动关闭</span></div>
+    <div class="pay-item">
+      <span class="app" style="--c:#EB7419"><svg class="i"><use href="icons.svg#i-search"/></svg></span>
+      <div><b>Everything 便携版 1.4.1.1026</b><small>购买后永久有效，可以在"已购资源"里随时重新下载</small></div>
+    </div>
+    <dl class="pay-sum">
+      <dt>原价</dt><dd>¥9.90</dd>
+      <dt>限时特惠</dt><dd>-¥6.00</dd>
+      <dt class="total">应付金额</dt><dd class="total">¥3.90</dd>
+    </dl>
+    <div class="pay-methods" data-pick>
+      <button class="pm"><i class="wx">微</i>微信支付</button>
+      <button class="pm"><i class="ali">支</i>支付宝</button>
+      <button class="pm on"><i class="bal">余</i>余额支付<small>余额 ¥28.50</small></button>
+    </div>
+    <div class="bal-box">
+      <div><span>当前余额</span><b>¥28.50</b></div>
+      <div><span>支付后余额</span><b>¥24.60</b></div>
+    </div>
+    <button class="btn block jb-red" type="button">确认支付 ¥3.90</button>
+    <p class="pay-foot">开通 VIP 可以免费下载这个资源，<a href="vip.html">去看看会员</a></p>
+  </div>
+</div>
+<script src="xzji.js"></script>
+</body>
+</html>

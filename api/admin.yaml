@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: XZJI 后台接口
+  version: 1.0.0
+  description: 后台管理使用的接口，随后端一起发布，不做版本兼容。
+servers:
+  - url: /admin-api/v1
+tags:
+  - name: system
+    description: 系统
+paths:
+  /system/status:
+    get:
+      operationId: getSystemStatus
+      summary: 系统状态
+      tags: [system]
+      responses:
+        "200":
+          description: 系统状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+components:
+  schemas:
+    SystemStatus:
+      type: object
+      required: [siteName, version, goVersion, uptimeSeconds, database]
+      properties:
+        siteName:
+          type: string
+          example: XZJI
+        version:
+          type: string
+          example: 0.1.0
+        goVersion:
+          type: string
+          example: go1.27.1
+        uptimeSeconds:
+          type: integer
+          format: int64
+        database:
+          $ref: "#/components/schemas/DatabaseStatus"
+    DatabaseStatus:
+      type: object
+      required: [status, version, migration]
+      properties:
+        status:
+          type: string
+          enum: [up, down]
+        version:
+          type: string
+          description: 数据库服务端版本
+          example: 12.3.3-MariaDB
+        migration:
+          type: integer
+          format: int64
+          description: 当前数据库迁移版本号
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: UNAUTHORIZED
+            message:
+              type: string
+              example: 请先登录

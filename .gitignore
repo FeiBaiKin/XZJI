@@ -1,0 +1,32 @@
+# 依赖与构建产物
+node_modules/
+/admin/dist/
+/packages/*/dist/
+.output/
+.nuxt/
+.data/
+*.tsbuildinfo
+/server/bin/
+
+# 后台构建产物（构建时复制进后端程序嵌入，只保留占位文件）
+/server/internal/httpapi/adminui/dist/*
+!/server/internal/httpapi/adminui/dist/.gitkeep
+
+# 本地配置与数据
+/server/config.yaml
+/server/data/
+.env
+.env.*
+!.env.example
+
+# 编辑器与系统
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.log
+
+# Claude Code 本地设置
+.claude/settings.local.json
+.claude/launch.json

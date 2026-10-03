@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: XZJI 前台接口
+  version: 1.0.0
+  description: |
+    前台网页、App、小程序共用的接口。
+    出现不兼容变更时升级路径版本（/api/v2），旧版本保留一段时间。
+servers:
+  - url: /api/v1
+tags:
+  - name: system
+    description: 系统
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: 健康检查
+      tags: [system]
+      responses:
+        "200":
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: 依赖的服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, version, database, time]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+          description: ok 表示全部正常；degraded 表示有依赖不可用
+        version:
+          type: string
+          example: 0.1.0
+        database:
+          type: string
+          enum: [up, down]
+        time:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: 业务错误码，前端据此判断错误类型
+              example: ORDER_EXPIRED
+            message:
+              type: string
+              description: 可直接展示给用户的提示
+              example: 订单已过期

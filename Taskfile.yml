@@ -1,0 +1,117 @@
+version: "3"
+
+vars:
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+  LDFLAGS: -s -w -X xzji/internal/buildinfo.Version={{.VERSION}}
+  ADMIN_EMBED: server/internal/httpapi/adminui/dist
+
+tasks:
+  default:
+    cmds: [task --list]
+    silent: true
+
+  # ---------- 环境 ----------
+  tools:
+    desc: 安装后端代码生成工具（版本固定）
+    env: { CGO_ENABLED: "0" }
+    cmds:
+      - go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+
+  install:
+    desc: 安装前端依赖
+    cmds: [pnpm install]
+
+  # ---------- 代码生成 ----------
+  gen:
+    desc: 重新生成全部代码（接口契约 + 数据库查询）
+    deps: [gen:api, gen:sql]
+
+  gen:api:
+    desc: 由 api/*.yaml 生成 Go 接口代码和 TS 客户端类型
+    cmds:
+      - cd server && oapi-codegen -config oapi-public.yaml ../api/public.yaml
+      - cd server && oapi-codegen -config oapi-admin.yaml ../api/admin.yaml
+      - pnpm --filter @xzji/api-client gen
+
+  gen:sql:
+    desc: 由 db/queries 和迁移文件生成数据库访问代码
+    dir: server
+    cmds: [sqlc generate]
+
+  check:gen:
+    desc: 检查生成代码是否与契约和 SQL 一致（提交前或 CI 使用）
+    cmds:
+      - task: gen
+      - git diff --exit-code -- server/internal/apigen server/internal/dbgen packages/api-client/src/gen
+
+  # ---------- 开发 ----------
+  dev:server:
+    desc: 启动后端 http://127.0.0.1:8080
+    dir: server
+    cmds: [go run ./cmd/xzji serve -c config.yaml]
+
+  dev:web:
+    desc: 启动前台 http://localhost:3000
+    cmds: [pnpm --filter @xzji/web dev]
+
+  dev:admin:
+    desc: 启动后台 http://localhost:5173/admin/
+    cmds: [pnpm --filter @xzji/admin dev]
+
+  migrate:
+    desc: "数据库迁移，例如 task migrate -- status（默认 up）"
+    dir: server
+    cmds: ['go run ./cmd/xzji migrate -c config.yaml {{.CLI_ARGS | default "up"}}']
+
+  migrate:create:
+    desc: "新建迁移文件，例如 task migrate:create -- add_users"
+    dir: server
+    cmds: ["go run ./cmd/xzji migrate create {{.CLI_ARGS}}"]
+
+  # ---------- 测试 ----------
+  test:
+    desc: 后端静态检查与测试，前端类型检查
+    cmds:
+      - task: test:server
+      - pnpm -r typecheck
+
+  test:server:
+    dir: server
+    cmds:
+      - go vet ./...
+      - go test ./...
+
+  # ---------- 构建 ----------
+  build:
+    desc: 构建发布产物：后端可执行文件（内嵌后台页面）和前台
+    cmds:
+      - task: build:admin
+      - task: build:server
+      - task: build:web
+
+  build:admin:
+    desc: 构建后台并复制到后端的嵌入目录
+    cmds:
+      - pnpm --filter @xzji/admin build
+      - >-
+        node -e "const fs=require('fs'),d='{{.ADMIN_EMBED}}';
+        for (const f of fs.readdirSync(d)) if (f!=='.gitkeep') fs.rmSync(d+'/'+f,{recursive:true,force:true});
+        fs.cpSync('admin/dist',d,{recursive:true})"
+
+  build:server:
+    desc: 构建本机平台的后端可执行文件到 server/bin
+    dir: server
+    env: { CGO_ENABLED: "0" }
+    cmds: ['go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/xzji{{exeExt}} ./cmd/xzji']
+
+  build:server:linux:
+    desc: 交叉编译 Linux amd64 后端，用于部署
+    dir: server
+    env: { CGO_ENABLED: "0", GOOS: linux, GOARCH: amd64 }
+    cmds: ['go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/xzji-linux-amd64 ./cmd/xzji']
+
+  build:web:
+    desc: 构建前台，产物在 web/.output
+    cmds: [pnpm --filter @xzji/web build]

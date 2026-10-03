@@ -1,0 +1,20 @@
+{
+  "name": "@xzji/api-client",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./public": "./src/public.ts",
+    "./admin": "./src/admin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "gen": "openapi-typescript ../../api/public.yaml -o src/gen/public.d.ts && openapi-typescript ../../api/admin.yaml -o src/gen/admin.d.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~5.9.3"
+  }
+}

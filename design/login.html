@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XZJI 登录注册</title>
+<link rel="stylesheet" href="xzji.css">
+</head>
+<body class="auth-body">
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="index.html"><i><b></b><b></b><b></b><b></b></i>XZJI</a>
+    <a class="back" href="index.html"><svg class="i"><use href="icons.svg#i-home"/></svg>返回首页</a>
+  </div>
+</header>
+
+<main class="auth">
+  <section class="auth-card box">
+    <div class="auth-side">
+      <h2>登录 XZJI</h2>
+      <p>安卓、电脑软件和建站资源，版本号写清楚，失效了就补。</p>
+      <ul>
+        <li><b><svg class="i"><use href="icons.svg#i-star"/></svg></b>收藏资源，换台电脑也能找到</li>
+        <li><b><svg class="i"><use href="icons.svg#i-box"/></svg></b>买过的资源随时重新下载</li>
+        <li><b><svg class="i"><use href="icons.svg#i-crown"/></svg></b>开通会员，2,300+ 资源免费下</li>
+        <li><b><svg class="i"><use href="icons.svg#i-refresh"/></svg></b>链接失效一键反馈，24 小时内补</li>
+      </ul>
+      <span class="b-art" aria-hidden="true">
+        <span class="app" style="--c:#EB7419"><svg class="i"><use href="icons.svg#i-search"/></svg></span>
+        <span class="app" style="--c:#2D7FF0"><svg class="i"><use href="icons.svg#i-crop"/></svg></span>
+        <span class="app" style="--c:#1E9AB5"><svg class="i"><use href="icons.svg#i-box"/></svg></span>
+        <span class="app" style="--c:#F2B321"><svg class="i"><use href="icons.svg#i-play"/></svg></span>
+        <span class="app" style="--c:#23A55A"><svg class="i"><use href="icons.svg#i-camera"/></svg></span>
+        <span class="app" style="--c:#1F9D6B"><svg class="i"><use href="icons.svg#i-usb"/></svg></span>
+      </span>
+    </div>
+
+    <div class="auth-form">
+      <nav class="auth-tabs" data-tabs="#auth-panes"><a data-tab="login" class="on">登录</a><a data-tab="reg">注册</a></nav>
+      <div id="auth-panes">
+        <form data-pane="login" onsubmit="return false">
+          <label class="field"><span>邮箱</span><input type="email" autocomplete="email" placeholder="you@example.com"></label>
+          <label class="field"><span>密码</span><input type="password" autocomplete="current-password" placeholder="输入密码"><a class="aside" href="#">忘记密码？</a></label>
+          <label class="check"><input type="checkbox" checked>30 天内自动登录</label>
+          <button class="btn block jb-blue" type="submit">登录</button>
+          <p class="switch">还没有账号？<a data-tab="reg">免费注册</a></p>
+        </form>
+
+        <form data-pane="reg" hidden onsubmit="return false">
+          <p class="invite"><svg class="i"><use href="icons.svg#i-gift"/></svg>你正在接受 <b>林间小路</b> 的邀请注册</p>
+          <label class="field"><span>邮箱</span><input type="email" autocomplete="email" placeholder="you@example.com"></label>
+          <label class="field"><span>验证码</span><span class="row"><input inputmode="numeric" placeholder="6 位数字"><button class="btn btn-soft" type="button">发送验证码</button></span></label>
+          <label class="field"><span>设置密码</span><input type="password" autocomplete="new-password" placeholder="至少 8 位"><span class="hint">需要同时包含字母和数字</span></label>
+          <label class="check"><input type="checkbox">我已阅读并同意<a href="#">《用户协议》</a>和<a href="#">《隐私政策》</a></label>
+          <button class="btn block jb-blue" type="submit">注册</button>
+          <p class="switch">已经有账号？<a data-tab="login">直接登录</a></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="xzji.js"></script>
+</body>
+</html>

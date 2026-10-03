@@ -1,0 +1,8 @@
+packages:
+  - web
+  - admin
+  - packages/*
+
+# 依赖的安装脚本默认不执行；esbuild 的二进制由平台可选依赖提供，不需要脚本
+allowBuilds:
+  esbuild: false

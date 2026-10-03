@@ -1,0 +1,8 @@
+{
+  "name": "xzji",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

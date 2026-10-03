@@ -1,0 +1,6 @@
+package: public
+output: internal/apigen/public/public.gen.go
+generate:
+  gin-server: true
+  strict-server: true
+  models: true
