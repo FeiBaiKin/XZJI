@@ -195,7 +195,7 @@ web/
    - 下载地址不出现在页面里；
    - 页头的用户区域留空。
 2. **因此整个页面可以在前台服务器上缓存**，所有访客共用，命中缓存时既不用渲染，也不用请求后端。
-3. **页面在浏览器里加载完成后**，前端直接请求 `api.域名` 获取个人部分：`/api/v1/me`（登录状态）、`/api/v1/posts/{id}/unlocked`（已解锁的隐藏块和下载地址）。这些接口每次都实时判断权限。
+3. **页面在浏览器里加载完成后**，前端直接请求 `api.域名` 获取个人部分：`/api/v1/auth/session`（登录状态，未登录时也返回 200，避免匿名访问产生大量 401）、`/api/v1/posts/{id}/unlocked`（已解锁的隐藏块和下载地址）。这些接口每次都实时判断权限。
 4. **只在浏览器端渲染的页面**：用户中心、订单、支付这些页面不需要 SEO，不做服务端渲染，减轻前台服务器的压力。
 5. **浏览量**：由浏览器调用 `POST /api/v1/posts/{id}/view` 上报（命中页面缓存时服务端根本不会执行，没法在服务端统计）。后端先在内存里累加，每分钟批量写一次数据库。
 
@@ -254,8 +254,9 @@ sessions                 登录会话
   id                     CHAR(64) PK         令牌的 SHA-256；客户端只持有原始令牌
   user_id                BIGINT INDEX
   client                 VARCHAR(16)         web / admin / app
+  ttl_seconds            INT                 会话时长：勾选自动登录和 App 为 30 天，未勾选为 1 天，admin 为 12 小时
   ip / user_agent
-  expires_at             DATETIME            web 和 app 为 30 天并在访问时续期；admin 为 12 小时
+  expires_at             DATETIME            剩余不足一半时续期；admin 不续期
   created_at
 
 email_codes              邮箱验证码
@@ -263,6 +264,7 @@ email_codes              邮箱验证码
   email                  VARCHAR(191) INDEX
   purpose                VARCHAR(16)         register / reset_password
   code_hash              VARCHAR(64)
+  attempts               INT                 校验失败次数，达到 5 次即作废
   ip                     VARCHAR(45)
   expires_at             DATETIME            5 分钟
   used_at                DATETIME NULL
@@ -557,9 +559,9 @@ wallet_ledger            余额流水（只增不改，是余额的唯一依据�
   - 只允许配置中列出的前台域名访问，且必须精确匹配，不用通配符；
   - 允许携带 Cookie。
 - **CSRF**：
-  - 后端在主域下设置一个可读的 `xzji_csrf` Cookie；
-  - 前端发起所有写请求时，把它的值放进 `X-CSRF-Token` 请求头；
-  - 后端校验这个头与 Cookie 是否一致，同时校验 `Origin` 是否在白名单内；
+  - 前端首次发起写请求前调用 `GET /auth/csrf` 取得令牌，后端同时把同一个令牌写进 HttpOnly 的 `xzji_csrf` Cookie；
+  - 前端把令牌放进 `X-CSRF-Token` 请求头；攻击页面跨域读不到这个接口的响应，也就伪造不出请求头；
+  - 后端校验请求头与 Cookie 是否一致，同时校验 `Origin` 是否在白名单内（后台要求 `Origin` 与 Host 相同）；
   - 使用 Bearer 令牌的请求不需要 CSRF 校验。
 
 ### 7.3 服务端渲染请求的识别
@@ -572,7 +574,8 @@ wallet_ledger            余额流水（只增不改，是余额的唯一依据�
 ## 8. 安全要点
 
 - **密码**：用 argon2id 哈希；登录失败按 IP 和账号分别限流。
-- **邮箱验证码**：同一邮箱 60 秒内只能发一次，同一 IP 每天最多 10 次。
+- **邮箱验证码**：5 分钟有效，同一个验证码最多输错 5 次；同一邮箱同一用途 60 秒内只能发一次，同一邮箱、同一 IP 每天各最多 10 次；找回密码时邮箱未注册也提示发送成功，不暴露注册情况。
+- **登录**：同一账号 15 分钟内失败 5 次、同一 IP 失败 20 次后暂时拒绝；邮箱不存在时同样做一次密码哈希计算，避免通过响应时间判断邮箱是否注册；后台登录对非管理员账号返回与密码错误相同的提示。
 - **XSS**：评论只允许纯文本；后台正文用 bluemonday 白名单过滤。
 - **SQL 注入**：所有查询使用参数绑定。
 - **上传**：

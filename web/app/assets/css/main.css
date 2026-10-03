@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* 设计变量，参照 design/xzji.css */
+@theme {
+  --font-sans: "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei", system-ui, sans-serif;
+
+  --color-page: #F4F5F7;
+  --color-card: #FFFFFF;
+  --color-title: #262A31;
+  --color-body: #4E5358;
+  --color-muted: #8A9099;
+  --color-line: #EEF0F3;
+  --color-soft: #F6F7F9;
+  --color-field: #E1E4E9;
+  --color-theme: #2F6BFF;
+  --color-theme-soft: #EBF1FF;
+  --color-danger: #FF4D3D;
+  --color-danger-soft: #FFF1EF;
+  --color-success: #12B087;
+  --color-vip: #F3E3C3;
+  --color-vip-gold: #F6C76B;
+
+  --radius-card: 10px;
+  --radius-btn: 5px;
+
+  --shadow-card: 0 0 12px rgba(116, 116, 116, .08);
+}
+
+/* 渐变按钮与色块 */
+@utility bg-jb-blue { background-image: linear-gradient(135deg, #5AA9FF 0%, #2F6BFF 100%); }
+@utility bg-jb-red { background-image: linear-gradient(135deg, #FF8A6B 10%, #FF3B3B 100%); }
+@utility bg-jb-orange { background-image: linear-gradient(135deg, #FFC35A 0%, #FF8A1F 100%); }
+@utility bg-jb-green { background-image: linear-gradient(135deg, #4FD8A8 0%, #12B087 100%); }
+@utility bg-jb-purple { background-image: linear-gradient(135deg, #B48CFF 0%, #7457F5 100%); }
+@utility bg-jb-gold { background-image: linear-gradient(135deg, #FCE3B4 0%, #E8B65E 100%); }
+@utility bg-jb-vip { background-image: linear-gradient(300deg, #4C4D51, #2A2A31 15%, #85858A 40%, #393A3C 60%, #393838 80%, #5E5F62); }
+@utility bg-brand { background-image: linear-gradient(120deg, #3A6DFF 0%, #5B4CF0 55%, #8A4FE8 100%); }
+
+@layer base {
+  body {
+    @apply bg-page font-sans text-sm leading-[1.7] text-body antialiased;
+  }
+  :focus-visible {
+    @apply rounded outline-2 outline-offset-2 outline-theme;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card bg-card shadow-card;
+  }
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-1.5 rounded-btn px-4 text-sm font-semibold whitespace-nowrap text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-soft {
+    @apply bg-theme-soft text-theme;
+  }
+  .field-input {
+    @apply h-[42px] w-full rounded-md border border-field bg-white px-3 text-sm text-title outline-none transition placeholder:text-muted focus:border-theme focus:ring-3 focus:ring-theme-soft;
+  }
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-semibold text-title;
+  }
+  .icon {
+    @apply size-4 shrink-0 fill-none stroke-current stroke-[1.9] [stroke-linecap:round] [stroke-linejoin:round];
+  }
+}

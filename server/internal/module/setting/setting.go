@@ -17,11 +17,17 @@ const defaultSiteName = "XZJI"
 
 var ErrNotFound = errors.New("设置项不存在")
 
-type Service struct {
-	q dbgen.Querier
+// Store 本模块用到的数据库查询。
+type Store interface {
+	GetSetting(ctx context.Context, key string) (json.RawMessage, error)
+	UpsertSetting(ctx context.Context, arg dbgen.UpsertSettingParams) error
 }
 
-func NewService(q dbgen.Querier) *Service { return &Service{q: q} }
+type Service struct {
+	q Store
+}
+
+func NewService(q Store) *Service { return &Service{q: q} }
 
 // Get 读取设置项并解码到 dst。
 func (s *Service) Get(ctx context.Context, key string, dst any) error {

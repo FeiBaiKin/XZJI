@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"xzji/internal/platform/errs"
 )
 
 // Error 是可以直接返回给客户端的业务错误。
@@ -26,7 +28,20 @@ var (
 	NotFound         = New(http.StatusNotFound, "NOT_FOUND", "请求的地址不存在")
 	MethodNotAllowed = New(http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "不支持该请求方法")
 	Internal         = New(http.StatusInternalServerError, "INTERNAL_ERROR", "服务器内部错误，请稍后重试")
+	Unauthorized     = New(http.StatusUnauthorized, "UNAUTHORIZED", "请先登录")
+	CSRFInvalid      = New(http.StatusForbidden, "CSRF_INVALID", "页面已过期，请刷新后重试")
+	CSRFOrigin       = New(http.StatusForbidden, "CSRF_ORIGIN", "请求来源不被允许")
 )
+
+var kindStatus = map[errs.Kind]int{
+	errs.KindInvalid:      http.StatusBadRequest,
+	errs.KindUnauthorized: http.StatusUnauthorized,
+	errs.KindForbidden:    http.StatusForbidden,
+	errs.KindNotFound:     http.StatusNotFound,
+	errs.KindConflict:     http.StatusConflict,
+	errs.KindTooMany:      http.StatusTooManyRequests,
+	errs.KindUnavailable:  http.StatusServiceUnavailable,
+}
 
 type body struct {
 	Error detail `json:"error"`
@@ -37,10 +52,20 @@ type detail struct {
 	Message string `json:"message"`
 }
 
-// Write 输出错误响应。非 *Error 的错误一律按内部错误处理，原始错误记入请求日志，不暴露给客户端。
+// Write 输出错误响应。业务模块的领域错误按类别映射状态码；其他错误一律按内部错误处理，
+// 原始错误记入请求日志，不暴露给客户端。
 func Write(c *gin.Context, err error) {
 	var e *Error
-	if !errors.As(err, &e) {
+	var de *errs.Error
+	switch {
+	case errors.As(err, &e):
+	case errors.As(err, &de):
+		status, ok := kindStatus[de.Kind]
+		if !ok {
+			status = http.StatusBadRequest
+		}
+		e = New(status, de.Code, de.Message)
+	default:
 		_ = c.Error(err)
 		e = Internal
 	}

@@ -7,10 +7,33 @@ package dbgen
 import (
 	"context"
 	"encoding/json"
+	"time"
 )
 
 type Querier interface {
+	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
+	CreateAdminLog(ctx context.Context, arg CreateAdminLogParams) error
+	CreateEmailCode(ctx context.Context, arg CreateEmailCodeParams) error
+	CreateSession(ctx context.Context, arg CreateSessionParams) error
+	CreateUser(ctx context.Context, arg CreateUserParams) (int64, error)
+	DeleteExpiredEmailCodes(ctx context.Context, expiresAt time.Time) (int64, error)
+	DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) (int64, error)
+	DeleteSession(ctx context.Context, id string) error
+	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) error
+	ExtendSession(ctx context.Context, arg ExtendSessionParams) error
+	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
+	GetLatestEmailCode(ctx context.Context, arg GetLatestEmailCodeParams) (EmailCode, error)
 	GetSetting(ctx context.Context, key string) (json.RawMessage, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
+	GetUserByID(ctx context.Context, id int64) (User, error)
+	IncrEmailCodeAttempts(ctx context.Context, id int64) error
+	InvalidateEmailCodes(ctx context.Context, arg InvalidateEmailCodesParams) error
+	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	MarkEmailCodeUsed(ctx context.Context, arg MarkEmailCodeUsedParams) (int64, error)
+	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
+	UpdateUserNickname(ctx context.Context, arg UpdateUserNicknameParams) error
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpdateUserRoleStatus(ctx context.Context, arg UpdateUserRoleStatusParams) error
 	UpsertSetting(ctx context.Context, arg UpsertSettingParams) error
 }
 

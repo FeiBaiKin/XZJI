@@ -30,11 +30,14 @@ deploy/          Nginx、systemd、建库 SQL 等部署样例
 - `task test`：go vet + go test + 前端类型检查
 - `task build`：构建后台并嵌入后端，构建后端与前台
 - 首次环境：`task tools`、`task install`，复制 `server/config.example.yaml` 为 `server/config.yaml`
+- 集成测试连接 `server/.env.test` 中的 `XZJI_TEST_DB_DSN`（库名必须以 `_test` 结尾，测试会清空它），复制 `.env.test.example` 后修改
+- 创建管理员：`cd server && go run ./cmd/xzji admin create -email 你的邮箱`
 
 ## 必须遵守的规则
 
 **接口**
 - 新增或修改接口，先改 `api/*.yaml`，再 `task gen`，最后写实现。不允许绕过契约手写路由。
+- 需要登录的接口在契约里声明 `security`，`task gen:api` 会据此生成 `SecuredOperations`，由路由统一拦截未登录请求；不要在 handler 里自己判断。
 - 前台接口（`/api/v1`）只能做向后兼容的变更；不兼容变更走新版本路径。
 - 错误统一返回 `{"error":{"code","message"}}`，在 `httpapi/apierr` 定义业务错误；内部错误不向客户端暴露细节。
 

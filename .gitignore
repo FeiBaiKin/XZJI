@@ -18,6 +18,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.test.example
 
 # 编辑器与系统
 .idea/

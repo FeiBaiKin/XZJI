@@ -8,23 +8,36 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	adminapi "xzji/internal/apigen/admin"
 	"xzji/internal/buildinfo"
+	"xzji/internal/httpapi/authn"
+	"xzji/internal/module/auth"
 	"xzji/internal/module/setting"
+	"xzji/internal/module/user"
 	platformdb "xzji/internal/platform/db"
 )
 
+type Deps struct {
+	DB       *sql.DB
+	Log      *slog.Logger
+	Settings *setting.Service
+	Auth     *auth.Service
+	Users    *user.Service
+	Realm    *authn.Realm
+	CSRF     *authn.CSRF
+}
+
 type Handler struct {
-	db       *sql.DB
-	log      *slog.Logger
-	settings *setting.Service
+	Deps
 }
 
 var _ adminapi.StrictServerInterface = (*Handler)(nil)
 
-func NewHandler(db *sql.DB, log *slog.Logger, settings *setting.Service) *Handler {
-	return &Handler{db: db, log: log, settings: settings}
-}
+func NewHandler(d Deps) *Handler { return &Handler{Deps: d} }
+
+func ginCtx(ctx context.Context) *gin.Context { return ctx.(*gin.Context) }
 
 // GetSystemStatus 数据库不可用时仍返回 200，由状态字段说明问题，方便后台展示。
 func (h *Handler) GetSystemStatus(ctx context.Context, _ adminapi.GetSystemStatusRequestObject) (adminapi.GetSystemStatusResponseObject, error) {
@@ -38,18 +51,18 @@ func (h *Handler) GetSystemStatus(ctx context.Context, _ adminapi.GetSystemStatu
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	ver, err := platformdb.ServerVersion(ctx, h.db)
+	ver, err := platformdb.ServerVersion(ctx, h.DB)
 	if err != nil {
-		h.log.Warn("系统状态：数据库不可用", "error", err)
+		h.Log.Warn("系统状态：数据库不可用", "error", err)
 		resp.Database.Status = adminapi.Down
 		return adminapi.GetSystemStatus200JSONResponse(resp), nil
 	}
 	resp.Database.Version = ver
 
-	if resp.Database.Migration, err = platformdb.MigrationVersion(ctx, h.db); err != nil {
+	if resp.Database.Migration, err = platformdb.MigrationVersion(ctx, h.DB); err != nil {
 		return nil, err
 	}
-	if resp.SiteName, err = h.settings.SiteName(ctx); err != nil {
+	if resp.SiteName, err = h.Settings.SiteName(ctx); err != nil {
 		return nil, err
 	}
 	return adminapi.GetSystemStatus200JSONResponse(resp), nil

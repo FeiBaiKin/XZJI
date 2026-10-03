@@ -19,3 +19,17 @@ log:
 cors:
   allow_origins:
     - https://www.example.com
+
+auth:
+  cookie_domain: .example.com
+  cookie_secure: true
+
+mail:
+  driver: smtp
+  smtp:
+    host: smtp.example.com
+    port: 465
+    implicit_tls: true
+    username: noreply@example.com
+    password: "" # 建议用环境变量 XZJI_SMTP_PASSWORD
+    from: XZJI <noreply@example.com>

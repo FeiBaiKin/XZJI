@@ -5,13 +5,76 @@
 package dbgen
 
 import (
+	"database/sql"
 	"encoding/json"
 	"time"
 )
+
+// 后台操作日志
+type AdminLog struct {
+	ID         int64
+	AdminID    int64
+	Action     string
+	TargetType string
+	TargetID   int64
+	Detail     json.RawMessage
+	Ip         string
+	CreatedAt  time.Time
+}
+
+// 邮箱验证码
+type EmailCode struct {
+	ID    int64
+	Email string
+	// register / reset_password
+	Purpose  string
+	CodeHash string
+	// 校验失败次数，达到上限即作废
+	Attempts  int32
+	Ip        string
+	ExpiresAt time.Time
+	// 已使用或已作废的时间
+	UsedAt    sql.NullTime
+	CreatedAt time.Time
+}
+
+// 登录会话
+type Session struct {
+	// 令牌的 SHA-256，客户端只持有原始令牌
+	ID     string
+	UserID int64
+	// web / admin / app
+	Client string
+	// 有效期时长，续期时沿用
+	TtlSeconds int32
+	Ip         string
+	UserAgent  string
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+}
 
 // 站点设置
 type Setting struct {
 	Key       string
 	Value     json.RawMessage
 	UpdatedAt time.Time
+}
+
+// 用户
+type User struct {
+	ID            int64
+	Email         string
+	PasswordHash  string
+	Nickname      string
+	AvatarMediaID sql.NullInt64
+	// user / admin
+	Role string
+	// active / banned
+	Status string
+	// 邀请人，用于推广分佣
+	InviterID       sql.NullInt64
+	EmailVerifiedAt sql.NullTime
+	LastLoginAt     sql.NullTime
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }

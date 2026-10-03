@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -73,4 +74,10 @@ func ServerVersion(ctx context.Context, db *sql.DB) (string, error) {
 	var v string
 	err := db.QueryRowContext(ctx, "SELECT VERSION()").Scan(&v)
 	return v, err
+}
+
+// IsDuplicate 判断是否违反唯一索引（MySQL 错误 1062）。
+func IsDuplicate(err error) bool {
+	var me *mysql.MySQLError
+	return errors.As(err, &me) && me.Number == 1062
 }

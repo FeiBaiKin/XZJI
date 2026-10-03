@@ -4,6 +4,7 @@ package httpapi
 import (
 	"database/sql"
 	"log/slog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,14 +14,23 @@ import (
 	"xzji/internal/httpapi/admin"
 	"xzji/internal/httpapi/adminui"
 	"xzji/internal/httpapi/apierr"
+	"xzji/internal/httpapi/authn"
 	"xzji/internal/httpapi/middleware"
 	"xzji/internal/httpapi/public"
+	"xzji/internal/module/auth"
+	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
+	"xzji/internal/module/user"
 )
 
 const (
 	PublicBase = "/api/v1"
 	AdminBase  = "/admin-api/v1"
+
+	CookiePublicSession = "xzji_session"
+	CookiePublicCSRF    = "xzji_csrf"
+	CookieAdminSession  = "xzji_admin_session"
+	CookieAdminCSRF     = "xzji_admin_csrf"
 )
 
 type Deps struct {
@@ -28,6 +38,9 @@ type Deps struct {
 	DB       *sql.DB
 	Log      *slog.Logger
 	Settings *setting.Service
+	Auth     *auth.Service
+	Users    *user.Service
+	Sessions *session.Service
 }
 
 func NewRouter(d Deps) (*gin.Engine, error) {
@@ -50,26 +63,88 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 	r.NoRoute(func(c *gin.Context) { apierr.Write(c, apierr.NotFound) })
 	r.NoMethod(func(c *gin.Context) { apierr.Write(c, apierr.MethodNotAllowed) })
 
+	// 前台：Cookie 作用于主域，www 与 api 共享；同时接受 App 的 Bearer 令牌
+	pubCookies := authn.Cookies{
+		Session: CookiePublicSession, CSRF: CookiePublicCSRF,
+		Domain: d.Config.Auth.CookieDomain, Secure: d.Config.Auth.CookieSecure, SameSite: http.SameSiteLaxMode,
+	}
+	pubRealm := &authn.Realm{
+		Cookies: pubCookies, Bearer: true, Sessions: d.Sessions, Log: d.Log,
+		Clients: map[session.Client]bool{session.ClientWeb: true, session.ClientApp: true},
+	}
+	pubCSRF := &authn.CSRF{Cookies: pubCookies, AllowOrigin: authn.OriginIn(d.Config.CORS.AllowOrigins)}
+
+	// 后台：Cookie 只作用于后台域名并且 SameSite=Strict，只接受管理员的后台会话
+	adminCookies := authn.Cookies{
+		Session: CookieAdminSession, CSRF: CookieAdminCSRF,
+		Secure: d.Config.Auth.CookieSecure, SameSite: http.SameSiteStrictMode,
+	}
+	adminRealm := &authn.Realm{
+		Cookies: adminCookies, Role: user.RoleAdmin, Sessions: d.Sessions, Log: d.Log,
+		Clients: map[session.Client]bool{session.ClientAdmin: true},
+	}
+	adminCSRF := &authn.CSRF{Cookies: adminCookies, AllowOrigin: authn.SameHost}
+
+	pubHandler := public.NewHandler(public.Deps{
+		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
+	})
 	pubapi.RegisterHandlersWithOptions(r,
-		pubapi.NewStrictHandlerWithOptions(public.NewHandler(d.DB, d.Log), nil, pubapi.StrictGinServerOptions{
+		pubapi.NewStrictHandlerWithOptions(pubHandler, []pubapi.StrictMiddlewareFunc{requirePublic}, pubapi.StrictGinServerOptions{
 			RequestErrorHandlerFunc:  apierr.WriteBadRequest,
 			HandlerErrorFunc:         apierr.Write,
 			ResponseErrorHandlerFunc: apierr.Write,
 		}),
-		pubapi.GinServerOptions{BaseURL: PublicBase, ErrorHandler: bindError},
+		pubapi.GinServerOptions{
+			BaseURL:      PublicBase,
+			ErrorHandler: bindError,
+			Middlewares:  []pubapi.MiddlewareFunc{pubCSRF.Check, pubRealm.Load},
+		},
 	)
 
+	adminHandler := admin.NewHandler(admin.Deps{
+		DB: d.DB, Log: d.Log, Settings: d.Settings, Auth: d.Auth, Users: d.Users, Realm: adminRealm, CSRF: adminCSRF,
+	})
 	adminapi.RegisterHandlersWithOptions(r,
-		adminapi.NewStrictHandlerWithOptions(admin.NewHandler(d.DB, d.Log, d.Settings), nil, adminapi.StrictGinServerOptions{
+		adminapi.NewStrictHandlerWithOptions(adminHandler, []adminapi.StrictMiddlewareFunc{requireAdmin}, adminapi.StrictGinServerOptions{
 			RequestErrorHandlerFunc:  apierr.WriteBadRequest,
 			HandlerErrorFunc:         apierr.Write,
 			ResponseErrorHandlerFunc: apierr.Write,
 		}),
-		adminapi.GinServerOptions{BaseURL: AdminBase, ErrorHandler: bindError},
+		adminapi.GinServerOptions{
+			BaseURL:      AdminBase,
+			ErrorHandler: bindError,
+			Middlewares:  []adminapi.MiddlewareFunc{adminCSRF.Check, adminRealm.Load},
+		},
 	)
 
 	adminui.Mount(r)
 	return r, nil
+}
+
+// requirePublic 契约中声明了 security 的前台接口必须已登录。
+func requirePublic(f pubapi.StrictHandlerFunc, op string) pubapi.StrictHandlerFunc {
+	if !pubapi.SecuredOperations[op] {
+		return f
+	}
+	return func(c *gin.Context, req any) (any, error) {
+		if _, ok := authn.FromContext(c); !ok {
+			return nil, apierr.Unauthorized
+		}
+		return f(c, req)
+	}
+}
+
+// requireAdmin 契约中声明了 security 的后台接口必须已登录。
+func requireAdmin(f adminapi.StrictHandlerFunc, op string) adminapi.StrictHandlerFunc {
+	if !adminapi.SecuredOperations[op] {
+		return f
+	}
+	return func(c *gin.Context, req any) (any, error) {
+		if _, ok := authn.FromContext(c); !ok {
+			return nil, apierr.Unauthorized
+		}
+		return f(c, req)
+	}
 }
 
 // bindError 处理路径和查询参数解析失败。

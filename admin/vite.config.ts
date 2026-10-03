@@ -9,7 +9,8 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     proxy: {
-      '/admin-api': 'http://127.0.0.1:8080',
+      // 保留浏览器的 Host，后端据此做同源校验（与生产环境 Nginx 转发 Host 的行为一致）
+      '/admin-api': { target: 'http://127.0.0.1:8080', changeOrigin: false },
     },
   },
 })

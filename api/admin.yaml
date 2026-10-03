@@ -2,18 +2,125 @@ openapi: 3.0.3
 info:
   title: XZJI 后台接口
   version: 1.0.0
-  description: 后台管理使用的接口，随后端一起发布，不做版本兼容。
+  description: |
+    后台管理使用的接口，随后端一起发布，不做版本兼容。
+    使用独立的 HttpOnly Cookie（xzji_admin_session，只作用于后台域名），与前台会话互相隔离。
+    写请求需要带 X-CSRF-Token 请求头，令牌通过 GET /auth/csrf 获取。
 servers:
   - url: /admin-api/v1
 tags:
+  - name: auth
+    description: 后台登录
   - name: system
     description: 系统
+  - name: users
+    description: 用户管理
 paths:
+  /auth/csrf:
+    get:
+      operationId: getCsrfToken
+      summary: 获取 CSRF 令牌
+      tags: [auth]
+      responses:
+        "200":
+          description: CSRF 令牌
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfToken"
+
+  /auth/session:
+    get:
+      operationId: getSession
+      summary: 当前登录状态
+      description: 未登录时不返回 admin 字段，也不返回 401。
+      tags: [auth]
+      responses:
+        "200":
+          description: 登录状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionState"
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: 管理员登录
+      description: 只有角色为 admin 的账号可以登录，会话 12 小时后过期。
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: 退出登录
+      tags: [auth]
+      responses:
+        "204":
+          description: 已退出
+
+  /me:
+    get:
+      operationId: getMe
+      summary: 当前管理员
+      tags: [auth]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 管理员信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/password:
+    post:
+      operationId: changePassword
+      summary: 修改自己的密码
+      tags: [auth]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: 已修改
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /system/status:
     get:
       operationId: getSystemStatus
       summary: 系统状态
       tags: [system]
+      security:
+        - adminCookieAuth: []
       responses:
         "200":
           description: 系统状态
@@ -21,8 +128,226 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SystemStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: 用户列表
+      tags: [users]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          description: 按邮箱或昵称模糊搜索
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/Role"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/UserStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: 用户分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      summary: 修改用户角色或状态
+      description: 封禁后该用户的所有会话立即失效。不能修改自己的角色和状态。操作会写入后台日志。
+      tags: [users]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: 修改后的用户
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
+  securitySchemes:
+    adminCookieAuth:
+      type: apiKey
+      in: cookie
+      name: xzji_admin_session
+
+  responses:
+    BadRequest:
+      description: 参数不正确
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未登录或凭证无效
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: 操作太频繁
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   schemas:
+    CsrfToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword:
+          type: string
+        newPassword:
+          type: string
+
+    AdminProfile:
+      type: object
+      required: [id, email, nickname]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        nickname:
+          type: string
+
+    SessionState:
+      type: object
+      properties:
+        admin:
+          $ref: "#/components/schemas/AdminProfile"
+
+    Role:
+      type: string
+      enum: [user, admin]
+
+    UserStatus:
+      type: string
+      enum: [active, banned]
+
+    UserItem:
+      type: object
+      required: [id, email, nickname, role, status, emailVerified, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        nickname:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        emailVerified:
+          type: boolean
+        inviterId:
+          type: integer
+          format: int64
+          nullable: true
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    UserPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserItem"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/Role"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+
     SystemStatus:
       type: object
       required: [siteName, version, goVersion, uptimeSeconds, database]
@@ -41,6 +366,7 @@ components:
           format: int64
         database:
           $ref: "#/components/schemas/DatabaseStatus"
+
     DatabaseStatus:
       type: object
       required: [status, version, migration]
@@ -56,6 +382,7 @@ components:
           type: integer
           format: int64
           description: 当前数据库迁移版本号
+
     Error:
       type: object
       required: [error]

@@ -5,11 +5,18 @@ info:
   description: |
     前台网页、App、小程序共用的接口。
     出现不兼容变更时升级路径版本（/api/v2），旧版本保留一段时间。
+
+    身份凭证：网页使用 HttpOnly Cookie（xzji_session）；App 和小程序使用 Authorization: Bearer 令牌。
+    网页发起写请求时需要带 X-CSRF-Token 请求头，令牌通过 GET /auth/csrf 获取。
 servers:
   - url: /api/v1
 tags:
   - name: system
     description: 系统
+  - name: auth
+    description: 注册、登录与找回密码
+  - name: me
+    description: 当前登录用户
 paths:
   /health:
     get:
@@ -29,7 +36,246 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+
+  /auth/csrf:
+    get:
+      operationId: getCsrfToken
+      summary: 获取 CSRF 令牌
+      description: 同时写入 HttpOnly 的 CSRF Cookie。已有有效 Cookie 时返回同一个令牌。
+      tags: [auth]
+      responses:
+        "200":
+          description: CSRF 令牌
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfToken"
+
+  /auth/session:
+    get:
+      operationId: getSession
+      summary: 当前登录状态
+      description: 未登录时不返回 user 字段，也不返回 401，供页面判断登录状态，避免匿名访问产生大量 401。
+      tags: [auth]
+      responses:
+        "200":
+          description: 登录状态
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionState"
+
+  /auth/email-codes:
+    post:
+      operationId: sendEmailCode
+      summary: 发送邮箱验证码
+      description: 找回密码时，邮箱未注册也返回成功，避免泄露注册情况。
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailCodeRequest"
+      responses:
+        "204":
+          description: 已发送
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /auth/register:
+    post:
+      operationId: register
+      summary: 邮箱注册
+      description: 注册成功后直接登录。
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: 邮箱密码登录
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: 退出登录
+      tags: [auth]
+      responses:
+        "204":
+          description: 已退出
+
+  /auth/password-reset:
+    post:
+      operationId: resetPassword
+      summary: 通过邮箱验证码重设密码
+      description: 重设后该账号的所有登录会话失效。
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: 已重设
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /me:
+    get:
+      operationId: getMe
+      summary: 当前登录用户
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      operationId: updateMe
+      summary: 修改个人资料
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: 修改后的用户信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/password:
+    post:
+      operationId: changePassword
+      summary: 修改密码
+      description: 修改后其他设备上的登录会话失效，当前会话保留。
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: 已修改
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: xzji_session
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  responses:
+    BadRequest:
+      description: 参数不正确
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: 未登录或凭证无效
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: 没有权限
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: 与现有数据冲突
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: 操作太频繁
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   schemas:
     Health:
       type: object
@@ -48,6 +294,131 @@ components:
         time:
           type: string
           format: date-time
+
+    CsrfToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    ClientType:
+      type: string
+      enum: [web, app]
+      default: web
+      description: web 使用 Cookie；app 在响应体中返回令牌
+
+    SendEmailCodeRequest:
+      type: object
+      required: [email, purpose]
+      properties:
+        email:
+          type: string
+          example: you@example.com
+        purpose:
+          type: string
+          enum: [register, reset_password]
+
+    RegisterRequest:
+      type: object
+      required: [email, code, password]
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+          description: 6 位邮箱验证码
+        password:
+          type: string
+          description: 至少 8 位，同时包含字母和数字
+        nickname:
+          type: string
+          description: 不填时取邮箱 @ 前面的部分
+        inviterId:
+          type: integer
+          format: int64
+          description: 邀请人 ID，来自推广链接 ?ref=
+        client:
+          $ref: "#/components/schemas/ClientType"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        remember:
+          type: boolean
+          default: true
+          description: true 时 30 天内免登录；false 时关闭浏览器后失效
+        client:
+          $ref: "#/components/schemas/ClientType"
+
+    ResetPasswordRequest:
+      type: object
+      required: [email, code, password]
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+        password:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      required: [nickname]
+      properties:
+        nickname:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword:
+          type: string
+        newPassword:
+          type: string
+
+    User:
+      type: object
+      required: [id, email, nickname, role, emailVerified, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        emailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    SessionState:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    AuthResult:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+          description: "仅 client=app 时返回，之后放在 Authorization: Bearer 请求头中"
+
     Error:
       type: object
       required: [error]
@@ -59,8 +430,8 @@ components:
             code:
               type: string
               description: 业务错误码，前端据此判断错误类型
-              example: ORDER_EXPIRED
+              example: INVALID_CREDENTIALS
             message:
               type: string
               description: 可直接展示给用户的提示
-              example: 订单已过期
+              example: 邮箱或密码不正确

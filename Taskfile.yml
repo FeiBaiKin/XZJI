@@ -33,6 +33,8 @@ tasks:
     cmds:
       - cd server && oapi-codegen -config oapi-public.yaml ../api/public.yaml
       - cd server && oapi-codegen -config oapi-admin.yaml ../api/admin.yaml
+      - cd server && go run ./tools/secops -spec ../api/public.yaml -pkg public -out internal/apigen/public/security.gen.go
+      - cd server && go run ./tools/secops -spec ../api/admin.yaml -pkg admin -out internal/apigen/admin/security.gen.go
       - pnpm --filter @xzji/api-client gen
 
   gen:sql:
@@ -78,7 +80,10 @@ tasks:
       - pnpm -r typecheck
 
   test:server:
+    desc: 后端测试；集成测试需要 server/.env.test 中的 XZJI_TEST_DB_DSN
     dir: server
+    dotenv: [.env.test]
+    env: { GIN_MODE: test }
     cmds:
       - go vet ./...
       - go test ./...
