@@ -8,19 +8,22 @@ import (
 	"os"
 	"strings"
 	"time"
+	_ "time/tzdata" // 内嵌时区数据，服务器没有安装 tzdata 也能加载时区
 
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Env   string `yaml:"env"`
-	HTTP  HTTP   `yaml:"http"`
-	DB    DB     `yaml:"db"`
-	Log   Log    `yaml:"log"`
-	CORS  CORS   `yaml:"cors"`
-	Auth  Auth   `yaml:"auth"`
-	Mail  Mail   `yaml:"mail"`
-	Media Media  `yaml:"media"`
+	Env string `yaml:"env"`
+	// Timezone 站点所在时区，用于按天统计下载次数等
+	Timezone string `yaml:"timezone"`
+	HTTP     HTTP   `yaml:"http"`
+	DB       DB     `yaml:"db"`
+	Log      Log    `yaml:"log"`
+	CORS     CORS   `yaml:"cors"`
+	Auth     Auth   `yaml:"auth"`
+	Mail     Mail   `yaml:"mail"`
+	Media    Media  `yaml:"media"`
 }
 
 type HTTP struct {
@@ -88,6 +91,15 @@ const (
 
 func (c *Config) IsProd() bool { return c.Env == EnvProd }
 
+// Location 站点时区，配置已在加载时校验过。
+func (c *Config) Location() *time.Location {
+	loc, err := time.LoadLocation(c.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
 // Load 读取配置文件，未知字段视为错误，避免拼错配置项而不自知。
 func Load(path string) (*Config, error) {
 	cfg := defaults()
@@ -109,12 +121,13 @@ func Load(path string) (*Config, error) {
 
 func defaults() *Config {
 	return &Config{
-		Env:   EnvDev,
-		HTTP:  HTTP{Addr: "127.0.0.1:8080", TrustedProxies: []string{"127.0.0.1", "::1"}},
-		DB:    DB{MaxOpenConns: 20, MaxIdleConns: 10, ConnMaxLifetime: 30 * time.Minute, AutoMigrate: true},
-		Log:   Log{Level: "info", Format: "text"},
-		Mail:  Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
-		Media: Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
+		Env:      EnvDev,
+		Timezone: "Asia/Shanghai",
+		HTTP:     HTTP{Addr: "127.0.0.1:8080", TrustedProxies: []string{"127.0.0.1", "::1"}},
+		DB:       DB{MaxOpenConns: 20, MaxIdleConns: 10, ConnMaxLifetime: 30 * time.Minute, AutoMigrate: true},
+		Log:      Log{Level: "info", Format: "text"},
+		Mail:     Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
+		Media:    Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
 	}
 }
 
@@ -134,6 +147,9 @@ func (c *Config) validate() error {
 	var errs []error
 	if c.Env != EnvDev && c.Env != EnvProd {
 		errs = append(errs, fmt.Errorf("env 只能是 %s 或 %s", EnvDev, EnvProd))
+	}
+	if _, err := time.LoadLocation(c.Timezone); err != nil || c.Timezone == "" {
+		errs = append(errs, fmt.Errorf("timezone %q 不正确，例如 Asia/Shanghai", c.Timezone))
 	}
 	if c.DB.DSN == "" {
 		errs = append(errs, errors.New("db.dsn 不能为空"))

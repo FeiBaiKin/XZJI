@@ -27,7 +27,7 @@ func (b *browser) upload(path string, data []byte) resp {
 }
 
 func (b *browser) put(path string, body any) resp { return b.do(http.MethodPut, path, body, true, nil) }
-func (b *browser) del(path string) resp       { return b.do(http.MethodDelete, path, nil, true, nil) }
+func (b *browser) del(path string) resp           { return b.do(http.MethodDelete, path, nil, true, nil) }
 
 func testPNG(t *testing.T) []byte {
 	t.Helper()

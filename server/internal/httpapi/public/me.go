@@ -15,7 +15,7 @@ func (h *Handler) GetMe(ctx context.Context, _ pubapi.GetMeRequestObject) (pubap
 	if err != nil {
 		return nil, err
 	}
-	return pubapi.GetMe200JSONResponse(toUser(u)), nil
+	return pubapi.GetMe200JSONResponse(h.toUser(ctx, u)), nil
 }
 
 func (h *Handler) UpdateMe(ctx context.Context, req pubapi.UpdateMeRequestObject) (pubapi.UpdateMeResponseObject, error) {
@@ -24,7 +24,7 @@ func (h *Handler) UpdateMe(ctx context.Context, req pubapi.UpdateMeRequestObject
 	if err != nil {
 		return nil, err
 	}
-	return pubapi.UpdateMe200JSONResponse(toUser(u)), nil
+	return pubapi.UpdateMe200JSONResponse(h.toUser(ctx, u)), nil
 }
 
 func (h *Handler) ChangePassword(ctx context.Context, req pubapi.ChangePasswordRequestObject) (pubapi.ChangePasswordResponseObject, error) {

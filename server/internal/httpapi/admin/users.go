@@ -30,9 +30,20 @@ func (h *Handler) ListUsers(ctx context.Context, req adminapi.ListUsersRequestOb
 	if err != nil {
 		return nil, err
 	}
+	ids := make([]int64, len(users))
+	for i, u := range users {
+		ids[i] = u.ID
+	}
+	members, err := h.Members.ForUsers(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]adminapi.UserItem, len(users))
 	for i, u := range users {
 		items[i] = toUserItem(u)
+		if m, ok := members[u.ID]; ok {
+			items[i].Membership = toUserMembership(&m)
+		}
 	}
 	return adminapi.ListUsers200JSONResponse{Items: items, Total: total, Page: f.Page, PageSize: f.PageSize}, nil
 }
@@ -52,7 +63,22 @@ func (h *Handler) UpdateUser(ctx context.Context, req adminapi.UpdateUserRequest
 	if err != nil {
 		return nil, err
 	}
-	return adminapi.UpdateUser200JSONResponse(toUserItem(u)), nil
+	item, err := h.userItem(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return adminapi.UpdateUser200JSONResponse(item), nil
+}
+
+// userItem 单个用户连同会员状态。
+func (h *Handler) userItem(ctx context.Context, u user.User) (adminapi.UserItem, error) {
+	item := toUserItem(u)
+	m, err := h.Members.Get(ctx, u.ID)
+	if err != nil {
+		return item, err
+	}
+	item.Membership = toUserMembership(m)
+	return item, nil
 }
 
 func toUserItem(u user.User) adminapi.UserItem {

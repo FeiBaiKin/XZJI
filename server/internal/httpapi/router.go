@@ -18,8 +18,10 @@ import (
 	"xzji/internal/httpapi/middleware"
 	"xzji/internal/httpapi/public"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/comment"
 	"xzji/internal/module/content"
 	"xzji/internal/module/media"
+	"xzji/internal/module/membership"
 	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
@@ -46,6 +48,8 @@ type Deps struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Members  *membership.Service
+	Comments *comment.Service
 }
 
 func NewRouter(d Deps) (*gin.Engine, error) {
@@ -92,7 +96,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	pubHandler := public.NewHandler(public.Deps{
 		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
-		Content: d.Content, Home: d.Home,
+		Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
 	})
 	pubapi.RegisterHandlersWithOptions(r,
 		pubapi.NewStrictHandlerWithOptions(pubHandler, []pubapi.StrictMiddlewareFunc{requirePublic}, pubapi.StrictGinServerOptions{
@@ -109,7 +113,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	adminHandler := admin.NewHandler(admin.Deps{
 		DB: d.DB, Log: d.Log, Settings: d.Settings, Auth: d.Auth, Users: d.Users, Realm: adminRealm, CSRF: adminCSRF,
-		Media: d.Media, Content: d.Content, Home: d.Home,
+		Media: d.Media, Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
 	})
 	adminapi.RegisterHandlersWithOptions(r,
 		adminapi.NewStrictHandlerWithOptions(adminHandler, []adminapi.StrictMiddlewareFunc{requireAdmin}, adminapi.StrictGinServerOptions{

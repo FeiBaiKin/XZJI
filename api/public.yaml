@@ -21,6 +21,12 @@ tags:
     description: 站点与运营位
   - name: content
     description: 分类、标签与内容
+  - name: access
+    description: 解锁、下载与失效反馈
+  - name: comments
+    description: 评论
+  - name: membership
+    description: 会员
 paths:
   /health:
     get:
@@ -292,6 +298,12 @@ paths:
           description: 资源平台，如 Windows
           schema:
             type: string
+        - name: access
+          in: query
+          description: 按下载区解锁方式筛选资源：free 免费 / login 登录或评论 / vip 会员免费 / paid 付费
+          schema:
+            type: string
+            enum: [free, login, vip, paid]
         - name: q
           in: query
           description: 搜索关键词，匹配标题和摘要
@@ -448,7 +460,177 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /membership/levels:
+    get:
+      operationId: listMembershipLevels
+      summary: 会员等级
+      description: 只返回启用的等级，按 rank 从低到高。用于显示“VIP 免费”等标识和解锁提示。
+      tags: [membership]
+      responses:
+        "200":
+          description: 会员等级
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LevelList"
+
+  /posts/{id}/unlocked:
+    get:
+      operationId: getUnlockState
+      summary: 当前用户的解锁情况
+      description: |
+        返回隐藏块和下载区对当前访问者是否已解锁，已解锁的隐藏块附带内容。
+        每次请求实时判定，不能缓存；未登录也可以调用。
+      tags: [access]
+      parameters:
+        - $ref: "#/components/parameters/PostIdPath"
+      responses:
+        "200":
+          description: 解锁情况
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlockState"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/{id}/links/{linkId}/download:
+    post:
+      operationId: downloadLink
+      summary: 获取下载地址
+      description: |
+        判定下载区的解锁条件，并记录一次下载。靠会员身份免费下载时检查每日次数，
+        同一篇内容当天重复获取不重复计数。
+      tags: [access]
+      parameters:
+        - $ref: "#/components/parameters/PostIdPath"
+        - $ref: "#/components/parameters/LinkIdPath"
+      responses:
+        "200":
+          description: 下载地址
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DownloadLink"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /posts/{id}/links/{linkId}/reports:
+    post:
+      operationId: reportLink
+      summary: 反馈下载地址失效
+      tags: [access]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PostIdPath"
+        - $ref: "#/components/parameters/LinkIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkReportRequest"
+      responses:
+        "204":
+          description: 已收到
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /posts/{id}/comments:
+    get:
+      operationId: listComments
+      summary: 评论列表
+      description: 一级评论按时间倒序分页，回复按时间顺序放在 replies 里。登录用户还能看到自己待审核的评论。
+      tags: [comments]
+      parameters:
+        - $ref: "#/components/parameters/PostIdPath"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+      responses:
+        "200":
+          description: 评论分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentPage"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createComment
+      summary: 发表评论
+      description: 只允许纯文本。按后台设置的审核方式，可能需要审核后才显示。
+      tags: [comments]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PostIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: 发表成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
 components:
+  parameters:
+    PostIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    LinkIdPath:
+      name: linkId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
   securitySchemes:
     cookieAuth:
       type: apiKey
@@ -619,6 +801,8 @@ components:
           enum: [user, admin]
         emailVerified:
           type: boolean
+        membership:
+          $ref: "#/components/schemas/UserMembership"
         createdAt:
           type: string
           format: date-time
@@ -766,8 +950,10 @@ components:
 
     ResourceBrief:
       type: object
-      required: [platform, version, fileSize]
+      required: [platform, version, fileSize, downloadCond]
       properties:
+        downloadCond:
+          $ref: "#/components/schemas/Cond"
         platform:
           type: string
         version:
@@ -779,8 +965,15 @@ components:
 
     PostCard:
       type: object
-      required: [id, type, title, summary, category, tags, author, pinned, viewCount, commentCount, publishedAt]
+      required: [id, type, title, summary, category, tags, author, pinned, price, memberFreeRank, viewCount, commentCount, publishedAt]
       properties:
+        price:
+          type: integer
+          format: int64
+          description: 单独购买的原价（分），0 表示不能单独购买
+        memberFreeRank:
+          type: integer
+          description: 会员等级达到该值即免费，0 表示会员也不免费
         id:
           type: integer
           format: int64
@@ -875,8 +1068,15 @@ components:
 
     ResourceDetail:
       type: object
-      required: [platform, version, fileSize, attrs, changelog]
+      required: [platform, version, fileSize, attrs, changelog, downloadCond, links]
       properties:
+        downloadCond:
+          $ref: "#/components/schemas/Cond"
+        links:
+          type: array
+          description: 只有网盘名称，地址需要通过下载接口获取
+          items:
+            $ref: "#/components/schemas/LinkInfo"
         platform:
           type: string
         version:
@@ -897,8 +1097,23 @@ components:
 
     PostDetail:
       type: object
-      required: [id, type, title, summary, contentHtml, toc, category, tags, author, pinned, viewCount, commentCount, seoTitle, seoKeywords, seoDescription, publishedAt, updatedAt]
+      required: [id, type, title, summary, contentHtml, toc, category, tags, author, pinned, price, memberFreeRank, memberDiscount, hiddenBlocks, viewCount, commentCount, seoTitle, seoKeywords, seoDescription, publishedAt, updatedAt]
       properties:
+        price:
+          type: integer
+          format: int64
+          description: 单独购买的原价（分），0 表示不能单独购买
+        memberFreeRank:
+          type: integer
+          description: 会员等级达到该值即免费，0 表示会员也不免费
+        memberDiscount:
+          type: boolean
+          description: 等级不够免费的会员是否享受等级折扣
+        hiddenBlocks:
+          type: array
+          description: 隐藏块的条件和标题，内容通过 /posts/{id}/unlocked 获取
+          items:
+            $ref: "#/components/schemas/HiddenBlockInfo"
         id:
           type: integer
           format: int64
@@ -910,7 +1125,7 @@ components:
           type: string
         contentHtml:
           type: string
-          description: 已过滤的正文 HTML，只含公开内容
+          description: 已过滤的正文 HTML，只含公开内容；隐藏块的位置是 <div data-hidden-block="序号"></div> 占位符
         toc:
           type: array
           items:
@@ -988,6 +1203,256 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlatformCount"
+
+    Cond:
+      type: string
+      description: 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+      example: member:1
+
+    HiddenBlockInfo:
+      type: object
+      required: [seq, cond, title]
+      properties:
+        seq:
+          type: integer
+          description: 对应正文中 <div data-hidden-block="seq"></div> 占位符
+        cond:
+          $ref: "#/components/schemas/Cond"
+        title:
+          type: string
+          description: 未解锁时显示的标题，可能为空
+
+    LinkInfo:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: 百度网盘
+        status:
+          type: string
+          enum: [ok, broken]
+
+    MembershipLevel:
+      type: object
+      required: [id, name, rank, discountRate, dailyDownloadLimit]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: VIP
+        rank:
+          type: integer
+          description: 数字越大等级越高
+        discountRate:
+          type: integer
+          description: 购买付费内容的折扣，80 表示 8 折，100 表示不打折
+        dailyDownloadLimit:
+          type: integer
+          description: 每天靠会员身份免费下载的次数，0 表示不限
+
+    LevelList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MembershipLevel"
+
+    UserMembership:
+      type: object
+      required: [levelId, name, rank, expiresAt]
+      properties:
+        levelId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        rank:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: null 表示永久
+
+    Lock:
+      type: object
+      required: [reason, rank]
+      description: 未解锁时需要的操作
+      properties:
+        reason:
+          type: string
+          enum: [login, comment, paid, member]
+        rank:
+          type: integer
+          description: paid 时为会员免费等级（0 表示会员也不免费），member 时为要求的会员等级
+
+    ViewerState:
+      type: object
+      required: [loggedIn, privileged, memberRank, purchased, commented, dailyLimit]
+      properties:
+        loggedIn:
+          type: boolean
+        privileged:
+          type: boolean
+          description: 管理员或作者本人，所有内容可见
+        memberRank:
+          type: integer
+          description: 当前有效的会员等级，非会员为 0
+        purchased:
+          type: boolean
+        commented:
+          type: boolean
+          description: 在这篇内容下有审核通过的评论
+        dailyLimit:
+          type: integer
+          description: 每天靠会员身份免费下载的次数，0 表示不限
+
+    BlockState:
+      type: object
+      required: [seq, unlocked]
+      properties:
+        seq:
+          type: integer
+        unlocked:
+          type: boolean
+        contentHtml:
+          type: string
+          description: 已解锁时返回
+        lock:
+          $ref: "#/components/schemas/Lock"
+
+    DownloadState:
+      type: object
+      required: [unlocked, memberFree, usedToday]
+      properties:
+        unlocked:
+          type: boolean
+        memberFree:
+          type: boolean
+          description: 靠会员身份免费下载，计入每日次数
+        usedToday:
+          type: integer
+          description: 今天已用的会员免费下载次数，有每日次数限制时才统计
+        lock:
+          $ref: "#/components/schemas/Lock"
+
+    UnlockState:
+      type: object
+      required: [viewer, price, canBuy, hiddenBlocks]
+      properties:
+        viewer:
+          $ref: "#/components/schemas/ViewerState"
+        price:
+          type: integer
+          format: int64
+          description: 当前用户单独购买需要支付的金额（分），已按会员折扣计算
+        canBuy:
+          type: boolean
+          description: 是否可以单独购买
+        hiddenBlocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockState"
+        download:
+          $ref: "#/components/schemas/DownloadState"
+
+    DownloadLink:
+      type: object
+      required: [url, extractCode, unzipPassword, status]
+      properties:
+        url:
+          type: string
+        extractCode:
+          type: string
+        unzipPassword:
+          type: string
+        status:
+          type: string
+          enum: [ok, broken]
+
+    LinkReportRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 补充说明，可以为空
+          maxLength: 200
+
+    CommentAuthor:
+      type: object
+      required: [id, nickname]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        badge:
+          type: string
+          description: 有效会员的等级名称
+
+    Comment:
+      type: object
+      required: [id, content, status, createdAt, author, replies]
+      properties:
+        id:
+          type: integer
+          format: int64
+        content:
+          type: string
+          description: 纯文本，显示时需要转义
+        status:
+          type: string
+          enum: [approved, pending]
+          description: pending 只会出现在作者本人看到的列表里
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: "#/components/schemas/CommentAuthor"
+        replyTo:
+          $ref: "#/components/schemas/CommentAuthor"
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+
+    CommentPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        total:
+          type: integer
+          format: int64
+          description: 一级评论数
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: 2 到 1000 个字
+        replyToId:
+          type: integer
+          format: int64
+          description: 要回复的评论，回复楼中楼时传被回复的那条
 
     Error:
       type: object

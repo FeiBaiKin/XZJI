@@ -178,7 +178,7 @@ func runAdmin(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	svc, err := app.NewServices(db, mailer, log, cfg.Media)
+	svc, err := app.NewServices(db, mailer, log, cfg)
 	if err != nil {
 		return err
 	}

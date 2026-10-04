@@ -312,3 +312,9 @@ func (s *Service) Nicknames(ctx context.Context, ids []int64) (map[int64]string,
 	}
 	return out, nil
 }
+
+// Exists 用户不存在时返回 ErrNotFound。
+func (s *Service) Exists(ctx context.Context, id int64) error {
+	_, err := s.Get(ctx, id)
+	return err
+}

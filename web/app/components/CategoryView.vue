@@ -16,12 +16,21 @@ const top = computed(() => parent.value ?? category.value!)
 
 const platform = computed(() => typeof route.query.platform === 'string' ? route.query.platform : '')
 const sort = computed(() => route.query.sort === 'views' ? 'views' : 'latest')
+const accessOptions = [
+  { value: '', label: '全部' },
+  { value: 'free', label: '免费' },
+  { value: 'login', label: '登录下载' },
+  { value: 'vip', label: '会员免费' },
+  { value: 'paid', label: '付费' },
+] as const
+type Access = 'free' | 'login' | 'vip' | 'paid'
+const access = computed(() => accessOptions.find(o => o.value && o.value === route.query.access)?.value as Access | undefined)
 
 const { data, error } = await useAsyncData(
-  () => `category:${props.slug}:${props.page}:${platform.value}:${sort.value}`,
+  () => `category:${props.slug}:${props.page}:${platform.value}:${access.value ?? ''}:${sort.value}`,
   async () => {
     const [list, platforms, hot] = await Promise.all([
-      api.GET('/posts', { params: { query: { category: props.slug, platform: platform.value || undefined, sort: sort.value, page: props.page, pageSize } } }),
+      api.GET('/posts', { params: { query: { category: props.slug, platform: platform.value || undefined, access: access.value, sort: sort.value, page: props.page, pageSize } } }),
       api.GET('/platforms', { params: { query: { category: props.slug } } }),
       api.GET('/posts', { params: { query: { category: top.value.slug, sort: 'views', pageSize: 5 } } }),
     ])
@@ -35,7 +44,7 @@ if (props.page > 1 && !data.value?.list.items.length) throw createError({ status
 // 筛选和排序回到第一页；分页保留筛选条件
 const link = (slug: string, query: LocationQuery = {}, page = 1) => ({ path: categoryUrl(slug, page), query })
 const keep = (patch: Record<string, string | undefined>): LocationQuery => {
-  const q = { platform: platform.value || undefined, sort: sort.value === 'views' ? 'views' : undefined, ...patch }
+  const q = { platform: platform.value || undefined, access: access.value, sort: sort.value === 'views' ? 'views' : undefined, ...patch }
   return Object.fromEntries(Object.entries(q).filter((e): e is [string, string] => !!e[1]))
 }
 
@@ -93,6 +102,20 @@ useSeoMeta({
           </NuxtLink>
         </div>
       </div>
+      <div v-if="data.platforms.length || access" class="flex items-start gap-4 py-2.5 [&+&]:border-t [&+&]:border-dashed [&+&]:border-line">
+        <span class="w-10 shrink-0 text-[13.5px] leading-7 text-muted">价格</span>
+        <div class="flex flex-wrap gap-1.5">
+          <NuxtLink
+            v-for="o in accessOptions"
+            :key="o.value"
+            :to="link(slug, keep({ access: o.value || undefined }))"
+            class="rounded-[5px] px-3 text-[13.5px] leading-7"
+            :class="(access ?? '') === o.value ? 'bg-theme text-white' : 'hover:text-theme'"
+          >
+            {{ o.label }}
+          </NuxtLink>
+        </div>
+      </div>
     </section>
 
     <div class="mt-5 grid grid-cols-[minmax(0,1fr)_300px] items-start gap-5 max-[1100px]:grid-cols-1">
@@ -104,7 +127,7 @@ useSeoMeta({
             <NuxtLink :to="link(slug, keep({ sort: 'views' }))" class="rounded-[5px] px-2.5 py-[3px]" :class="sort === 'views' ? 'bg-theme-soft font-semibold text-theme' : 'hover:text-theme'">最多浏览</NuxtLink>
           </nav>
         </div>
-        <PostList :posts="data.list.items" :empty="platform ? `这个分类下还没有 ${platform} 平台的内容` : '这个分类下还没有内容'" />
+        <PostList :posts="data.list.items" :empty="platform || access ? '没有符合筛选条件的内容，换个条件试试' : '这个分类下还没有内容'" />
         <PagerNav :page="page" :total="data.list.total" :page-size="pageSize" :to="p => link(slug, keep({}), p)" />
       </div>
 

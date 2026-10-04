@@ -125,11 +125,19 @@ func postInput(b *adminapi.PostInput) content.PostInput {
 		Type: content.Type(b.Type), Title: b.Title, Summary: deref(b.Summary), ContentHTML: b.ContentHtml,
 		CoverID: b.CoverId, CategoryID: b.CategoryId, Tags: deref(b.Tags), Status: content.Status(b.Status),
 		Pinned: deref(b.Pinned), PublishedAt: b.PublishedAt,
+		Price: deref(b.Price), MemberFreeRank: deref(b.MemberFreeRank), MemberDiscount: deref(b.MemberDiscount),
 		SEOTitle: deref(b.SeoTitle), SEOKeywords: deref(b.SeoKeywords), SEODescription: deref(b.SeoDescription),
 	}
 	if r := b.Resource; r != nil {
 		in.Resource = &content.ResourceInput{
 			Platform: deref(r.Platform), Version: deref(r.Version), FileSize: deref(r.FileSize), IconID: r.IconId,
+			DownloadCond: deref(r.DownloadCond),
+		}
+		for _, l := range deref(r.Links) {
+			in.Resource.Links = append(in.Resource.Links, content.Link{
+				ID: deref(l.Id), Name: l.Name, URL: l.Url, ExtractCode: deref(l.ExtractCode),
+				UnzipPassword: deref(l.UnzipPassword), Status: string(deref(l.Status)),
+			})
 		}
 		for _, a := range deref(r.Attrs) {
 			in.Resource.Attrs = append(in.Resource.Attrs, content.Attr{Name: a.Name, Value: a.Value})
@@ -143,7 +151,8 @@ func postInput(b *adminapi.PostInput) content.PostInput {
 
 func toAdminPost(p *content.Post) adminapi.AdminPost {
 	out := adminapi.AdminPost{
-		Id: p.ID, Type: adminapi.PostType(p.Type), Title: p.Title, Summary: p.Summary, ContentHtml: p.ContentHTML,
+		Id: p.ID, Type: adminapi.PostType(p.Type), Title: p.Title, Summary: p.Summary, ContentHtml: p.EditorHTML(),
+		Price: p.Price, MemberFreeRank: p.MemberFreeRank, MemberDiscount: p.MemberDiscount,
 		Cover: toMedia(p.Cover), CategoryId: p.Category.ID, Tags: make([]string, len(p.Tags)),
 		Status: adminapi.PostStatus(p.Status), Pinned: p.Pinned,
 		SeoTitle: p.SEOTitle, SeoKeywords: p.SEOKeywords, SeoDescription: p.SEODescription,
@@ -161,6 +170,12 @@ func toAdminPost(p *content.Post) adminapi.AdminPost {
 		out.Resource = &adminapi.AdminResource{
 			Platform: r.Platform, Version: r.Version, FileSize: r.FileSize, Icon: toMedia(r.Icon),
 			Attrs: make([]adminapi.Attr, len(r.Attrs)), Changelog: make([]adminapi.ChangelogEntry, len(r.Changelog)),
+			DownloadCond: r.DownloadCond, Links: make([]adminapi.AdminLink, len(r.Links)),
+		}
+		for i, l := range r.Links {
+			out.Resource.Links[i] = adminapi.AdminLink{
+				Id: l.ID, Name: l.Name, Url: l.URL, ExtractCode: l.ExtractCode, UnzipPassword: l.UnzipPassword, Status: adminapi.LinkStatus(l.Status),
+			}
 		}
 		for i, a := range r.Attrs {
 			out.Resource.Attrs[i] = adminapi.Attr{Name: a.Name, Value: a.Value}

@@ -350,6 +350,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/membership/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 会员等级
+         * @description 只返回启用的等级，按 rank 从低到高。用于显示“VIP 免费”等标识和解锁提示。
+         */
+        get: operations["listMembershipLevels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/unlocked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 当前用户的解锁情况
+         * @description 返回隐藏块和下载区对当前访问者是否已解锁，已解锁的隐藏块附带内容。
+         *     每次请求实时判定，不能缓存；未登录也可以调用。
+         */
+        get: operations["getUnlockState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/links/{linkId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 获取下载地址
+         * @description 判定下载区的解锁条件，并记录一次下载。靠会员身份免费下载时检查每日次数，
+         *     同一篇内容当天重复获取不重复计数。
+         */
+        post: operations["downloadLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/links/{linkId}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 反馈下载地址失效 */
+        post: operations["reportLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 评论列表
+         * @description 一级评论按时间倒序分页，回复按时间顺序放在 replies 里。登录用户还能看到自己待审核的评论。
+         */
+        get: operations["listComments"];
+        put?: never;
+        /**
+         * 发表评论
+         * @description 只允许纯文本。按后台设置的审核方式，可能需要审核后才显示。
+         */
+        post: operations["createComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -427,6 +530,7 @@ export interface components {
             /** @enum {string} */
             role: "user" | "admin";
             emailVerified: boolean;
+            membership?: components["schemas"]["UserMembership"];
             /** Format: date-time */
             createdAt: string;
         };
@@ -505,12 +609,20 @@ export interface components {
             nickname: string;
         };
         ResourceBrief: {
+            downloadCond: components["schemas"]["Cond"];
             platform: string;
             version: string;
             fileSize: string;
             icon?: components["schemas"]["Image"];
         };
         PostCard: {
+            /**
+             * Format: int64
+             * @description 单独购买的原价（分），0 表示不能单独购买
+             */
+            price: number;
+            /** @description 会员等级达到该值即免费，0 表示会员也不免费 */
+            memberFreeRank: number;
             /** Format: int64 */
             id: number;
             type: components["schemas"]["PostType"];
@@ -557,6 +669,9 @@ export interface components {
             note: string;
         };
         ResourceDetail: {
+            downloadCond: components["schemas"]["Cond"];
+            /** @description 只有网盘名称，地址需要通过下载接口获取 */
+            links: components["schemas"]["LinkInfo"][];
             platform: string;
             version: string;
             fileSize: string;
@@ -566,12 +681,23 @@ export interface components {
             changelog: components["schemas"]["ChangelogEntry"][];
         };
         PostDetail: {
+            /**
+             * Format: int64
+             * @description 单独购买的原价（分），0 表示不能单独购买
+             */
+            price: number;
+            /** @description 会员等级达到该值即免费，0 表示会员也不免费 */
+            memberFreeRank: number;
+            /** @description 等级不够免费的会员是否享受等级折扣 */
+            memberDiscount: boolean;
+            /** @description 隐藏块的条件和标题，内容通过 /posts/{id}/unlocked 获取 */
+            hiddenBlocks: components["schemas"]["HiddenBlockInfo"][];
             /** Format: int64 */
             id: number;
             type: components["schemas"]["PostType"];
             title: string;
             summary: string;
-            /** @description 已过滤的正文 HTML，只含公开内容 */
+            /** @description 已过滤的正文 HTML，只含公开内容；隐藏块的位置是 <div data-hidden-block="序号"></div> 占位符 */
             contentHtml: string;
             toc: components["schemas"]["TocItem"][];
             cover?: components["schemas"]["Image"];
@@ -608,6 +734,151 @@ export interface components {
         };
         PlatformList: {
             items: components["schemas"]["PlatformCount"][];
+        };
+        /**
+         * @description 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+         * @example member:1
+         */
+        Cond: string;
+        HiddenBlockInfo: {
+            /** @description 对应正文中 <div data-hidden-block="seq"></div> 占位符 */
+            seq: number;
+            cond: components["schemas"]["Cond"];
+            /** @description 未解锁时显示的标题，可能为空 */
+            title: string;
+        };
+        LinkInfo: {
+            /** Format: int64 */
+            id: number;
+            /** @example 百度网盘 */
+            name: string;
+            /** @enum {string} */
+            status: "ok" | "broken";
+        };
+        MembershipLevel: {
+            /** Format: int64 */
+            id: number;
+            /** @example VIP */
+            name: string;
+            /** @description 数字越大等级越高 */
+            rank: number;
+            /** @description 购买付费内容的折扣，80 表示 8 折，100 表示不打折 */
+            discountRate: number;
+            /** @description 每天靠会员身份免费下载的次数，0 表示不限 */
+            dailyDownloadLimit: number;
+        };
+        LevelList: {
+            items: components["schemas"]["MembershipLevel"][];
+        };
+        UserMembership: {
+            /** Format: int64 */
+            levelId: number;
+            name: string;
+            rank: number;
+            /**
+             * Format: date-time
+             * @description null 表示永久
+             */
+            expiresAt: string | null;
+        };
+        /** @description 未解锁时需要的操作 */
+        Lock: {
+            /** @enum {string} */
+            reason: "login" | "comment" | "paid" | "member";
+            /** @description paid 时为会员免费等级（0 表示会员也不免费），member 时为要求的会员等级 */
+            rank: number;
+        };
+        ViewerState: {
+            loggedIn: boolean;
+            /** @description 管理员或作者本人，所有内容可见 */
+            privileged: boolean;
+            /** @description 当前有效的会员等级，非会员为 0 */
+            memberRank: number;
+            purchased: boolean;
+            /** @description 在这篇内容下有审核通过的评论 */
+            commented: boolean;
+            /** @description 每天靠会员身份免费下载的次数，0 表示不限 */
+            dailyLimit: number;
+        };
+        BlockState: {
+            seq: number;
+            unlocked: boolean;
+            /** @description 已解锁时返回 */
+            contentHtml?: string;
+            lock?: components["schemas"]["Lock"];
+        };
+        DownloadState: {
+            unlocked: boolean;
+            /** @description 靠会员身份免费下载，计入每日次数 */
+            memberFree: boolean;
+            /** @description 今天已用的会员免费下载次数，有每日次数限制时才统计 */
+            usedToday: number;
+            lock?: components["schemas"]["Lock"];
+        };
+        UnlockState: {
+            viewer: components["schemas"]["ViewerState"];
+            /**
+             * Format: int64
+             * @description 当前用户单独购买需要支付的金额（分），已按会员折扣计算
+             */
+            price: number;
+            /** @description 是否可以单独购买 */
+            canBuy: boolean;
+            hiddenBlocks: components["schemas"]["BlockState"][];
+            download?: components["schemas"]["DownloadState"];
+        };
+        DownloadLink: {
+            url: string;
+            extractCode: string;
+            unzipPassword: string;
+            /** @enum {string} */
+            status: "ok" | "broken";
+        };
+        LinkReportRequest: {
+            /** @description 补充说明，可以为空 */
+            reason?: string;
+        };
+        CommentAuthor: {
+            /** Format: int64 */
+            id: number;
+            nickname: string;
+            /** @description 有效会员的等级名称 */
+            badge?: string;
+        };
+        Comment: {
+            /** Format: int64 */
+            id: number;
+            /** @description 纯文本，显示时需要转义 */
+            content: string;
+            /**
+             * @description pending 只会出现在作者本人看到的列表里
+             * @enum {string}
+             */
+            status: "approved" | "pending";
+            /** Format: date-time */
+            createdAt: string;
+            author: components["schemas"]["CommentAuthor"];
+            replyTo?: components["schemas"]["CommentAuthor"];
+            replies: components["schemas"]["Comment"][];
+        };
+        CommentPage: {
+            items: components["schemas"]["Comment"][];
+            /**
+             * Format: int64
+             * @description 一级评论数
+             */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        CreateCommentRequest: {
+            /** @description 2 到 1000 个字 */
+            content: string;
+            /**
+             * Format: int64
+             * @description 要回复的评论，回复楼中楼时传被回复的那条
+             */
+            replyToId?: number;
         };
         Error: {
             error: {
@@ -680,7 +951,10 @@ export interface components {
             };
         };
     };
-    parameters: never;
+    parameters: {
+        PostIdPath: number;
+        LinkIdPath: number;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -999,6 +1273,8 @@ export interface operations {
                 tag?: string;
                 /** @description 资源平台，如 Windows */
                 platform?: string;
+                /** @description 按下载区解锁方式筛选资源：free 免费 / login 登录或评论 / vip 会员免费 / paid 付费 */
+                access?: "free" | "login" | "vip" | "paid";
                 /** @description 搜索关键词，匹配标题和摘要 */
                 q?: string;
                 /** @description latest 置顶在前，再按发布时间倒序；views 按浏览量倒序 */
@@ -1140,6 +1416,162 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    listMembershipLevels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 会员等级 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LevelList"];
+                };
+            };
+        };
+    };
+    getUnlockState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PostIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 解锁情况 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnlockState"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    downloadLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PostIdPath"];
+                linkId: components["parameters"]["LinkIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 下载地址 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    reportLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PostIdPath"];
+                linkId: components["parameters"]["LinkIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkReportRequest"];
+            };
+        };
+        responses: {
+            /** @description 已收到 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listComments: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["PostIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 评论分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentPage"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PostIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description 发表成功 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
 }

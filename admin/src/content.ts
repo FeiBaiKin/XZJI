@@ -56,3 +56,31 @@ export function loadCategories(force = false) {
 }
 
 export const typeLabel: Record<AdminSchemas['PostType'], string> = { article: '文章', resource: '资源' }
+
+export type Level = AdminSchemas['AdminLevel']
+
+// 会员等级在编辑页、用户管理和隐藏块里共用，修改等级后调用 loadLevels(true) 刷新
+export const levels = ref<Level[]>([])
+let levelsLoaded: Promise<void> | null = null
+export function loadLevels(force = false) {
+  if (force || !levelsLoaded) {
+    levelsLoaded = api.GET('/membership/levels').then(({ data }) => {
+      if (data) levels.value = data.items
+      else levelsLoaded = null
+    })
+  }
+  return levelsLoaded
+}
+
+// 解锁条件的选项：会员条件按等级列出，选中某等级表示该等级及以上可见
+export function condOptions(withPublic: boolean) {
+  return [
+    ...(withPublic ? [{ value: 'public', label: '公开' }] : []),
+    { value: 'login', label: '登录后可见' },
+    { value: 'comment', label: '评论审核通过后可见' },
+    { value: 'paid', label: '购买后可见' },
+    ...levels.value.map(l => ({ value: `member:${l.rank}`, label: `${l.name} 及以上会员可见` })),
+  ]
+}
+
+export const yuan = (fen: number) => (fen / 100).toFixed(2)

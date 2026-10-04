@@ -33,6 +33,42 @@ func (e ClientType) Valid() bool {
 	}
 }
 
+// Defines values for CommentStatus.
+const (
+	Approved CommentStatus = "approved"
+	Pending  CommentStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the CommentStatus enum.
+func (e CommentStatus) Valid() bool {
+	switch e {
+	case Approved:
+		return true
+	case Pending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DownloadLinkStatus.
+const (
+	DownloadLinkStatusBroken DownloadLinkStatus = "broken"
+	DownloadLinkStatusOk     DownloadLinkStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the DownloadLinkStatus enum.
+func (e DownloadLinkStatus) Valid() bool {
+	switch e {
+	case DownloadLinkStatusBroken:
+		return true
+	case DownloadLinkStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthDatabase.
 const (
 	Down HealthDatabase = "down"
@@ -53,16 +89,58 @@ func (e HealthDatabase) Valid() bool {
 
 // Defines values for HealthStatus.
 const (
-	Degraded HealthStatus = "degraded"
-	Ok       HealthStatus = "ok"
+	HealthStatusDegraded HealthStatus = "degraded"
+	HealthStatusOk       HealthStatus = "ok"
 )
 
 // Valid indicates whether the value is a known member of the HealthStatus enum.
 func (e HealthStatus) Valid() bool {
 	switch e {
-	case Degraded:
+	case HealthStatusDegraded:
 		return true
-	case Ok:
+	case HealthStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LinkInfoStatus.
+const (
+	LinkInfoStatusBroken LinkInfoStatus = "broken"
+	LinkInfoStatusOk     LinkInfoStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the LinkInfoStatus enum.
+func (e LinkInfoStatus) Valid() bool {
+	switch e {
+	case LinkInfoStatusBroken:
+		return true
+	case LinkInfoStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LockReason.
+const (
+	LockReasonComment LockReason = "comment"
+	LockReasonLogin   LockReason = "login"
+	LockReasonMember  LockReason = "member"
+	LockReasonPaid    LockReason = "paid"
+)
+
+// Valid indicates whether the value is a known member of the LockReason enum.
+func (e LockReason) Valid() bool {
+	switch e {
+	case LockReasonComment:
+		return true
+	case LockReasonLogin:
+		return true
+	case LockReasonMember:
+		return true
+	case LockReasonPaid:
 		return true
 	default:
 		return false
@@ -123,6 +201,30 @@ func (e UserRole) Valid() bool {
 	}
 }
 
+// Defines values for ListPostsParamsAccess.
+const (
+	ListPostsParamsAccessFree  ListPostsParamsAccess = "free"
+	ListPostsParamsAccessLogin ListPostsParamsAccess = "login"
+	ListPostsParamsAccessPaid  ListPostsParamsAccess = "paid"
+	ListPostsParamsAccessVip   ListPostsParamsAccess = "vip"
+)
+
+// Valid indicates whether the value is a known member of the ListPostsParamsAccess enum.
+func (e ListPostsParamsAccess) Valid() bool {
+	switch e {
+	case ListPostsParamsAccessFree:
+		return true
+	case ListPostsParamsAccessLogin:
+		return true
+	case ListPostsParamsAccessPaid:
+		return true
+	case ListPostsParamsAccessVip:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListPostsParamsSort.
 const (
 	Latest ListPostsParamsSort = "latest"
@@ -177,6 +279,17 @@ type Banner struct {
 	Title string `json:"title"`
 }
 
+// BlockState defines model for BlockState.
+type BlockState struct {
+	// ContentHtml 已解锁时返回
+	ContentHtml *string `json:"contentHtml,omitempty"`
+
+	// Lock 未解锁时需要的操作
+	Lock     *Lock `json:"lock,omitempty"`
+	Seq      int   `json:"seq"`
+	Unlocked bool  `json:"unlocked"`
+}
+
 // CategoryList defines model for CategoryList.
 type CategoryList struct {
 	Items []CategoryNode `json:"items"`
@@ -224,9 +337,83 @@ type ChangelogEntry struct {
 // ClientType web 使用 Cookie；app 在响应体中返回令牌
 type ClientType string
 
+// Comment defines model for Comment.
+type Comment struct {
+	Author CommentAuthor `json:"author"`
+
+	// Content 纯文本，显示时需要转义
+	Content   string         `json:"content"`
+	CreatedAt time.Time      `json:"createdAt"`
+	Id        int64          `json:"id"`
+	Replies   []Comment      `json:"replies"`
+	ReplyTo   *CommentAuthor `json:"replyTo,omitempty"`
+
+	// Status pending 只会出现在作者本人看到的列表里
+	Status CommentStatus `json:"status"`
+}
+
+// CommentStatus pending 只会出现在作者本人看到的列表里
+type CommentStatus string
+
+// CommentAuthor defines model for CommentAuthor.
+type CommentAuthor struct {
+	// Badge 有效会员的等级名称
+	Badge    *string `json:"badge,omitempty"`
+	Id       int64   `json:"id"`
+	Nickname string  `json:"nickname"`
+}
+
+// CommentPage defines model for CommentPage.
+type CommentPage struct {
+	Items    []Comment `json:"items"`
+	Page     int       `json:"page"`
+	PageSize int       `json:"pageSize"`
+
+	// Total 一级评论数
+	Total int64 `json:"total"`
+}
+
+// Cond 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+//
+// Example: member:1
+type Cond = string
+
+// CreateCommentRequest defines model for CreateCommentRequest.
+type CreateCommentRequest struct {
+	// Content 2 到 1000 个字
+	Content string `json:"content"`
+
+	// ReplyToId 要回复的评论，回复楼中楼时传被回复的那条
+	ReplyToId *int64 `json:"replyToId,omitempty"`
+}
+
 // CsrfToken defines model for CsrfToken.
 type CsrfToken struct {
 	Token string `json:"token"`
+}
+
+// DownloadLink defines model for DownloadLink.
+type DownloadLink struct {
+	ExtractCode   string             `json:"extractCode"`
+	Status        DownloadLinkStatus `json:"status"`
+	UnzipPassword string             `json:"unzipPassword"`
+	Url           string             `json:"url"`
+}
+
+// DownloadLinkStatus defines model for DownloadLink.Status.
+type DownloadLinkStatus string
+
+// DownloadState defines model for DownloadState.
+type DownloadState struct {
+	// Lock 未解锁时需要的操作
+	Lock *Lock `json:"lock,omitempty"`
+
+	// MemberFree 靠会员身份免费下载，计入每日次数
+	MemberFree bool `json:"memberFree"`
+	Unlocked   bool `json:"unlocked"`
+
+	// UsedToday 今天已用的会员免费下载次数，有每日次数限制时才统计
+	UsedToday int `json:"usedToday"`
 }
 
 // Error defines model for Error.
@@ -262,6 +449,20 @@ type HealthDatabase string
 // HealthStatus ok 表示全部正常；degraded 表示有依赖不可用
 type HealthStatus string
 
+// HiddenBlockInfo defines model for HiddenBlockInfo.
+type HiddenBlockInfo struct {
+	// Cond 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+	//
+	// Example: member:1
+	Cond Cond `json:"cond"`
+
+	// Seq 对应正文中 <div data-hidden-block="seq"></div> 占位符
+	Seq int `json:"seq"`
+
+	// Title 未解锁时显示的标题，可能为空
+	Title string `json:"title"`
+}
+
 // Home defines model for Home.
 type Home struct {
 	Banners []Banner `json:"banners"`
@@ -281,6 +482,39 @@ type Image struct {
 	Width  int     `json:"width"`
 }
 
+// LevelList defines model for LevelList.
+type LevelList struct {
+	Items []MembershipLevel `json:"items"`
+}
+
+// LinkInfo defines model for LinkInfo.
+type LinkInfo struct {
+	Id int64 `json:"id"`
+
+	// Name Example: 百度网盘
+	Name   string         `json:"name"`
+	Status LinkInfoStatus `json:"status"`
+}
+
+// LinkInfoStatus defines model for LinkInfo.Status.
+type LinkInfoStatus string
+
+// LinkReportRequest defines model for LinkReportRequest.
+type LinkReportRequest struct {
+	// Reason 补充说明，可以为空
+	Reason *string `json:"reason,omitempty"`
+}
+
+// Lock 未解锁时需要的操作
+type Lock struct {
+	// Rank paid 时为会员免费等级（0 表示会员也不免费），member 时为要求的会员等级
+	Rank   int        `json:"rank"`
+	Reason LockReason `json:"reason"`
+}
+
+// LockReason defines model for Lock.Reason.
+type LockReason string
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	// Client web 使用 Cookie；app 在响应体中返回令牌
@@ -290,6 +524,22 @@ type LoginRequest struct {
 
 	// Remember true 时 30 天内免登录；false 时关闭浏览器后失效
 	Remember *bool `json:"remember,omitempty"`
+}
+
+// MembershipLevel defines model for MembershipLevel.
+type MembershipLevel struct {
+	// DailyDownloadLimit 每天靠会员身份免费下载的次数，0 表示不限
+	DailyDownloadLimit int `json:"dailyDownloadLimit"`
+
+	// DiscountRate 购买付费内容的折扣，80 表示 8 折，100 表示不打折
+	DiscountRate int   `json:"discountRate"`
+	Id           int64 `json:"id"`
+
+	// Name Example: VIP
+	Name string `json:"name"`
+
+	// Rank 数字越大等级越高
+	Rank int `json:"rank"`
 }
 
 // PlatformCount defines model for PlatformCount.
@@ -305,17 +555,23 @@ type PlatformList struct {
 
 // PostCard defines model for PostCard.
 type PostCard struct {
-	Author       Author         `json:"author"`
-	Category     CategoryRef    `json:"category"`
-	CommentCount int            `json:"commentCount"`
-	Cover        *Image         `json:"cover,omitempty"`
-	Id           int64          `json:"id"`
-	Pinned       bool           `json:"pinned"`
-	PublishedAt  time.Time      `json:"publishedAt"`
-	Resource     *ResourceBrief `json:"resource,omitempty"`
-	Summary      string         `json:"summary"`
-	Tags         []TagRef       `json:"tags"`
-	Title        string         `json:"title"`
+	Author       Author      `json:"author"`
+	Category     CategoryRef `json:"category"`
+	CommentCount int         `json:"commentCount"`
+	Cover        *Image      `json:"cover,omitempty"`
+	Id           int64       `json:"id"`
+
+	// MemberFreeRank 会员等级达到该值即免费，0 表示会员也不免费
+	MemberFreeRank int  `json:"memberFreeRank"`
+	Pinned         bool `json:"pinned"`
+
+	// Price 单独购买的原价（分），0 表示不能单独购买
+	Price       int64          `json:"price"`
+	PublishedAt time.Time      `json:"publishedAt"`
+	Resource    *ResourceBrief `json:"resource,omitempty"`
+	Summary     string         `json:"summary"`
+	Tags        []TagRef       `json:"tags"`
+	Title       string         `json:"title"`
 
 	// Type article 文章；resource 资源
 	Type      PostType `json:"type"`
@@ -328,11 +584,23 @@ type PostDetail struct {
 	Category     CategoryRef `json:"category"`
 	CommentCount int         `json:"commentCount"`
 
-	// ContentHtml 已过滤的正文 HTML，只含公开内容
-	ContentHtml    string          `json:"contentHtml"`
-	Cover          *Image          `json:"cover,omitempty"`
-	Id             int64           `json:"id"`
-	Pinned         bool            `json:"pinned"`
+	// ContentHtml 已过滤的正文 HTML，只含公开内容；隐藏块的位置是 <div data-hidden-block="序号"></div> 占位符
+	ContentHtml string `json:"contentHtml"`
+	Cover       *Image `json:"cover,omitempty"`
+
+	// HiddenBlocks 隐藏块的条件和标题，内容通过 /posts/{id}/unlocked 获取
+	HiddenBlocks []HiddenBlockInfo `json:"hiddenBlocks"`
+	Id           int64             `json:"id"`
+
+	// MemberDiscount 等级不够免费的会员是否享受等级折扣
+	MemberDiscount bool `json:"memberDiscount"`
+
+	// MemberFreeRank 会员等级达到该值即免费，0 表示会员也不免费
+	MemberFreeRank int  `json:"memberFreeRank"`
+	Pinned         bool `json:"pinned"`
+
+	// Price 单独购买的原价（分），0 表示不能单独购买
+	Price          int64           `json:"price"`
 	PublishedAt    time.Time       `json:"publishedAt"`
 	Resource       *ResourceDetail `json:"resource,omitempty"`
 	SeoDescription string          `json:"seoDescription"`
@@ -393,10 +661,14 @@ type ResetPasswordRequest struct {
 
 // ResourceBrief defines model for ResourceBrief.
 type ResourceBrief struct {
-	FileSize string `json:"fileSize"`
-	Icon     *Image `json:"icon,omitempty"`
-	Platform string `json:"platform"`
-	Version  string `json:"version"`
+	// DownloadCond 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+	//
+	// Example: member:1
+	DownloadCond Cond   `json:"downloadCond"`
+	FileSize     string `json:"fileSize"`
+	Icon         *Image `json:"icon,omitempty"`
+	Platform     string `json:"platform"`
+	Version      string `json:"version"`
 }
 
 // ResourceDetail defines model for ResourceDetail.
@@ -405,10 +677,18 @@ type ResourceDetail struct {
 
 	// Changelog 新的在前
 	Changelog []ChangelogEntry `json:"changelog"`
-	FileSize  string           `json:"fileSize"`
-	Icon      *Image           `json:"icon,omitempty"`
-	Platform  string           `json:"platform"`
-	Version   string           `json:"version"`
+
+	// DownloadCond 解锁条件：public 公开 / login 登录 / comment 评论审核通过 / paid 购买或会员等级达到免费等级 / member:N 会员等级不低于 N
+	//
+	// Example: member:1
+	DownloadCond Cond   `json:"downloadCond"`
+	FileSize     string `json:"fileSize"`
+	Icon         *Image `json:"icon,omitempty"`
+
+	// Links 只有网盘名称，地址需要通过下载接口获取
+	Links    []LinkInfo `json:"links"`
+	Platform string     `json:"platform"`
+	Version  string     `json:"version"`
 }
 
 // SendEmailCodeRequest defines model for SendEmailCodeRequest.
@@ -456,6 +736,18 @@ type TocItem struct {
 	Text  string `json:"text"`
 }
 
+// UnlockState defines model for UnlockState.
+type UnlockState struct {
+	// CanBuy 是否可以单独购买
+	CanBuy       bool           `json:"canBuy"`
+	Download     *DownloadState `json:"download,omitempty"`
+	HiddenBlocks []BlockState   `json:"hiddenBlocks"`
+
+	// Price 当前用户单独购买需要支付的金额（分），已按会员折扣计算
+	Price  int64       `json:"price"`
+	Viewer ViewerState `json:"viewer"`
+}
+
 // UpdateProfileRequest defines model for UpdateProfileRequest.
 type UpdateProfileRequest struct {
 	Nickname string `json:"nickname"`
@@ -463,16 +755,49 @@ type UpdateProfileRequest struct {
 
 // User defines model for User.
 type User struct {
-	CreatedAt     time.Time `json:"createdAt"`
-	Email         string    `json:"email"`
-	EmailVerified bool      `json:"emailVerified"`
-	Id            int64     `json:"id"`
-	Nickname      string    `json:"nickname"`
-	Role          UserRole  `json:"role"`
+	CreatedAt     time.Time       `json:"createdAt"`
+	Email         string          `json:"email"`
+	EmailVerified bool            `json:"emailVerified"`
+	Id            int64           `json:"id"`
+	Membership    *UserMembership `json:"membership,omitempty"`
+	Nickname      string          `json:"nickname"`
+	Role          UserRole        `json:"role"`
 }
 
 // UserRole defines model for User.Role.
 type UserRole string
+
+// UserMembership defines model for UserMembership.
+type UserMembership struct {
+	// ExpiresAt null 表示永久
+	ExpiresAt *time.Time `json:"expiresAt"`
+	LevelId   int64      `json:"levelId"`
+	Name      string     `json:"name"`
+	Rank      int        `json:"rank"`
+}
+
+// ViewerState defines model for ViewerState.
+type ViewerState struct {
+	// Commented 在这篇内容下有审核通过的评论
+	Commented bool `json:"commented"`
+
+	// DailyLimit 每天靠会员身份免费下载的次数，0 表示不限
+	DailyLimit int  `json:"dailyLimit"`
+	LoggedIn   bool `json:"loggedIn"`
+
+	// MemberRank 当前有效的会员等级，非会员为 0
+	MemberRank int `json:"memberRank"`
+
+	// Privileged 管理员或作者本人，所有内容可见
+	Privileged bool `json:"privileged"`
+	Purchased  bool `json:"purchased"`
+}
+
+// LinkIdPath defines model for LinkIdPath.
+type LinkIdPath = int64
+
+// PostIdPath defines model for PostIdPath.
+type PostIdPath = int64
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
@@ -511,6 +836,9 @@ type ListPostsParams struct {
 	// Platform 资源平台，如 Windows
 	Platform *string `form:"platform,omitempty" json:"platform,omitempty"`
 
+	// Access 按下载区解锁方式筛选资源：free 免费 / login 登录或评论 / vip 会员免费 / paid 付费
+	Access *ListPostsParamsAccess `form:"access,omitempty" json:"access,omitempty"`
+
 	// Q 搜索关键词，匹配标题和摘要
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
@@ -520,8 +848,17 @@ type ListPostsParams struct {
 	PageSize *int                 `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 }
 
+// ListPostsParamsAccess defines parameters for ListPosts.
+type ListPostsParamsAccess string
+
 // ListPostsParamsSort defines parameters for ListPosts.
 type ListPostsParamsSort string
+
+// ListCommentsParams defines parameters for ListComments.
+type ListCommentsParams struct {
+	Page     *int `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *int `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
 
 // ListRelatedPostsParams defines parameters for ListRelatedPosts.
 type ListRelatedPostsParams struct {
@@ -550,6 +887,12 @@ type UpdateMeJSONRequestBody = UpdateProfileRequest
 
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
+
+// CreateCommentJSONRequestBody defines body for CreateComment for application/json ContentType.
+type CreateCommentJSONRequestBody = CreateCommentRequest
+
+// ReportLinkJSONRequestBody defines body for ReportLink for application/json ContentType.
+type ReportLinkJSONRequestBody = LinkReportRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -589,6 +932,9 @@ type ServerInterface interface {
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(c *gin.Context)
+	// ListMembershipLevels 会员等级
+	// (GET /membership/levels)
+	ListMembershipLevels(c *gin.Context)
 	// ListPlatforms 资源平台
 	// (GET /platforms)
 	ListPlatforms(c *gin.Context, params ListPlatformsParams)
@@ -598,9 +944,24 @@ type ServerInterface interface {
 	// GetPost 内容详情
 	// (GET /posts/{id})
 	GetPost(c *gin.Context, id int64)
+	// ListComments 评论列表
+	// (GET /posts/{id}/comments)
+	ListComments(c *gin.Context, id PostIdPath, params ListCommentsParams)
+	// CreateComment 发表评论
+	// (POST /posts/{id}/comments)
+	CreateComment(c *gin.Context, id PostIdPath)
+	// DownloadLink 获取下载地址
+	// (POST /posts/{id}/links/{linkId}/download)
+	DownloadLink(c *gin.Context, id PostIdPath, linkId LinkIdPath)
+	// ReportLink 反馈下载地址失效
+	// (POST /posts/{id}/links/{linkId}/reports)
+	ReportLink(c *gin.Context, id PostIdPath, linkId LinkIdPath)
 	// ListRelatedPosts 相关推荐
 	// (GET /posts/{id}/related)
 	ListRelatedPosts(c *gin.Context, id int64, params ListRelatedPostsParams)
+	// GetUnlockState 当前用户的解锁情况
+	// (GET /posts/{id}/unlocked)
+	GetUnlockState(c *gin.Context, id PostIdPath)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(c *gin.Context)
@@ -777,6 +1138,19 @@ func (siw *ServerInterfaceWrapper) ChangePassword(c *gin.Context) {
 	siw.Handler.ChangePassword(c)
 }
 
+// ListMembershipLevels operation middleware
+func (siw *ServerInterfaceWrapper) ListMembershipLevels(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMembershipLevels(c)
+}
+
 // ListPlatforms operation middleware
 func (siw *ServerInterfaceWrapper) ListPlatforms(c *gin.Context) {
 
@@ -842,6 +1216,14 @@ func (siw *ServerInterfaceWrapper) ListPosts(c *gin.Context) {
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "platform", c.Request.URL.Query(), &params.Platform, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter platform: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "access" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "access", c.Request.URL.Query(), &params.Access, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter access: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -912,6 +1294,143 @@ func (siw *ServerInterfaceWrapper) GetPost(c *gin.Context) {
 	siw.Handler.GetPost(c, id)
 }
 
+// ListComments operation middleware
+func (siw *ServerInterfaceWrapper) ListComments(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PostIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCommentsParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListComments(c, id, params)
+}
+
+// CreateComment operation middleware
+func (siw *ServerInterfaceWrapper) CreateComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PostIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateComment(c, id)
+}
+
+// DownloadLink operation middleware
+func (siw *ServerInterfaceWrapper) DownloadLink(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PostIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "linkId" -------------
+	var linkId LinkIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "linkId", c.Param("linkId"), &linkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter linkId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DownloadLink(c, id, linkId)
+}
+
+// ReportLink operation middleware
+func (siw *ServerInterfaceWrapper) ReportLink(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PostIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "linkId" -------------
+	var linkId LinkIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "linkId", c.Param("linkId"), &linkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter linkId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ReportLink(c, id, linkId)
+}
+
 // ListRelatedPosts operation middleware
 func (siw *ServerInterfaceWrapper) ListRelatedPosts(c *gin.Context) {
 
@@ -946,6 +1465,31 @@ func (siw *ServerInterfaceWrapper) ListRelatedPosts(c *gin.Context) {
 	}
 
 	siw.Handler.ListRelatedPosts(c, id, params)
+}
+
+// GetUnlockState operation middleware
+func (siw *ServerInterfaceWrapper) GetUnlockState(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id PostIdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetUnlockState(c, id)
 }
 
 // GetHome operation middleware
@@ -1059,6 +1603,12 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/tags", wrapper.ListTags)
 	router.GET(options.BaseURL+"/tags/:slug", wrapper.GetTag)
 	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
+	router.GET(options.BaseURL+"/membership/levels", wrapper.ListMembershipLevels)
+	router.GET(options.BaseURL+"/posts/:id/unlocked", wrapper.GetUnlockState)
+	router.POST(options.BaseURL+"/posts/:id/links/:linkId/download", wrapper.DownloadLink)
+	router.POST(options.BaseURL+"/posts/:id/links/:linkId/reports", wrapper.ReportLink)
+	router.GET(options.BaseURL+"/posts/:id/comments", wrapper.ListComments)
+	router.POST(options.BaseURL+"/posts/:id/comments", wrapper.CreateComment)
 }
 
 type BadRequestJSONResponse Error
@@ -1559,6 +2109,27 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type ListMembershipLevelsRequestObject struct {
+}
+
+type ListMembershipLevelsResponseObject interface {
+	VisitListMembershipLevelsResponse(w http.ResponseWriter) error
+}
+
+type ListMembershipLevels200JSONResponse LevelList
+
+func (response ListMembershipLevels200JSONResponse) VisitListMembershipLevelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPlatformsRequestObject struct {
 	Params ListPlatformsParams
 }
@@ -1681,6 +2252,289 @@ func (response GetPost404JSONResponse) VisitGetPostResponse(w http.ResponseWrite
 	return err
 }
 
+type ListCommentsRequestObject struct {
+	Id     PostIdPath `json:"id"`
+	Params ListCommentsParams
+}
+
+type ListCommentsResponseObject interface {
+	VisitListCommentsResponse(w http.ResponseWriter) error
+}
+
+type ListComments200JSONResponse CommentPage
+
+func (response ListComments200JSONResponse) VisitListCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListComments404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListComments404JSONResponse) VisitListCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCommentRequestObject struct {
+	Id   PostIdPath `json:"id"`
+	Body *CreateCommentJSONRequestBody
+}
+
+type CreateCommentResponseObject interface {
+	VisitCreateCommentResponse(w http.ResponseWriter) error
+}
+
+type CreateComment201JSONResponse Comment
+
+func (response CreateComment201JSONResponse) VisitCreateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateComment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateComment400JSONResponse) VisitCreateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateComment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateComment401JSONResponse) VisitCreateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateComment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateComment404JSONResponse) VisitCreateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateComment429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response CreateComment429JSONResponse) VisitCreateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadLinkRequestObject struct {
+	Id     PostIdPath `json:"id"`
+	LinkId LinkIdPath `json:"linkId"`
+}
+
+type DownloadLinkResponseObject interface {
+	VisitDownloadLinkResponse(w http.ResponseWriter) error
+}
+
+type DownloadLink200JSONResponse DownloadLink
+
+func (response DownloadLink200JSONResponse) VisitDownloadLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadLink401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadLink401JSONResponse) VisitDownloadLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadLink403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadLink403JSONResponse) VisitDownloadLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadLink404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadLink404JSONResponse) VisitDownloadLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadLink429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response DownloadLink429JSONResponse) VisitDownloadLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportLinkRequestObject struct {
+	Id     PostIdPath `json:"id"`
+	LinkId LinkIdPath `json:"linkId"`
+	Body   *ReportLinkJSONRequestBody
+}
+
+type ReportLinkResponseObject interface {
+	VisitReportLinkResponse(w http.ResponseWriter) error
+}
+
+type ReportLink204Response struct {
+}
+
+func (response ReportLink204Response) VisitReportLinkResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ReportLink400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReportLink400JSONResponse) VisitReportLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportLink401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReportLink401JSONResponse) VisitReportLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportLink404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReportLink404JSONResponse) VisitReportLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportLink409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReportLink409JSONResponse) VisitReportLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportLink429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response ReportLink429JSONResponse) VisitReportLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRelatedPostsRequestObject struct {
 	Id     int64 `json:"id"`
 	Params ListRelatedPostsParams
@@ -1707,6 +2561,42 @@ func (response ListRelatedPosts200JSONResponse) VisitListRelatedPostsResponse(w 
 type ListRelatedPosts404JSONResponse struct{ NotFoundJSONResponse }
 
 func (response ListRelatedPosts404JSONResponse) VisitListRelatedPostsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUnlockStateRequestObject struct {
+	Id PostIdPath `json:"id"`
+}
+
+type GetUnlockStateResponseObject interface {
+	VisitGetUnlockStateResponse(w http.ResponseWriter) error
+}
+
+type GetUnlockState200JSONResponse UnlockState
+
+func (response GetUnlockState200JSONResponse) VisitGetUnlockStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUnlockState404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetUnlockState404JSONResponse) VisitGetUnlockStateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -1835,6 +2725,9 @@ type StrictServerInterface interface {
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// ListMembershipLevels 会员等级
+	// (GET /membership/levels)
+	ListMembershipLevels(ctx context.Context, request ListMembershipLevelsRequestObject) (ListMembershipLevelsResponseObject, error)
 	// ListPlatforms 资源平台
 	// (GET /platforms)
 	ListPlatforms(ctx context.Context, request ListPlatformsRequestObject) (ListPlatformsResponseObject, error)
@@ -1844,9 +2737,24 @@ type StrictServerInterface interface {
 	// GetPost 内容详情
 	// (GET /posts/{id})
 	GetPost(ctx context.Context, request GetPostRequestObject) (GetPostResponseObject, error)
+	// ListComments 评论列表
+	// (GET /posts/{id}/comments)
+	ListComments(ctx context.Context, request ListCommentsRequestObject) (ListCommentsResponseObject, error)
+	// CreateComment 发表评论
+	// (POST /posts/{id}/comments)
+	CreateComment(ctx context.Context, request CreateCommentRequestObject) (CreateCommentResponseObject, error)
+	// DownloadLink 获取下载地址
+	// (POST /posts/{id}/links/{linkId}/download)
+	DownloadLink(ctx context.Context, request DownloadLinkRequestObject) (DownloadLinkResponseObject, error)
+	// ReportLink 反馈下载地址失效
+	// (POST /posts/{id}/links/{linkId}/reports)
+	ReportLink(ctx context.Context, request ReportLinkRequestObject) (ReportLinkResponseObject, error)
 	// ListRelatedPosts 相关推荐
 	// (GET /posts/{id}/related)
 	ListRelatedPosts(ctx context.Context, request ListRelatedPostsRequestObject) (ListRelatedPostsResponseObject, error)
+	// GetUnlockState 当前用户的解锁情况
+	// (GET /posts/{id}/unlocked)
+	GetUnlockState(ctx context.Context, request GetUnlockStateRequestObject) (GetUnlockStateResponseObject, error)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(ctx context.Context, request GetHomeRequestObject) (GetHomeResponseObject, error)
@@ -2245,6 +3153,30 @@ func (sh *strictHandler) ChangePassword(ctx *gin.Context) {
 	}
 }
 
+// ListMembershipLevels operation middleware
+func (sh *strictHandler) ListMembershipLevels(ctx *gin.Context) {
+	var request ListMembershipLevelsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMembershipLevels(ctx, request.(ListMembershipLevelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMembershipLevels")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMembershipLevelsResponseObject); ok {
+		if err := validResponse.VisitListMembershipLevelsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPlatforms operation middleware
 func (sh *strictHandler) ListPlatforms(ctx *gin.Context, params ListPlatformsParams) {
 	var request ListPlatformsRequestObject
@@ -2323,6 +3255,127 @@ func (sh *strictHandler) GetPost(ctx *gin.Context, id int64) {
 	}
 }
 
+// ListComments operation middleware
+func (sh *strictHandler) ListComments(ctx *gin.Context, id PostIdPath, params ListCommentsParams) {
+	var request ListCommentsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListComments(ctx, request.(ListCommentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListComments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListCommentsResponseObject); ok {
+		if err := validResponse.VisitListCommentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateComment operation middleware
+func (sh *strictHandler) CreateComment(ctx *gin.Context, id PostIdPath) {
+	var request CreateCommentRequestObject
+
+	request.Id = id
+
+	var body CreateCommentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateComment(ctx, request.(CreateCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateComment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCommentResponseObject); ok {
+		if err := validResponse.VisitCreateCommentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadLink operation middleware
+func (sh *strictHandler) DownloadLink(ctx *gin.Context, id PostIdPath, linkId LinkIdPath) {
+	var request DownloadLinkRequestObject
+
+	request.Id = id
+	request.LinkId = linkId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadLink(ctx, request.(DownloadLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadLink")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DownloadLinkResponseObject); ok {
+		if err := validResponse.VisitDownloadLinkResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReportLink operation middleware
+func (sh *strictHandler) ReportLink(ctx *gin.Context, id PostIdPath, linkId LinkIdPath) {
+	var request ReportLinkRequestObject
+
+	request.Id = id
+	request.LinkId = linkId
+
+	var body ReportLinkJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ReportLink(ctx, request.(ReportLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReportLink")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ReportLinkResponseObject); ok {
+		if err := validResponse.VisitReportLinkResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListRelatedPosts operation middleware
 func (sh *strictHandler) ListRelatedPosts(ctx *gin.Context, id int64, params ListRelatedPostsParams) {
 	var request ListRelatedPostsRequestObject
@@ -2343,6 +3396,32 @@ func (sh *strictHandler) ListRelatedPosts(ctx *gin.Context, id int64, params Lis
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ListRelatedPostsResponseObject); ok {
 		if err := validResponse.VisitListRelatedPostsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUnlockState operation middleware
+func (sh *strictHandler) GetUnlockState(ctx *gin.Context, id PostIdPath) {
+	var request GetUnlockStateRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUnlockState(ctx, request.(GetUnlockStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUnlockState")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetUnlockStateResponseObject); ok {
+		if err := validResponse.VisitGetUnlockStateResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

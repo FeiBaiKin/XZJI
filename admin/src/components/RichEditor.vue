@@ -7,6 +7,7 @@ import { TableKit } from '@tiptap/extension-table'
 import { Placeholder } from '@tiptap/extensions'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { uploadImage } from '../api'
+import { HiddenAwareDocument, HiddenBlock } from './hiddenBlock'
 
 const model = defineModel<string>({ required: true })
 
@@ -16,9 +17,12 @@ const editor = useEditor({
   content: model.value,
   extensions: [
     StarterKit.configure({
+      document: false,
       heading: { levels: [2, 3, 4] },
       link: { openOnClick: false, autolink: true, defaultProtocol: 'https' },
     }),
+    HiddenAwareDocument,
+    HiddenBlock,
     Image,
     TableKit.configure({ table: { resizable: false } }),
     Placeholder.configure({ placeholder: '开始写正文。图片可以直接粘贴或拖进来。' }),
@@ -128,6 +132,7 @@ function blockValue() {
       <span class="sep" />
       <button type="button" title="插入图片" @click="fileInput?.click()">图片</button>
       <button type="button" title="插入表格" @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">表格</button>
+      <button type="button" title="插入只有满足条件才能看到的内容" class="hidden-btn" @click="editor.chain().focus().insertHiddenBlock().run()">隐藏内容</button>
       <span class="sep" />
       <button type="button" title="撤销" :disabled="!editor.can().undo()" @click="editor.chain().focus().undo().run()">撤销</button>
       <button type="button" title="重做" :disabled="!editor.can().redo()" @click="editor.chain().focus().redo().run()">重做</button>
@@ -162,6 +167,7 @@ function blockValue() {
 .bar button.on { background: #EBF1FF; color: #2F6BFF; font-weight: 600; }
 .bar button:disabled { color: #C0C4CC; cursor: not-allowed; }
 .bar button.danger { color: #FF4D3D; }
+.bar button.hidden-btn { color: #E8590C; }
 .sep { width: 1px; height: 16px; margin: 0 4px; background: #E4E7ED; }
 .block { width: 90px; }
 .lang { width: 140px; }

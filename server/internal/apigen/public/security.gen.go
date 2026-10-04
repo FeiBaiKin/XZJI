@@ -5,6 +5,8 @@ package public
 // SecuredOperations 契约中声明了 security、需要登录才能调用的接口。
 var SecuredOperations = map[string]bool{
 	"ChangePassword": true,
+	"CreateComment":  true,
 	"GetMe":          true,
+	"ReportLink":     true,
 	"UpdateMe":       true,
 }

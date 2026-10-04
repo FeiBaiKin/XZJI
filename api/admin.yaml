@@ -21,6 +21,10 @@ tags:
     description: 图片上传
   - name: settings
     description: 站点设置
+  - name: comments
+    description: 评论审核
+  - name: membership
+    description: 会员等级
 paths:
   /auth/csrf:
     get:
@@ -649,6 +653,309 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /membership/levels:
+    get:
+      operationId: listMembershipLevels
+      summary: 会员等级列表
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 会员等级，按 rank 从低到高
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLevelList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createMembershipLevel
+      summary: 新建会员等级
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelInput"
+      responses:
+        "201":
+          description: 新建的等级
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLevel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /membership/levels/{id}:
+    put:
+      operationId: updateMembershipLevel
+      summary: 修改会员等级
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelInput"
+      responses:
+        "200":
+          description: 修改后的等级
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLevel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteMembershipLevel
+      summary: 删除会员等级
+      description: 还有用户是这个等级的会员时不能删除，可以改为停用。
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已删除
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /users/{id}/membership:
+    put:
+      operationId: setUserMembership
+      summary: 开通或修改用户的会员
+      description: 后台手动开通，不产生订单。操作会写入后台日志。
+      tags: [users]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetMembershipRequest"
+      responses:
+        "200":
+          description: 修改后的用户
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserItem"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteUserMembership
+      summary: 取消用户的会员
+      tags: [users]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已取消
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /comments:
+    get:
+      operationId: listComments
+      summary: 评论列表
+      tags: [comments]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/CommentStatus"
+        - name: postId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: keyword
+          in: query
+          description: 按评论内容模糊搜索
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 评论分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCommentPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /comments/{id}:
+    patch:
+      operationId: updateComment
+      summary: 审核评论
+      tags: [comments]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCommentRequest"
+      responses:
+        "200":
+          description: 修改后的评论
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteComment
+      summary: 删除评论
+      description: 删除一级评论时连同它下面的回复一起删除。
+      tags: [comments]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已删除
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /settings/comment:
+    get:
+      operationId: getCommentSettings
+      summary: 评论设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 评论设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updateCommentSettings
+      summary: 修改评论设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentSettings"
+      responses:
+        "200":
+          description: 修改后的评论设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /link-reports:
+    get:
+      operationId: listLinkReports
+      summary: 下载地址失效反馈
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ReportStatus"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 反馈分页列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkReportPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /link-reports/{id}:
+    patch:
+      operationId: updateLinkReport
+      summary: 处理失效反馈
+      description: 修改下载地址请到内容编辑页，这里只记录处理结果。
+      tags: [content]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLinkReportRequest"
+      responses:
+        "204":
+          description: 已处理
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     adminCookieAuth:
@@ -789,6 +1096,8 @@ components:
           type: string
           format: date-time
           nullable: true
+        membership:
+          $ref: "#/components/schemas/UserMembership"
         createdAt:
           type: string
           format: date-time
@@ -1097,8 +1406,15 @@ components:
 
     AdminResource:
       type: object
-      required: [platform, version, fileSize, attrs, changelog]
+      required: [platform, version, fileSize, attrs, changelog, downloadCond, links]
       properties:
+        downloadCond:
+          type: string
+          description: 下载区解锁条件：public / login / comment / paid / member:N
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLink"
         platform:
           type: string
         version:
@@ -1118,8 +1434,18 @@ components:
 
     AdminPost:
       type: object
-      required: [id, type, title, summary, contentHtml, categoryId, tags, status, pinned, seoTitle, seoKeywords, seoDescription, publishedAt, author, createdAt, updatedAt]
+      required: [id, type, title, summary, contentHtml, categoryId, tags, status, pinned, price, memberFreeRank, memberDiscount, seoTitle, seoKeywords, seoDescription, publishedAt, author, createdAt, updatedAt]
       properties:
+        price:
+          type: integer
+          format: int64
+          description: 单独购买的价格（分），0 表示不能单独购买
+        memberFreeRank:
+          type: integer
+          description: 会员等级达到该值即免费，0 表示会员也不免费
+        memberDiscount:
+          type: boolean
+          description: 等级不够免费的会员是否享受等级折扣
         id:
           type: integer
           format: int64
@@ -1168,6 +1494,14 @@ components:
     ResourceInput:
       type: object
       properties:
+        downloadCond:
+          type: string
+          description: 下载区解锁条件：public / login / comment / paid / member:N，默认 public
+        links:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/LinkInput"
         platform:
           type: string
         version:
@@ -1192,6 +1526,16 @@ components:
       type: object
       required: [type, title, contentHtml, categoryId, status]
       properties:
+        price:
+          type: integer
+          format: int64
+          description: 单独购买的价格（分），0 表示不能单独购买
+        memberFreeRank:
+          type: integer
+          description: 会员等级达到该值即免费，0 表示会员也不免费
+        memberDiscount:
+          type: boolean
+          description: 等级不够免费的会员是否享受等级折扣
         type:
           $ref: "#/components/schemas/PostType"
         title:
@@ -1201,7 +1545,9 @@ components:
           description: 留空时从正文开头截取
         contentHtml:
           type: string
-          description: 编辑器输出的 HTML，保存时按白名单过滤
+          description: |
+            编辑器输出的 HTML，保存时按白名单过滤。
+            隐藏块写成顶层的 <div data-type="hidden-block" data-cond="条件" data-title="标题">…</div>，保存时拆出单独存放
         coverId:
           type: integer
           format: int64
@@ -1304,6 +1650,264 @@ components:
         notice:
           type: string
           description: 公告，按换行分段
+
+    AdminLink:
+      type: object
+      required: [id, name, url, extractCode, unzipPassword, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        url:
+          type: string
+        extractCode:
+          type: string
+        unzipPassword:
+          type: string
+        status:
+          $ref: "#/components/schemas/LinkStatus"
+
+    LinkInput:
+      type: object
+      required: [name, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 已有地址的 ID，新地址不传
+        name:
+          type: string
+        url:
+          type: string
+          description: http(s)、magnet、ed2k 开头的地址
+        extractCode:
+          type: string
+        unzipPassword:
+          type: string
+        status:
+          $ref: "#/components/schemas/LinkStatus"
+
+    LinkStatus:
+      type: string
+      enum: [ok, broken]
+
+    AdminLevel:
+      type: object
+      required: [id, name, rank, discountRate, dailyDownloadLimit, status, memberCount]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        rank:
+          type: integer
+        discountRate:
+          type: integer
+        dailyDownloadLimit:
+          type: integer
+        status:
+          $ref: "#/components/schemas/LevelStatus"
+        memberCount:
+          type: integer
+          format: int64
+          description: 这个等级的会员数，包括已过期的
+
+    LevelStatus:
+      type: string
+      enum: [active, disabled]
+
+    AdminLevelList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLevel"
+
+    LevelInput:
+      type: object
+      required: [name, rank, discountRate, dailyDownloadLimit]
+      properties:
+        name:
+          type: string
+          example: VIP
+        rank:
+          type: integer
+          description: 1 到 99，数字越大等级越高
+        discountRate:
+          type: integer
+          description: 1 到 100，80 表示 8 折，100 表示不打折
+        dailyDownloadLimit:
+          type: integer
+          description: 每天靠会员身份免费下载的次数，0 表示不限
+        status:
+          $ref: "#/components/schemas/LevelStatus"
+
+    UserMembership:
+      type: object
+      required: [levelId, name, rank, expiresAt, active]
+      properties:
+        levelId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        rank:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: null 表示永久
+        active:
+          type: boolean
+          description: 是否在有效期内
+
+    SetMembershipRequest:
+      type: object
+      required: [levelId]
+      properties:
+        levelId:
+          type: integer
+          format: int64
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 不传或 null 表示永久
+
+    CommentStatus:
+      type: string
+      enum: [pending, approved, spam]
+
+    AdminComment:
+      type: object
+      required: [id, postId, postTitle, content, status, ip, createdAt, author]
+      properties:
+        id:
+          type: integer
+          format: int64
+        postId:
+          type: integer
+          format: int64
+        postTitle:
+          type: string
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+        content:
+          type: string
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+        ip:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: "#/components/schemas/Author"
+        replyTo:
+          $ref: "#/components/schemas/Author"
+
+    AdminCommentPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminComment"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    UpdateCommentRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+
+    CommentSettings:
+      type: object
+      required: [moderation]
+      properties:
+        moderation:
+          type: string
+          enum: [all, trusted, none]
+          description: all 全部先审核；trusted 有过审核通过评论的用户免审；none 不审核
+
+    ReportStatus:
+      type: string
+      enum: [pending, resolved, ignored]
+
+    LinkReport:
+      type: object
+      required: [id, postId, postTitle, linkId, linkName, linkUrl, linkStatus, user, reason, status, handledAt, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        postId:
+          type: integer
+          format: int64
+        postTitle:
+          type: string
+        linkId:
+          type: integer
+          format: int64
+        linkName:
+          type: string
+          description: 地址已被删除时为空
+        linkUrl:
+          type: string
+        linkStatus:
+          type: string
+        user:
+          $ref: "#/components/schemas/Author"
+        reason:
+          type: string
+        status:
+          $ref: "#/components/schemas/ReportStatus"
+        handledAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    LinkReportPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LinkReport"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    UpdateLinkReportRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/ReportStatus"
 
     Error:
       type: object

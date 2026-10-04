@@ -14,8 +14,10 @@ import (
 	"xzji/internal/buildinfo"
 	"xzji/internal/httpapi/authn"
 	"xzji/internal/module/auth"
+	"xzji/internal/module/comment"
 	"xzji/internal/module/content"
 	"xzji/internal/module/media"
+	"xzji/internal/module/membership"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	platformdb "xzji/internal/platform/db"
@@ -32,6 +34,8 @@ type Deps struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Members  *membership.Service
+	Comments *comment.Service
 }
 
 type Handler struct {

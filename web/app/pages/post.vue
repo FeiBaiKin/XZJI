@@ -69,6 +69,13 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
+// 解锁情况只在浏览器端获取；发表评论后重新获取（不审核时评论可见的内容会立即解锁）
+const { state: unlock, refresh: refreshUnlock } = useUnlock(id)
+const toast = useToast()
+function buy() {
+  toast.error('在线支付即将开放，现在可以开通会员免费查看')
+}
+
 const image = computed(() => post.value.cover?.url ?? res.value?.icon?.url)
 useSeoMeta({
   title: useSiteTitle(() => post.value.seoTitle || post.value.title),
@@ -100,18 +107,7 @@ useHead({ meta: [{ name: 'keywords', content: () => post.value.seoKeywords || un
         </div>
 
         <template v-if="res">
-          <div class="mt-5 grid grid-cols-[260px_minmax(0,1fr)] gap-[22px] rounded-card border border-line bg-soft p-[18px] max-md:grid-cols-1 max-md:p-3.5">
-            <PostCover :post="post" :tile="84" eager class="rounded-lg" />
-            <div class="min-w-0">
-              <b class="block text-[17px] leading-normal text-title">{{ post.title }}</b>
-              <p v-if="post.summary" class="mt-1 line-clamp-3 text-[13px] text-muted">{{ post.summary }}</p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span v-if="res.version" class="rounded-[5px] bg-theme-soft px-2.5 py-1 text-[12.5px] font-semibold text-theme">v{{ res.version }}</span>
-                <span v-if="res.platform" class="rounded-[5px] bg-[#E6F8F1] px-2.5 py-1 text-[12.5px] font-semibold text-[#0E9F78]">{{ res.platform }}</span>
-                <span v-if="res.fileSize" class="rounded-[5px] bg-white px-2.5 py-1 text-[12.5px] font-semibold text-title">{{ res.fileSize }}</span>
-              </div>
-            </div>
-          </div>
+          <ResourceBox :post="post" :state="unlock" @buy="buy" />
           <dl v-if="info.length" class="mt-3.5 grid grid-cols-4 overflow-hidden rounded-lg border border-line bg-white max-md:grid-cols-2">
             <!-- 单元格向左上投 1px 阴影作分隔线，最外一圈被容器裁掉 -->
             <div v-for="a in info" :key="a.name" class="px-3.5 py-[9px] text-[13px] shadow-[-1px_-1px_0_var(--color-line)]">
@@ -121,8 +117,7 @@ useHead({ meta: [{ name: 'keywords', content: () => post.value.seoKeywords || un
           </dl>
         </template>
 
-        <!-- 正文已在后端按白名单过滤，只含公开内容 -->
-        <div class="prose-x mt-2" v-html="post.contentHtml" />
+        <RichContent class="mt-4" :html="post.contentHtml" :blocks="post.hiddenBlocks" :state="unlock" :member-free-rank="post.memberFreeRank" @buy="buy" />
 
         <section v-if="res?.changelog.length" class="mt-2">
           <h2 id="changelog" class="relative mt-[26px] mb-2.5 scroll-mt-20 pl-3.5 text-[19px] leading-[1.4] font-bold text-title before:absolute before:inset-y-[3px] before:left-0 before:w-1 before:rounded before:bg-theme">更新日志</h2>
@@ -140,6 +135,8 @@ useHead({ meta: [{ name: 'keywords', content: () => post.value.seoKeywords || un
           <NuxtLink v-for="t in post.tags" :key="t.id" :to="tagUrl(t.slug)" class="rounded bg-soft px-[7px] py-1 text-xs leading-none text-muted hover:text-theme"># {{ t.name }}</NuxtLink>
         </div>
       </article>
+
+      <CommentSection :post-id="post.id" :count="post.commentCount" @changed="refreshUnlock" />
 
       <section v-if="data.related.length" class="card mt-5 px-[18px] pt-4 pb-[18px]">
         <h2 class="sec-title mb-3">相关推荐</h2>

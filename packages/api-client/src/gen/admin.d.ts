@@ -371,6 +371,159 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/membership/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 会员等级列表 */
+        get: operations["listMembershipLevels"];
+        put?: never;
+        /** 新建会员等级 */
+        post: operations["createMembershipLevel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/membership/levels/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 修改会员等级 */
+        put: operations["updateMembershipLevel"];
+        post?: never;
+        /**
+         * 删除会员等级
+         * @description 还有用户是这个等级的会员时不能删除，可以改为停用。
+         */
+        delete: operations["deleteMembershipLevel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 开通或修改用户的会员
+         * @description 后台手动开通，不产生订单。操作会写入后台日志。
+         */
+        put: operations["setUserMembership"];
+        post?: never;
+        /** 取消用户的会员 */
+        delete: operations["deleteUserMembership"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 评论列表 */
+        get: operations["listComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 删除评论
+         * @description 删除一级评论时连同它下面的回复一起删除。
+         */
+        delete: operations["deleteComment"];
+        options?: never;
+        head?: never;
+        /** 审核评论 */
+        patch: operations["updateComment"];
+        trace?: never;
+    };
+    "/settings/comment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 评论设置 */
+        get: operations["getCommentSettings"];
+        /** 修改评论设置 */
+        put: operations["updateCommentSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/link-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下载地址失效反馈 */
+        get: operations["listLinkReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/link-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 处理失效反馈
+         * @description 修改下载地址请到内容编辑页，这里只记录处理结果。
+         */
+        patch: operations["updateLinkReport"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -411,6 +564,7 @@ export interface components {
             inviterId?: number | null;
             /** Format: date-time */
             lastLoginAt?: string | null;
+            membership?: components["schemas"]["UserMembership"];
             /** Format: date-time */
             createdAt: string;
         };
@@ -578,6 +732,9 @@ export interface components {
             note: string;
         };
         AdminResource: {
+            /** @description 下载区解锁条件：public / login / comment / paid / member:N */
+            downloadCond: string;
+            links: components["schemas"]["AdminLink"][];
             platform: string;
             version: string;
             fileSize: string;
@@ -586,6 +743,15 @@ export interface components {
             changelog: components["schemas"]["ChangelogEntry"][];
         };
         AdminPost: {
+            /**
+             * Format: int64
+             * @description 单独购买的价格（分），0 表示不能单独购买
+             */
+            price: number;
+            /** @description 会员等级达到该值即免费，0 表示会员也不免费 */
+            memberFreeRank: number;
+            /** @description 等级不够免费的会员是否享受等级折扣 */
+            memberDiscount: boolean;
             /** Format: int64 */
             id: number;
             type: components["schemas"]["PostType"];
@@ -611,6 +777,9 @@ export interface components {
             resource?: components["schemas"]["AdminResource"];
         };
         ResourceInput: {
+            /** @description 下载区解锁条件：public / login / comment / paid / member:N，默认 public */
+            downloadCond?: string;
+            links?: components["schemas"]["LinkInput"][];
             platform?: string;
             version?: string;
             fileSize?: string;
@@ -621,11 +790,23 @@ export interface components {
             changelog?: components["schemas"]["ChangelogEntry"][];
         };
         PostInput: {
+            /**
+             * Format: int64
+             * @description 单独购买的价格（分），0 表示不能单独购买
+             */
+            price?: number;
+            /** @description 会员等级达到该值即免费，0 表示会员也不免费 */
+            memberFreeRank?: number;
+            /** @description 等级不够免费的会员是否享受等级折扣 */
+            memberDiscount?: boolean;
             type: components["schemas"]["PostType"];
             title: string;
             /** @description 留空时从正文开头截取 */
             summary?: string;
-            /** @description 编辑器输出的 HTML，保存时按白名单过滤 */
+            /**
+             * @description 编辑器输出的 HTML，保存时按白名单过滤。
+             *     隐藏块写成顶层的 <div data-type="hidden-block" data-cond="条件" data-title="标题">…</div>，保存时拆出单独存放
+             */
             contentHtml: string;
             /** Format: int64 */
             coverId?: number | null;
@@ -679,6 +860,149 @@ export interface components {
             banners: components["schemas"]["BannerInput"][];
             /** @description 公告，按换行分段 */
             notice: string;
+        };
+        AdminLink: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            url: string;
+            extractCode: string;
+            unzipPassword: string;
+            status: components["schemas"]["LinkStatus"];
+        };
+        LinkInput: {
+            /**
+             * Format: int64
+             * @description 已有地址的 ID，新地址不传
+             */
+            id?: number;
+            name: string;
+            /** @description http(s)、magnet、ed2k 开头的地址 */
+            url: string;
+            extractCode?: string;
+            unzipPassword?: string;
+            status?: components["schemas"]["LinkStatus"];
+        };
+        /** @enum {string} */
+        LinkStatus: "ok" | "broken";
+        AdminLevel: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            rank: number;
+            discountRate: number;
+            dailyDownloadLimit: number;
+            status: components["schemas"]["LevelStatus"];
+            /**
+             * Format: int64
+             * @description 这个等级的会员数，包括已过期的
+             */
+            memberCount: number;
+        };
+        /** @enum {string} */
+        LevelStatus: "active" | "disabled";
+        AdminLevelList: {
+            items: components["schemas"]["AdminLevel"][];
+        };
+        LevelInput: {
+            /** @example VIP */
+            name: string;
+            /** @description 1 到 99，数字越大等级越高 */
+            rank: number;
+            /** @description 1 到 100，80 表示 8 折，100 表示不打折 */
+            discountRate: number;
+            /** @description 每天靠会员身份免费下载的次数，0 表示不限 */
+            dailyDownloadLimit: number;
+            status?: components["schemas"]["LevelStatus"];
+        };
+        UserMembership: {
+            /** Format: int64 */
+            levelId: number;
+            name: string;
+            rank: number;
+            /**
+             * Format: date-time
+             * @description null 表示永久
+             */
+            expiresAt: string | null;
+            /** @description 是否在有效期内 */
+            active: boolean;
+        };
+        SetMembershipRequest: {
+            /** Format: int64 */
+            levelId: number;
+            /**
+             * Format: date-time
+             * @description 不传或 null 表示永久
+             */
+            expiresAt?: string | null;
+        };
+        /** @enum {string} */
+        CommentStatus: "pending" | "approved" | "spam";
+        AdminComment: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            postId: number;
+            postTitle: string;
+            /** Format: int64 */
+            parentId?: number | null;
+            content: string;
+            status: components["schemas"]["CommentStatus"];
+            ip: string;
+            /** Format: date-time */
+            createdAt: string;
+            author: components["schemas"]["Author"];
+            replyTo?: components["schemas"]["Author"];
+        };
+        AdminCommentPage: {
+            items: components["schemas"]["AdminComment"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        UpdateCommentRequest: {
+            status: components["schemas"]["CommentStatus"];
+        };
+        CommentSettings: {
+            /**
+             * @description all 全部先审核；trusted 有过审核通过评论的用户免审；none 不审核
+             * @enum {string}
+             */
+            moderation: "all" | "trusted" | "none";
+        };
+        /** @enum {string} */
+        ReportStatus: "pending" | "resolved" | "ignored";
+        LinkReport: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            postId: number;
+            postTitle: string;
+            /** Format: int64 */
+            linkId: number;
+            /** @description 地址已被删除时为空 */
+            linkName: string;
+            linkUrl: string;
+            linkStatus: string;
+            user: components["schemas"]["Author"];
+            reason: string;
+            status: components["schemas"]["ReportStatus"];
+            /** Format: date-time */
+            handledAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        LinkReportPage: {
+            items: components["schemas"]["LinkReport"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        UpdateLinkReportRequest: {
+            status: components["schemas"]["ReportStatus"];
         };
         Error: {
             error: {
@@ -1412,6 +1736,335 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMembershipLevels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 会员等级，按 rank 从低到高 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLevelList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createMembershipLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LevelInput"];
+            };
+        };
+        responses: {
+            /** @description 新建的等级 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLevel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateMembershipLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LevelInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的等级 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLevel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteMembershipLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    setUserMembership: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMembershipRequest"];
+            };
+        };
+        responses: {
+            /** @description 修改后的用户 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteUserMembership: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已取消 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listComments: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["CommentStatus"];
+                postId?: number;
+                /** @description 按评论内容模糊搜索 */
+                keyword?: string;
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 评论分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCommentPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description 修改后的评论 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminComment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCommentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 评论设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateCommentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentSettings"];
+            };
+        };
+        responses: {
+            /** @description 修改后的评论设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listLinkReports: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ReportStatus"];
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 反馈分页列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkReportPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateLinkReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLinkReportRequest"];
+            };
+        };
+        responses: {
+            /** @description 已处理 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

@@ -96,7 +96,8 @@
   .prose-x {
     @apply text-[15px] leading-[1.9] text-body break-words;
   }
-  .prose-x > * + * { margin-top: .9em; }
+  /* 正文会被隐藏块切成几段，段落间距按相邻块元素计算，不依赖直接子元素 */
+  .prose-x :where(p, ul, ol, pre, blockquote, table, figure, hr) + :where(p, ul, ol, pre, blockquote, table, figure, hr) { margin-top: .9em; }
   .prose-x h2 {
     @apply relative mt-[26px] mb-2.5 scroll-mt-20 pl-3.5 text-[19px] leading-[1.4] font-bold text-title before:absolute before:inset-y-[3px] before:left-0 before:w-1 before:rounded before:bg-theme;
   }

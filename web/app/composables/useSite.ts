@@ -1,4 +1,4 @@
-import type { CategoryNode } from '~/utils/content'
+import type { CategoryNode, MembershipLevel } from '~/utils/content'
 
 // 分类树在页头、页脚和各列表页共用，同一次渲染只请求一次
 export async function useCategories() {
@@ -55,4 +55,29 @@ export function useNavActive(to: MaybeRefOrGetter<string | undefined>) {
     const v = toValue(to)
     state.value = v ? { path: route.path, to: v } : null
   })
+}
+
+// 会员等级用于卡片角标和解锁提示，与分类一样由页头先加载
+export async function useLevels() {
+  const api = useApi()
+  const { data } = await useAsyncData('levels', async () => {
+    const { data } = await api.GET('/membership/levels')
+    return data?.items ?? []
+  }, { default: () => [] as MembershipLevel[] })
+  return levelHelpers(data)
+}
+
+export function useLevelMap() {
+  const { data } = useNuxtData<MembershipLevel[]>('levels')
+  return levelHelpers(computed(() => data.value ?? []))
+}
+
+function levelHelpers(levels: Ref<MembershipLevel[]>) {
+  return {
+    levels,
+    // 某个等级的名称；后台删掉了这个等级时退回“会员”
+    levelName: (rank: number) => levels.value.find(l => l.rank === rank)?.name ?? '会员',
+    // 等级不低于 rank 的所有等级，用于“VIP 免费、SVIP 免费”
+    levelsFrom: (rank: number) => levels.value.filter(l => l.rank >= rank),
+  }
 }

@@ -42,7 +42,8 @@ func (h *Handler) ListPosts(ctx context.Context, req pubapi.ListPostsRequestObje
 	p := req.Params
 	q := content.PublicQuery{
 		Type: content.Type(deref(p.Type)), Category: deref(p.Category), Tag: deref(p.Tag), Platform: deref(p.Platform),
-		Keyword: limitRunes(deref(p.Q), 50), Sort: string(deref(p.Sort)), Page: deref(p.Page), PageSize: deref(p.PageSize),
+		Access: string(deref(p.Access)), Keyword: limitRunes(deref(p.Q), 50), Sort: string(deref(p.Sort)),
+		Page: deref(p.Page), PageSize: deref(p.PageSize),
 	}
 	res, err := h.Content.ListPublished(ctx, q)
 	if err != nil {
@@ -60,17 +61,26 @@ func (h *Handler) GetPost(ctx context.Context, req pubapi.GetPostRequestObject) 
 		Id: p.ID, Type: pubapi.PostType(p.Type), Title: p.Title, Summary: p.Summary, ContentHtml: p.ContentHTML,
 		Toc: make([]pubapi.TocItem, len(p.TOC)), Cover: toImage(p.Cover), Category: toCategoryRef(p.Category),
 		Tags: toTagRefs(p.Tags), Author: pubapi.Author{Id: p.Author.ID, Nickname: p.Author.Nickname},
-		Pinned: p.Pinned, ViewCount: p.ViewCount, CommentCount: p.CommentCount,
+		Pinned: p.Pinned, Price: p.Price, MemberFreeRank: p.MemberFreeRank, MemberDiscount: p.MemberDiscount,
+		HiddenBlocks: make([]pubapi.HiddenBlockInfo, len(p.HiddenBlocks)), ViewCount: p.ViewCount, CommentCount: p.CommentCount,
 		SeoTitle: p.SEOTitle, SeoKeywords: p.SEOKeywords, SeoDescription: p.SEODescription,
 		PublishedAt: deref(p.PublishedAt), UpdatedAt: p.UpdatedAt,
 	}
 	for i, t := range p.TOC {
 		d.Toc[i] = pubapi.TocItem{Id: t.ID, Text: t.Text, Level: t.Level}
 	}
+	// 隐藏块只返回条件和标题，内容由 /posts/{id}/unlocked 按身份判定后返回
+	for i, b := range p.HiddenBlocks {
+		d.HiddenBlocks[i] = pubapi.HiddenBlockInfo{Seq: b.Seq, Cond: b.Cond, Title: b.Title}
+	}
 	if r := p.Resource; r != nil {
 		d.Resource = &pubapi.ResourceDetail{
 			Platform: r.Platform, Version: r.Version, FileSize: r.FileSize, Icon: toImage(r.Icon),
 			Attrs: make([]pubapi.Attr, len(r.Attrs)), Changelog: make([]pubapi.ChangelogEntry, len(r.Changelog)),
+			DownloadCond: r.DownloadCond, Links: make([]pubapi.LinkInfo, len(r.Links)),
+		}
+		for i, l := range r.Links {
+			d.Resource.Links[i] = pubapi.LinkInfo{Id: l.ID, Name: l.Name, Status: pubapi.LinkInfoStatus(l.Status)}
 		}
 		for i, a := range r.Attrs {
 			d.Resource.Attrs[i] = pubapi.Attr{Name: a.Name, Value: a.Value}
@@ -171,10 +181,13 @@ func toCards(posts []*content.Post) []pubapi.PostCard {
 			Id: p.ID, Type: pubapi.PostType(p.Type), Title: p.Title, Summary: p.Summary, Cover: toImage(p.Cover),
 			Category: toCategoryRef(p.Category), Tags: toTagRefs(p.Tags),
 			Author: pubapi.Author{Id: p.Author.ID, Nickname: p.Author.Nickname},
-			Pinned: p.Pinned, ViewCount: p.ViewCount, CommentCount: p.CommentCount, PublishedAt: deref(p.PublishedAt),
+			Pinned: p.Pinned, Price: p.Price, MemberFreeRank: p.MemberFreeRank,
+			ViewCount: p.ViewCount, CommentCount: p.CommentCount, PublishedAt: deref(p.PublishedAt),
 		}
 		if r := p.Resource; r != nil {
-			out[i].Resource = &pubapi.ResourceBrief{Platform: r.Platform, Version: r.Version, FileSize: r.FileSize, Icon: toImage(r.Icon)}
+			out[i].Resource = &pubapi.ResourceBrief{
+				Platform: r.Platform, Version: r.Version, FileSize: r.FileSize, Icon: toImage(r.Icon), DownloadCond: r.DownloadCond,
+			}
 		}
 	}
 	return out

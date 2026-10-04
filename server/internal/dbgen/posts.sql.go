@@ -13,8 +13,8 @@ import (
 const createPost = `-- name: CreatePost :execlastid
 INSERT INTO posts (
   type, title, summary, summary_auto, content_html, toc, cover_media_id, category_id, author_id,
-  status, pinned, seo_title, seo_keywords, seo_description, published_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  status, pinned, price, member_free_rank, member_discount, seo_title, seo_keywords, seo_description, published_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreatePostParams struct {
@@ -29,6 +29,9 @@ type CreatePostParams struct {
 	AuthorID       int64
 	Status         string
 	Pinned         bool
+	Price          int64
+	MemberFreeRank int32
+	MemberDiscount bool
 	SeoTitle       string
 	SeoKeywords    string
 	SeoDescription string
@@ -48,6 +51,9 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (int64, 
 		arg.AuthorID,
 		arg.Status,
 		arg.Pinned,
+		arg.Price,
+		arg.MemberFreeRank,
+		arg.MemberDiscount,
 		arg.SeoTitle,
 		arg.SeoKeywords,
 		arg.SeoDescription,
@@ -78,7 +84,7 @@ func (q *Queries) DeleteResource(ctx context.Context, postID int64) error {
 }
 
 const getPost = `-- name: GetPost :one
-SELECT id, type, title, summary, summary_auto, content_html, toc, cover_media_id, category_id, author_id, status, pinned, view_count, comment_count, seo_title, seo_keywords, seo_description, published_at, created_at, updated_at FROM posts WHERE id = ?
+SELECT id, type, title, summary, summary_auto, content_html, toc, cover_media_id, category_id, author_id, status, pinned, view_count, comment_count, seo_title, seo_keywords, seo_description, published_at, created_at, updated_at, price, member_free_rank, member_discount FROM posts WHERE id = ?
 `
 
 func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
@@ -105,12 +111,15 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Price,
+		&i.MemberFreeRank,
+		&i.MemberDiscount,
 	)
 	return i, err
 }
 
 const getResource = `-- name: GetResource :one
-SELECT post_id, platform, version, file_size, icon_media_id, attrs, changelog FROM resources WHERE post_id = ?
+SELECT post_id, platform, version, file_size, icon_media_id, attrs, changelog, download_cond FROM resources WHERE post_id = ?
 `
 
 func (q *Queries) GetResource(ctx context.Context, postID int64) (Resource, error) {
@@ -124,6 +133,7 @@ func (q *Queries) GetResource(ctx context.Context, postID int64) (Resource, erro
 		&i.IconMediaID,
 		&i.Attrs,
 		&i.Changelog,
+		&i.DownloadCond,
 	)
 	return i, err
 }
@@ -158,7 +168,7 @@ func (q *Queries) ListPlatformNames(ctx context.Context) ([]string, error) {
 const updatePost = `-- name: UpdatePost :exec
 UPDATE posts
 SET type = ?, title = ?, summary = ?, summary_auto = ?, content_html = ?, toc = ?, cover_media_id = ?, category_id = ?,
-    status = ?, pinned = ?, seo_title = ?, seo_keywords = ?, seo_description = ?, published_at = ?
+    status = ?, pinned = ?, price = ?, member_free_rank = ?, member_discount = ?, seo_title = ?, seo_keywords = ?, seo_description = ?, published_at = ?
 WHERE id = ?
 `
 
@@ -173,6 +183,9 @@ type UpdatePostParams struct {
 	CategoryID     int64
 	Status         string
 	Pinned         bool
+	Price          int64
+	MemberFreeRank int32
+	MemberDiscount bool
 	SeoTitle       string
 	SeoKeywords    string
 	SeoDescription string
@@ -192,6 +205,9 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
 		arg.CategoryID,
 		arg.Status,
 		arg.Pinned,
+		arg.Price,
+		arg.MemberFreeRank,
+		arg.MemberDiscount,
 		arg.SeoTitle,
 		arg.SeoKeywords,
 		arg.SeoDescription,
@@ -220,21 +236,23 @@ func (q *Queries) UpdatePostStatus(ctx context.Context, arg UpdatePostStatusPara
 }
 
 const upsertResource = `-- name: UpsertResource :exec
-INSERT INTO resources (post_id, platform, version, file_size, icon_media_id, attrs, changelog)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO resources (post_id, platform, version, file_size, icon_media_id, attrs, changelog, download_cond)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON DUPLICATE KEY UPDATE
   platform = VALUES(platform), version = VALUES(version), file_size = VALUES(file_size),
-  icon_media_id = VALUES(icon_media_id), attrs = VALUES(attrs), changelog = VALUES(changelog)
+  icon_media_id = VALUES(icon_media_id), attrs = VALUES(attrs), changelog = VALUES(changelog),
+  download_cond = VALUES(download_cond)
 `
 
 type UpsertResourceParams struct {
-	PostID      int64
-	Platform    string
-	Version     string
-	FileSize    string
-	IconMediaID sql.NullInt64
-	Attrs       []byte
-	Changelog   []byte
+	PostID       int64
+	Platform     string
+	Version      string
+	FileSize     string
+	IconMediaID  sql.NullInt64
+	Attrs        []byte
+	Changelog    []byte
+	DownloadCond string
 }
 
 func (q *Queries) UpsertResource(ctx context.Context, arg UpsertResourceParams) error {
@@ -246,6 +264,7 @@ func (q *Queries) UpsertResource(ctx context.Context, arg UpsertResourceParams) 
 		arg.IconMediaID,
 		arg.Attrs,
 		arg.Changelog,
+		arg.DownloadCond,
 	)
 	return err
 }

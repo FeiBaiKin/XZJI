@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"xzji/internal/dbgen"
+	"xzji/internal/module/access"
 	"xzji/internal/module/media"
 	platformdb "xzji/internal/platform/db"
 	"xzji/internal/platform/errs"
@@ -20,6 +21,10 @@ var ErrStatusChanged = errs.New(errs.KindConflict, "STATUS_CHANGED", "内容状�
 const (
 	maxAttrs     = 20
 	maxChangelog = 50
+	maxHidden    = 20
+	maxLinks     = 10
+	// maxPrice 单篇内容价格上限（分）
+	maxPrice = 9_999_900
 )
 
 type PostInput struct {
@@ -32,6 +37,9 @@ type PostInput struct {
 	Tags           []string
 	Status         Status
 	Pinned         bool
+	Price          int64
+	MemberFreeRank int
+	MemberDiscount bool
 	PublishedAt    *time.Time
 	SEOTitle       string
 	SEOKeywords    string
@@ -40,12 +48,15 @@ type PostInput struct {
 }
 
 type ResourceInput struct {
-	Platform  string
-	Version   string
-	FileSize  string
-	IconID    *int64
-	Attrs     []Attr
-	Changelog []ChangelogEntry
+	Platform     string
+	Version      string
+	FileSize     string
+	IconID       *int64
+	Attrs        []Attr
+	Changelog    []ChangelogEntry
+	DownloadCond string
+	// Links 中 ID 为 0 的是新地址；已有地址保留 ID，失效反馈和下载记录才能对得上
+	Links []Link
 }
 
 // postValues 校验和规范化后的待写入数据。
@@ -53,6 +64,8 @@ type postValues struct {
 	post     dbgen.CreatePostParams
 	tags     []string
 	resource *dbgen.UpsertResourceParams
+	hidden   []HiddenBlock
+	links    []Link
 }
 
 func (s *Service) preparePost(ctx context.Context, in PostInput, existing *dbgen.Post) (postValues, error) {
@@ -82,11 +95,36 @@ func (s *Service) preparePost(ctx context.Context, in PostInput, existing *dbgen
 	}
 	p.CategoryID = in.CategoryID
 
-	body, err := processHTML(in.ContentHTML, s.media.BaseURL())
+	public, hidden, err := splitHidden(in.ContentHTML)
+	if err != nil {
+		return v, err
+	}
+	if len(hidden) > maxHidden {
+		return v, ErrTooManyHidden
+	}
+	body, err := processHTML(public, s.media.BaseURL(), "h-")
 	if err != nil {
 		return v, err
 	}
 	p.ContentHtml = body.HTML
+	conds := make([]access.Cond, 0, len(hidden)+1)
+	for i, h := range hidden {
+		cond, err := access.ParseCond(h.Cond)
+		if err != nil {
+			return v, err
+		}
+		title, err := checkLen("隐藏内容标题", h.Title, 64)
+		if err != nil {
+			return v, err
+		}
+		// 隐藏块里的标题不进目录，锚点加上块序号避免和正文重复
+		inner, err := processHTML(h.Inner, s.media.BaseURL(), fmt.Sprintf("hb%d-", i+1))
+		if err != nil {
+			return v, err
+		}
+		v.hidden = append(v.hidden, HiddenBlock{Seq: i + 1, Cond: cond.String(), Title: title, ContentHTML: inner.HTML})
+		conds = append(conds, cond)
+	}
 	if body.TOC == nil {
 		body.TOC = []TOCItem{}
 	}
@@ -113,6 +151,13 @@ func (s *Service) preparePost(ctx context.Context, in PostInput, existing *dbgen
 	}
 	p.Pinned = in.Pinned
 	p.CoverMediaID = nullInt64(in.CoverID)
+	if in.Price < 0 || in.Price > maxPrice {
+		return v, ErrInvalidPrice
+	}
+	if in.MemberFreeRank < 0 || in.MemberFreeRank > access.MaxRank {
+		return v, ErrInvalidRank
+	}
+	p.Price, p.MemberFreeRank, p.MemberDiscount = in.Price, int32(in.MemberFreeRank), in.MemberDiscount
 
 	switch {
 	case in.PublishedAt != nil:
@@ -132,7 +177,21 @@ func (s *Service) preparePost(ctx context.Context, in PostInput, existing *dbgen
 		if v.resource, err = prepareResource(r); err != nil {
 			return v, err
 		}
+		cond, err := access.ParseCond(v.resource.DownloadCond)
+		if err != nil {
+			return v, err
+		}
+		conds = append(conds, cond)
+		if v.links, err = prepareLinks(r.Links); err != nil {
+			return v, err
+		}
 		mediaIDs = append(mediaIDs, v.resource.IconMediaID.Int64)
+	}
+	// 没有价格也没有会员免费等级时，“购买后可见”的部分除了管理员谁都看不到
+	for _, c := range conds {
+		if c.Kind == access.KindPaid && in.Price == 0 && in.MemberFreeRank == 0 {
+			return v, ErrPaidNoPrice
+		}
 	}
 	found, err := s.media.GetMany(ctx, mediaIDs)
 	if err != nil {
@@ -146,8 +205,54 @@ func (s *Service) preparePost(ctx context.Context, in PostInput, existing *dbgen
 	return v, nil
 }
 
+// linkSchemes 允许的下载地址协议，网盘分享链接都是 https，种子资源常用 magnet 和 ed2k
+var linkSchemes = []string{"https://", "http://", "magnet:", "ed2k://"}
+
+func prepareLinks(in []Link) ([]Link, error) {
+	out := make([]Link, 0, len(in))
+	for _, l := range in {
+		var err error
+		if l.Name, err = checkLen("网盘名称", l.Name, 64); err != nil {
+			return nil, err
+		}
+		l.URL = strings.TrimSpace(l.URL)
+		if l.Name == "" && l.URL == "" {
+			continue
+		}
+		ok := l.Name != "" && len(l.URL) <= 1024
+		if ok {
+			ok = false
+			for _, sc := range linkSchemes {
+				if strings.HasPrefix(strings.ToLower(l.URL), sc) {
+					ok = true
+				}
+			}
+		}
+		if !ok {
+			return nil, ErrInvalidLink
+		}
+		if l.ExtractCode, err = checkLen("提取码", l.ExtractCode, 32); err != nil {
+			return nil, err
+		}
+		if l.UnzipPassword, err = checkLen("解压密码", l.UnzipPassword, 64); err != nil {
+			return nil, err
+		}
+		if l.Status != "broken" {
+			l.Status = "ok"
+		}
+		out = append(out, l)
+	}
+	if len(out) > maxLinks {
+		return nil, ErrTooManyLinks
+	}
+	return out, nil
+}
+
 func prepareResource(in *ResourceInput) (*dbgen.UpsertResourceParams, error) {
-	r := &dbgen.UpsertResourceParams{IconMediaID: nullInt64(in.IconID)}
+	r := &dbgen.UpsertResourceParams{IconMediaID: nullInt64(in.IconID), DownloadCond: strings.TrimSpace(in.DownloadCond)}
+	if r.DownloadCond == "" {
+		r.DownloadCond = string(access.KindPublic)
+	}
 	var err error
 	if r.Platform, err = checkLen("平台", in.Platform, 32); err != nil {
 		return nil, err
@@ -230,15 +335,64 @@ func (s *Service) saveRelations(ctx context.Context, q *dbgen.Queries, postID in
 			return fmt.Errorf("关联标签：%w", err)
 		}
 	}
+	if err := q.DeleteHiddenBlocks(ctx, postID); err != nil {
+		return fmt.Errorf("清除隐藏内容：%w", err)
+	}
+	for _, h := range v.hidden {
+		if err := q.AddHiddenBlock(ctx, dbgen.AddHiddenBlockParams{
+			PostID: postID, Seq: int32(h.Seq), Cond: h.Cond, Title: h.Title, ContentHtml: h.ContentHTML,
+		}); err != nil {
+			return fmt.Errorf("保存隐藏内容：%w", err)
+		}
+	}
 	if v.resource == nil {
 		if err := q.DeleteResource(ctx, postID); err != nil {
 			return fmt.Errorf("清除资源信息：%w", err)
+		}
+		if err := q.DeleteResourceLinks(ctx, postID); err != nil {
+			return fmt.Errorf("清除下载地址：%w", err)
 		}
 		return nil
 	}
 	v.resource.PostID = postID
 	if err := q.UpsertResource(ctx, *v.resource); err != nil {
 		return fmt.Errorf("保存资源信息：%w", err)
+	}
+	return saveLinks(ctx, q, postID, v.links)
+}
+
+// saveLinks 已有地址原地更新，新地址插入，表单里去掉的删除。
+func saveLinks(ctx context.Context, q *dbgen.Queries, postID int64, links []Link) error {
+	rows, err := q.ListResourceLinks(ctx, postID)
+	if err != nil {
+		return fmt.Errorf("查询下载地址：%w", err)
+	}
+	stale := make(map[int64]bool, len(rows))
+	for _, r := range rows {
+		stale[r.ID] = true
+	}
+	for i, l := range links {
+		if stale[l.ID] {
+			delete(stale, l.ID)
+			if err := q.UpdateResourceLink(ctx, dbgen.UpdateResourceLinkParams{
+				Name: l.Name, Url: l.URL, ExtractCode: l.ExtractCode, UnzipPassword: l.UnzipPassword,
+				Sort: int32(i), Status: l.Status, ID: l.ID, PostID: postID,
+			}); err != nil {
+				return fmt.Errorf("修改下载地址：%w", err)
+			}
+			continue
+		}
+		if _, err := q.CreateResourceLink(ctx, dbgen.CreateResourceLinkParams{
+			PostID: postID, Name: l.Name, Url: l.URL, ExtractCode: l.ExtractCode, UnzipPassword: l.UnzipPassword,
+			Sort: int32(i), Status: l.Status,
+		}); err != nil {
+			return fmt.Errorf("新增下载地址：%w", err)
+		}
+	}
+	for id := range stale {
+		if err := q.DeleteResourceLink(ctx, dbgen.DeleteResourceLinkParams{ID: id, PostID: postID}); err != nil {
+			return fmt.Errorf("删除下载地址：%w", err)
+		}
 	}
 	return nil
 }
@@ -281,6 +435,7 @@ func (s *Service) UpdatePost(ctx context.Context, id int64, in PostInput) (*Post
 		if err := q.UpdatePost(ctx, dbgen.UpdatePostParams{
 			Type: p.Type, Title: p.Title, Summary: p.Summary, SummaryAuto: p.SummaryAuto, ContentHtml: p.ContentHtml, Toc: p.Toc,
 			CoverMediaID: p.CoverMediaID, CategoryID: p.CategoryID, Status: p.Status, Pinned: p.Pinned,
+			Price: p.Price, MemberFreeRank: p.MemberFreeRank, MemberDiscount: p.MemberDiscount,
 			SeoTitle: p.SeoTitle, SeoKeywords: p.SeoKeywords, SeoDescription: p.SeoDescription,
 			PublishedAt: p.PublishedAt, ID: id,
 		}); err != nil {
@@ -357,6 +512,12 @@ func (s *Service) DeletePost(ctx context.Context, adminID int64, ip string, id i
 		if err := q.DeleteResource(ctx, id); err != nil {
 			return fmt.Errorf("清除资源信息：%w", err)
 		}
+		if err := q.DeleteResourceLinks(ctx, id); err != nil {
+			return fmt.Errorf("清除下载地址：%w", err)
+		}
+		if err := q.DeleteHiddenBlocks(ctx, id); err != nil {
+			return fmt.Errorf("清除隐藏内容：%w", err)
+		}
 		if err := q.DeletePost(ctx, id); err != nil {
 			return fmt.Errorf("删除内容 %d：%w", id, err)
 		}
@@ -394,7 +555,7 @@ func (s *Service) loadPost(ctx context.Context, row dbgen.Post) (*Post, error) {
 		ID: row.ID, Type: row.Type, Title: row.Title, Summary: row.Summary, CoverMediaID: row.CoverMediaID,
 		CategoryID: row.CategoryID, AuthorID: row.AuthorID, Status: row.Status, Pinned: row.Pinned,
 		ViewCount: row.ViewCount, CommentCount: row.CommentCount, PublishedAt: row.PublishedAt,
-		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+		CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Price: row.Price, MemberFreeRank: row.MemberFreeRank,
 	}
 	var res *dbgen.Resource
 	if Type(row.Type) == TypeResource {
@@ -403,12 +564,13 @@ func (s *Service) loadPost(ctx context.Context, row dbgen.Post) (*Post, error) {
 		case err == nil:
 			res = &r
 		case errors.Is(err, sql.ErrNoRows):
-			res = &dbgen.Resource{PostID: row.ID}
+			res = &dbgen.Resource{PostID: row.ID, DownloadCond: string(access.KindPublic)}
 		default:
 			return nil, fmt.Errorf("查询资源信息：%w", err)
 		}
 		p.Platform, p.Version, p.FileSize = sql.NullString{String: res.Platform, Valid: true}, sql.NullString{String: res.Version, Valid: true}, sql.NullString{String: res.FileSize, Valid: true}
 		p.IconMediaID = res.IconMediaID
+		p.DownloadCond = sql.NullString{String: res.DownloadCond, Valid: true}
 	}
 	posts, err := s.hydrate(ctx, []listRow{*p})
 	if err != nil {
@@ -424,7 +586,24 @@ func (s *Service) loadPost(ctx context.Context, row dbgen.Post) (*Post, error) {
 	}
 	post.SEOTitle, post.SEOKeywords, post.SEODescription = row.SeoTitle, row.SeoKeywords, row.SeoDescription
 	post.SummaryAuto = row.SummaryAuto
+	post.MemberDiscount = row.MemberDiscount
+	blocks, err := s.q.ListHiddenBlocks(ctx, row.ID)
+	if err != nil {
+		return nil, fmt.Errorf("查询隐藏内容：%w", err)
+	}
+	post.HiddenBlocks = make([]HiddenBlock, len(blocks))
+	for i, b := range blocks {
+		post.HiddenBlocks[i] = HiddenBlock{Seq: int(b.Seq), Cond: b.Cond, Title: b.Title, ContentHTML: outputHTML(b.ContentHtml, s.media.BaseURL())}
+	}
 	if res != nil {
+		links, err := s.q.ListResourceLinks(ctx, row.ID)
+		if err != nil {
+			return nil, fmt.Errorf("查询下载地址：%w", err)
+		}
+		post.Resource.Links = make([]Link, len(links))
+		for i, l := range links {
+			post.Resource.Links[i] = Link{ID: l.ID, Name: l.Name, URL: l.Url, ExtractCode: l.ExtractCode, UnzipPassword: l.UnzipPassword, Status: l.Status}
+		}
 		post.Resource.Attrs = []Attr{}
 		post.Resource.Changelog = []ChangelogEntry{}
 		if len(res.Attrs) > 0 {
@@ -439,4 +618,9 @@ func (s *Service) loadPost(ctx context.Context, row dbgen.Post) (*Post, error) {
 		}
 	}
 	return post, nil
+}
+
+// EditorHTML 后台编辑用的完整正文：隐藏块放回原位置。
+func (p *Post) EditorHTML() string {
+	return mergeHidden(p.ContentHTML, p.HiddenBlocks)
 }

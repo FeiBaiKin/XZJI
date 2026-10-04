@@ -1,5 +1,6 @@
 # 复制为 config.yaml 后修改。db.dsn 也可以用环境变量 XZJI_DB_DSN 覆盖。
 env: dev # dev 或 prod
+timezone: Asia/Shanghai # 站点时区，用于按天统计下载次数
 
 http:
   addr: 127.0.0.1:8080

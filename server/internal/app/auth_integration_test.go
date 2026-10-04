@@ -65,13 +65,14 @@ func newEnv(t *testing.T) *env {
 	db := testutil.DB(t)
 	log := slog.New(slog.NewTextHandler(testLog{t}, &slog.HandlerOptions{Level: slog.LevelError}))
 	cfg := &config.Config{
-		Env:   config.EnvDev,
-		HTTP:  config.HTTP{TrustedProxies: []string{"127.0.0.1"}},
-		CORS:  config.CORS{AllowOrigins: []string{testOrigin}},
-		Media: config.Media{Dir: t.TempDir(), BaseURL: "http://img.test", MaxSizeMB: 2},
+		Env:      config.EnvDev,
+		HTTP:     config.HTTP{TrustedProxies: []string{"127.0.0.1"}},
+		CORS:     config.CORS{AllowOrigins: []string{testOrigin}},
+		Media:    config.Media{Dir: t.TempDir(), BaseURL: "http://img.test", MaxSizeMB: 2},
+		Timezone: "Asia/Shanghai",
 	}
 	mailer := &fakeMailer{sent: map[string][]mail.Message{}}
-	svc, err := NewServices(db, mailer, log, cfg.Media)
+	svc, err := NewServices(db, mailer, log, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

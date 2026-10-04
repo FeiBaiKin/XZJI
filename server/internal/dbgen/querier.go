@@ -12,60 +12,101 @@ import (
 )
 
 type Querier interface {
+	AddHiddenBlock(ctx context.Context, arg AddHiddenBlockParams) error
 	AddPostTag(ctx context.Context, arg AddPostTagParams) error
 	CountActivePostsByCategory(ctx context.Context) ([]CountActivePostsByCategoryRow, error)
+	CountApprovedComments(ctx context.Context, postID int64) (int64, error)
 	CountChildCategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
+	CountCommentsAdmin(ctx context.Context, arg CountCommentsAdminParams) (int64, error)
+	CountLinkReports(ctx context.Context, arg CountLinkReportsParams) (int64, error)
+	CountMemberFreeDownloadsSince(ctx context.Context, arg CountMemberFreeDownloadsSinceParams) (int64, error)
+	CountMembersOfLevel(ctx context.Context, levelID int64) (int64, error)
 	CountPostsInCategory(ctx context.Context, categoryID int64) (int64, error)
 	CountPublishedPostsByCategory(ctx context.Context, publishedAt sql.NullTime) ([]CountPublishedPostsByCategoryRow, error)
 	CountPublishedPostsByTag(ctx context.Context, arg CountPublishedPostsByTagParams) (int64, error)
+	CountRootComments(ctx context.Context, arg CountRootCommentsParams) (int64, error)
 	CountTags(ctx context.Context, arg CountTagsParams) (int64, error)
 	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
 	CreateAdminLog(ctx context.Context, arg CreateAdminLogParams) error
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (int64, error)
+	CreateComment(ctx context.Context, arg CreateCommentParams) (int64, error)
+	CreateDownloadLog(ctx context.Context, arg CreateDownloadLogParams) error
 	CreateEmailCode(ctx context.Context, arg CreateEmailCodeParams) error
+	CreateLinkReport(ctx context.Context, arg CreateLinkReportParams) error
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (int64, error)
+	CreateMembershipLevel(ctx context.Context, arg CreateMembershipLevelParams) (int64, error)
 	CreatePost(ctx context.Context, arg CreatePostParams) (int64, error)
+	CreateResourceLink(ctx context.Context, arg CreateResourceLinkParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
 	CreateTag(ctx context.Context, arg CreateTagParams) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (int64, error)
 	DeleteCategory(ctx context.Context, id int64) error
+	DeleteComment(ctx context.Context, id int64) error
+	DeleteCommentReplies(ctx context.Context, parentID sql.NullInt64) error
 	DeleteExpiredEmailCodes(ctx context.Context, expiresAt time.Time) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) (int64, error)
+	DeleteHiddenBlocks(ctx context.Context, postID int64) error
+	DeleteMembershipLevel(ctx context.Context, id int64) error
 	DeletePost(ctx context.Context, id int64) error
 	DeletePostTags(ctx context.Context, postID int64) error
 	DeletePostTagsByTag(ctx context.Context, tagID int64) error
 	DeleteResource(ctx context.Context, postID int64) error
+	DeleteResourceLink(ctx context.Context, arg DeleteResourceLinkParams) error
+	DeleteResourceLinks(ctx context.Context, postID int64) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteTag(ctx context.Context, id int64) error
+	DeleteUserMembership(ctx context.Context, userID int64) error
 	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) error
 	ExtendSession(ctx context.Context, arg ExtendSessionParams) error
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
+	GetComment(ctx context.Context, id int64) (Comment, error)
 	GetLatestEmailCode(ctx context.Context, arg GetLatestEmailCodeParams) (EmailCode, error)
+	GetLinkReport(ctx context.Context, id int64) (LinkReport, error)
 	GetMedia(ctx context.Context, id int64) (Media, error)
+	GetMembershipLevel(ctx context.Context, id int64) (MembershipLevel, error)
 	GetPost(ctx context.Context, id int64) (Post, error)
 	GetResource(ctx context.Context, postID int64) (Resource, error)
+	GetResourceLink(ctx context.Context, arg GetResourceLinkParams) (ResourceLink, error)
 	GetSetting(ctx context.Context, key string) (json.RawMessage, error)
 	GetTag(ctx context.Context, id int64) (Tag, error)
 	GetTagByName(ctx context.Context, name string) (Tag, error)
 	GetTagBySlug(ctx context.Context, slug string) (Tag, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
+	GetUserMembership(ctx context.Context, userID int64) (GetUserMembershipRow, error)
+	HasApprovedComment(ctx context.Context, arg HasApprovedCommentParams) (bool, error)
+	HasMemberFreeDownloadSince(ctx context.Context, arg HasMemberFreeDownloadSinceParams) (bool, error)
+	HasPendingLinkReport(ctx context.Context, arg HasPendingLinkReportParams) (bool, error)
 	IncrEmailCodeAttempts(ctx context.Context, id int64) error
 	InvalidateEmailCodes(ctx context.Context, arg InvalidateEmailCodesParams) error
 	ListCategories(ctx context.Context) ([]Category, error)
+	ListCommentReplies(ctx context.Context, arg ListCommentRepliesParams) ([]Comment, error)
+	ListCommentsAdmin(ctx context.Context, arg ListCommentsAdminParams) ([]Comment, error)
+	ListHiddenBlocks(ctx context.Context, postID int64) ([]PostHiddenBlock, error)
 	ListHotTags(ctx context.Context, arg ListHotTagsParams) ([]ListHotTagsRow, error)
+	ListLinkReports(ctx context.Context, arg ListLinkReportsParams) ([]ListLinkReportsRow, error)
 	ListMediaByIDs(ctx context.Context, ids []int64) ([]Media, error)
+	ListMembershipLevels(ctx context.Context) ([]ListMembershipLevelsRow, error)
 	ListPlatformNames(ctx context.Context) ([]string, error)
+	ListPostTitles(ctx context.Context, ids []int64) ([]ListPostTitlesRow, error)
+	ListResourceLinks(ctx context.Context, postID int64) ([]ResourceLink, error)
+	ListRootComments(ctx context.Context, arg ListRootCommentsParams) ([]Comment, error)
 	ListTagsByNames(ctx context.Context, names []string) ([]Tag, error)
 	ListTagsByPostIDs(ctx context.Context, postIds []int64) ([]ListTagsByPostIDsRow, error)
 	ListTagsWithCount(ctx context.Context, arg ListTagsWithCountParams) ([]ListTagsWithCountRow, error)
+	ListUserMemberships(ctx context.Context, userIds []int64) ([]ListUserMembershipsRow, error)
 	ListUserNicknames(ctx context.Context, ids []int64) ([]ListUserNicknamesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	MarkEmailCodeUsed(ctx context.Context, arg MarkEmailCodeUsedParams) (int64, error)
+	SetPostCommentCount(ctx context.Context, arg SetPostCommentCountParams) error
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
+	UpdateCommentStatus(ctx context.Context, arg UpdateCommentStatusParams) error
+	UpdateLinkReportStatus(ctx context.Context, arg UpdateLinkReportStatusParams) error
+	UpdateMembershipLevel(ctx context.Context, arg UpdateMembershipLevelParams) error
 	UpdatePost(ctx context.Context, arg UpdatePostParams) error
 	UpdatePostStatus(ctx context.Context, arg UpdatePostStatusParams) (int64, error)
+	UpdateResourceLink(ctx context.Context, arg UpdateResourceLinkParams) error
 	UpdateTag(ctx context.Context, arg UpdateTagParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserNickname(ctx context.Context, arg UpdateUserNicknameParams) error
@@ -73,6 +114,8 @@ type Querier interface {
 	UpdateUserRoleStatus(ctx context.Context, arg UpdateUserRoleStatusParams) error
 	UpsertResource(ctx context.Context, arg UpsertResourceParams) error
 	UpsertSetting(ctx context.Context, arg UpsertSettingParams) error
+	UpsertUserMembership(ctx context.Context, arg UpsertUserMembershipParams) error
+	UserHasApprovedComment(ctx context.Context, userID int64) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

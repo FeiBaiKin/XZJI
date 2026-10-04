@@ -17,6 +17,48 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CommentSettingsModeration.
+const (
+	All     CommentSettingsModeration = "all"
+	None    CommentSettingsModeration = "none"
+	Trusted CommentSettingsModeration = "trusted"
+)
+
+// Valid indicates whether the value is a known member of the CommentSettingsModeration enum.
+func (e CommentSettingsModeration) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case None:
+		return true
+	case Trusted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommentStatus.
+const (
+	CommentStatusApproved CommentStatus = "approved"
+	CommentStatusPending  CommentStatus = "pending"
+	CommentStatusSpam     CommentStatus = "spam"
+)
+
+// Valid indicates whether the value is a known member of the CommentStatus enum.
+func (e CommentStatus) Valid() bool {
+	switch e {
+	case CommentStatusApproved:
+		return true
+	case CommentStatusPending:
+		return true
+	case CommentStatusSpam:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DatabaseStatusStatus.
 const (
 	Down DatabaseStatusStatus = "down"
@@ -47,6 +89,42 @@ func (e EditableStatus) Valid() bool {
 	case EditableStatusDraft:
 		return true
 	case EditableStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LevelStatus.
+const (
+	LevelStatusActive   LevelStatus = "active"
+	LevelStatusDisabled LevelStatus = "disabled"
+)
+
+// Valid indicates whether the value is a known member of the LevelStatus enum.
+func (e LevelStatus) Valid() bool {
+	switch e {
+	case LevelStatusActive:
+		return true
+	case LevelStatusDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LinkStatus.
+const (
+	Broken LinkStatus = "broken"
+	Ok     LinkStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the LinkStatus enum.
+func (e LinkStatus) Valid() bool {
+	switch e {
+	case Broken:
+		return true
+	case Ok:
 		return true
 	default:
 		return false
@@ -92,6 +170,27 @@ func (e PostType) Valid() bool {
 	}
 }
 
+// Defines values for ReportStatus.
+const (
+	ReportStatusIgnored  ReportStatus = "ignored"
+	ReportStatusPending  ReportStatus = "pending"
+	ReportStatusResolved ReportStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ReportStatus enum.
+func (e ReportStatus) Valid() bool {
+	switch e {
+	case ReportStatusIgnored:
+		return true
+	case ReportStatusPending:
+		return true
+	case ReportStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Role.
 const (
 	Admin Role = "admin"
@@ -112,16 +211,16 @@ func (e Role) Valid() bool {
 
 // Defines values for UserStatus.
 const (
-	Active UserStatus = "active"
-	Banned UserStatus = "banned"
+	UserStatusActive UserStatus = "active"
+	UserStatusBanned UserStatus = "banned"
 )
 
 // Valid indicates whether the value is a known member of the UserStatus enum.
 func (e UserStatus) Valid() bool {
 	switch e {
-	case Active:
+	case UserStatusActive:
 		return true
-	case Banned:
+	case UserStatusBanned:
 		return true
 	default:
 		return false
@@ -148,15 +247,74 @@ type AdminCategoryList struct {
 	Items []AdminCategory `json:"items"`
 }
 
+// AdminComment defines model for AdminComment.
+type AdminComment struct {
+	Author    Author        `json:"author"`
+	Content   string        `json:"content"`
+	CreatedAt time.Time     `json:"createdAt"`
+	Id        int64         `json:"id"`
+	Ip        string        `json:"ip"`
+	ParentId  *int64        `json:"parentId,omitempty"`
+	PostId    int64         `json:"postId"`
+	PostTitle string        `json:"postTitle"`
+	ReplyTo   *Author       `json:"replyTo,omitempty"`
+	Status    CommentStatus `json:"status"`
+}
+
+// AdminCommentPage defines model for AdminCommentPage.
+type AdminCommentPage struct {
+	Items    []AdminComment `json:"items"`
+	Page     int            `json:"page"`
+	PageSize int            `json:"pageSize"`
+	Total    int64          `json:"total"`
+}
+
+// AdminLevel defines model for AdminLevel.
+type AdminLevel struct {
+	DailyDownloadLimit int   `json:"dailyDownloadLimit"`
+	DiscountRate       int   `json:"discountRate"`
+	Id                 int64 `json:"id"`
+
+	// MemberCount 这个等级的会员数，包括已过期的
+	MemberCount int64       `json:"memberCount"`
+	Name        string      `json:"name"`
+	Rank        int         `json:"rank"`
+	Status      LevelStatus `json:"status"`
+}
+
+// AdminLevelList defines model for AdminLevelList.
+type AdminLevelList struct {
+	Items []AdminLevel `json:"items"`
+}
+
+// AdminLink defines model for AdminLink.
+type AdminLink struct {
+	ExtractCode   string     `json:"extractCode"`
+	Id            int64      `json:"id"`
+	Name          string     `json:"name"`
+	Status        LinkStatus `json:"status"`
+	UnzipPassword string     `json:"unzipPassword"`
+	Url           string     `json:"url"`
+}
+
 // AdminPost defines model for AdminPost.
 type AdminPost struct {
-	Author         Author         `json:"author"`
-	CategoryId     int64          `json:"categoryId"`
-	ContentHtml    string         `json:"contentHtml"`
-	Cover          *Media         `json:"cover,omitempty"`
-	CreatedAt      time.Time      `json:"createdAt"`
-	Id             int64          `json:"id"`
-	Pinned         bool           `json:"pinned"`
+	Author      Author    `json:"author"`
+	CategoryId  int64     `json:"categoryId"`
+	ContentHtml string    `json:"contentHtml"`
+	Cover       *Media    `json:"cover,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+	Id          int64     `json:"id"`
+
+	// MemberDiscount 等级不够免费的会员是否享受等级折扣
+	MemberDiscount bool `json:"memberDiscount"`
+
+	// MemberFreeRank 会员等级达到该值即免费，0 表示会员也不免费
+	MemberFreeRank int  `json:"memberFreeRank"`
+	Pinned         bool `json:"pinned"`
+
+	// Price 单独购买的价格（分），0 表示不能单独购买
+	Price          int64          `json:"price"`
 	PublishedAt    *time.Time     `json:"publishedAt"`
 	Resource       *AdminResource `json:"resource,omitempty"`
 	SeoDescription string         `json:"seoDescription"`
@@ -206,10 +364,14 @@ type AdminProfile struct {
 type AdminResource struct {
 	Attrs     []Attr           `json:"attrs"`
 	Changelog []ChangelogEntry `json:"changelog"`
-	FileSize  string           `json:"fileSize"`
-	Icon      *Media           `json:"icon,omitempty"`
-	Platform  string           `json:"platform"`
-	Version   string           `json:"version"`
+
+	// DownloadCond 下载区解锁条件：public / login / comment / paid / member:N
+	DownloadCond string      `json:"downloadCond"`
+	FileSize     string      `json:"fileSize"`
+	Icon         *Media      `json:"icon,omitempty"`
+	Links        []AdminLink `json:"links"`
+	Platform     string      `json:"platform"`
+	Version      string      `json:"version"`
 }
 
 // AdminTag defines model for AdminTag.
@@ -310,6 +472,18 @@ type ChangelogEntry struct {
 	Version string `json:"version"`
 }
 
+// CommentSettings defines model for CommentSettings.
+type CommentSettings struct {
+	// Moderation all 全部先审核；trusted 有过审核通过评论的用户免审；none 不审核
+	Moderation CommentSettingsModeration `json:"moderation"`
+}
+
+// CommentSettingsModeration all 全部先审核；trusted 有过审核通过评论的用户免审；none 不审核
+type CommentSettingsModeration string
+
+// CommentStatus defines model for CommentStatus.
+type CommentStatus string
+
 // CsrfToken defines model for CsrfToken.
 type CsrfToken struct {
 	Token string `json:"token"`
@@ -358,6 +532,68 @@ type HomeSettingsInput struct {
 	Notice string `json:"notice"`
 }
 
+// LevelInput defines model for LevelInput.
+type LevelInput struct {
+	// DailyDownloadLimit 每天靠会员身份免费下载的次数，0 表示不限
+	DailyDownloadLimit int `json:"dailyDownloadLimit"`
+
+	// DiscountRate 1 到 100，80 表示 8 折，100 表示不打折
+	DiscountRate int `json:"discountRate"`
+
+	// Name Example: VIP
+	Name string `json:"name"`
+
+	// Rank 1 到 99，数字越大等级越高
+	Rank   int          `json:"rank"`
+	Status *LevelStatus `json:"status,omitempty"`
+}
+
+// LevelStatus defines model for LevelStatus.
+type LevelStatus string
+
+// LinkInput defines model for LinkInput.
+type LinkInput struct {
+	ExtractCode *string `json:"extractCode,omitempty"`
+
+	// Id 已有地址的 ID，新地址不传
+	Id            *int64      `json:"id,omitempty"`
+	Name          string      `json:"name"`
+	Status        *LinkStatus `json:"status,omitempty"`
+	UnzipPassword *string     `json:"unzipPassword,omitempty"`
+
+	// Url http(s)、magnet、ed2k 开头的地址
+	Url string `json:"url"`
+}
+
+// LinkReport defines model for LinkReport.
+type LinkReport struct {
+	CreatedAt time.Time  `json:"createdAt"`
+	HandledAt *time.Time `json:"handledAt"`
+	Id        int64      `json:"id"`
+	LinkId    int64      `json:"linkId"`
+
+	// LinkName 地址已被删除时为空
+	LinkName   string       `json:"linkName"`
+	LinkStatus string       `json:"linkStatus"`
+	LinkUrl    string       `json:"linkUrl"`
+	PostId     int64        `json:"postId"`
+	PostTitle  string       `json:"postTitle"`
+	Reason     string       `json:"reason"`
+	Status     ReportStatus `json:"status"`
+	User       Author       `json:"user"`
+}
+
+// LinkReportPage defines model for LinkReportPage.
+type LinkReportPage struct {
+	Items    []LinkReport `json:"items"`
+	Page     int          `json:"page"`
+	PageSize int          `json:"pageSize"`
+	Total    int64        `json:"total"`
+}
+
+// LinkStatus defines model for LinkStatus.
+type LinkStatus string
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -385,10 +621,20 @@ type PlatformNames struct {
 type PostInput struct {
 	CategoryId int64 `json:"categoryId"`
 
-	// ContentHtml 编辑器输出的 HTML，保存时按白名单过滤
+	// ContentHtml 编辑器输出的 HTML，保存时按白名单过滤。
+	// 隐藏块写成顶层的 <div data-type="hidden-block" data-cond="条件" data-title="标题">…</div>，保存时拆出单独存放
 	ContentHtml string `json:"contentHtml"`
 	CoverId     *int64 `json:"coverId,omitempty"`
-	Pinned      *bool  `json:"pinned,omitempty"`
+
+	// MemberDiscount 等级不够免费的会员是否享受等级折扣
+	MemberDiscount *bool `json:"memberDiscount,omitempty"`
+
+	// MemberFreeRank 会员等级达到该值即免费，0 表示会员也不免费
+	MemberFreeRank *int  `json:"memberFreeRank,omitempty"`
+	Pinned         *bool `json:"pinned,omitempty"`
+
+	// Price 单独购买的价格（分），0 表示不能单独购买
+	Price *int64 `json:"price,omitempty"`
 
 	// PublishedAt 发布时留空则取当前时间；填写将来的时间即为定时发布
 	PublishedAt    *time.Time     `json:"publishedAt,omitempty"`
@@ -415,16 +661,23 @@ type PostStatus string
 // PostType defines model for PostType.
 type PostType string
 
+// ReportStatus defines model for ReportStatus.
+type ReportStatus string
+
 // ResourceInput defines model for ResourceInput.
 type ResourceInput struct {
 	Attrs *[]Attr `json:"attrs,omitempty"`
 
 	// Changelog 新的在前
 	Changelog *[]ChangelogEntry `json:"changelog,omitempty"`
-	FileSize  *string           `json:"fileSize,omitempty"`
-	IconId    *int64            `json:"iconId,omitempty"`
-	Platform  *string           `json:"platform,omitempty"`
-	Version   *string           `json:"version,omitempty"`
+
+	// DownloadCond 下载区解锁条件：public / login / comment / paid / member:N，默认 public
+	DownloadCond *string      `json:"downloadCond,omitempty"`
+	FileSize     *string      `json:"fileSize,omitempty"`
+	IconId       *int64       `json:"iconId,omitempty"`
+	Links        *[]LinkInput `json:"links,omitempty"`
+	Platform     *string      `json:"platform,omitempty"`
+	Version      *string      `json:"version,omitempty"`
 }
 
 // Role defines model for Role.
@@ -433,6 +686,13 @@ type Role string
 // SessionState defines model for SessionState.
 type SessionState struct {
 	Admin *AdminProfile `json:"admin,omitempty"`
+}
+
+// SetMembershipRequest defines model for SetMembershipRequest.
+type SetMembershipRequest struct {
+	// ExpiresAt 不传或 null 表示永久
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+	LevelId   int64      `json:"levelId"`
 }
 
 // SystemStatus defines model for SystemStatus.
@@ -458,6 +718,16 @@ type TagInput struct {
 	Slug *string `json:"slug,omitempty"`
 }
 
+// UpdateCommentRequest defines model for UpdateCommentRequest.
+type UpdateCommentRequest struct {
+	Status CommentStatus `json:"status"`
+}
+
+// UpdateLinkReportRequest defines model for UpdateLinkReportRequest.
+type UpdateLinkReportRequest struct {
+	Status ReportStatus `json:"status"`
+}
+
 // UpdateUserRequest defines model for UpdateUserRequest.
 type UpdateUserRequest struct {
 	Role   *Role       `json:"role,omitempty"`
@@ -466,15 +736,28 @@ type UpdateUserRequest struct {
 
 // UserItem defines model for UserItem.
 type UserItem struct {
-	CreatedAt     time.Time  `json:"createdAt"`
-	Email         string     `json:"email"`
-	EmailVerified bool       `json:"emailVerified"`
-	Id            int64      `json:"id"`
-	InviterId     *int64     `json:"inviterId,omitempty"`
-	LastLoginAt   *time.Time `json:"lastLoginAt,omitempty"`
-	Nickname      string     `json:"nickname"`
-	Role          Role       `json:"role"`
-	Status        UserStatus `json:"status"`
+	CreatedAt     time.Time       `json:"createdAt"`
+	Email         string          `json:"email"`
+	EmailVerified bool            `json:"emailVerified"`
+	Id            int64           `json:"id"`
+	InviterId     *int64          `json:"inviterId,omitempty"`
+	LastLoginAt   *time.Time      `json:"lastLoginAt,omitempty"`
+	Membership    *UserMembership `json:"membership,omitempty"`
+	Nickname      string          `json:"nickname"`
+	Role          Role            `json:"role"`
+	Status        UserStatus      `json:"status"`
+}
+
+// UserMembership defines model for UserMembership.
+type UserMembership struct {
+	// Active 是否在有效期内
+	Active bool `json:"active"`
+
+	// ExpiresAt null 表示永久
+	ExpiresAt *time.Time `json:"expiresAt"`
+	LevelId   int64      `json:"levelId"`
+	Name      string     `json:"name"`
+	Rank      int        `json:"rank"`
 }
 
 // UserPage defines model for UserPage.
@@ -511,6 +794,24 @@ type TooManyRequests = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// ListCommentsParams defines parameters for ListComments.
+type ListCommentsParams struct {
+	Status *CommentStatus `form:"status,omitempty" json:"status,omitempty"`
+	PostId *int64         `form:"postId,omitempty" json:"postId,omitempty"`
+
+	// Keyword 按评论内容模糊搜索
+	Keyword  *string   `form:"keyword,omitempty" json:"keyword,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// ListLinkReportsParams defines parameters for ListLinkReports.
+type ListLinkReportsParams struct {
+	Status   *ReportStatus `form:"status,omitempty" json:"status,omitempty"`
+	Page     *Page         `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize     `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
 
 // UploadMediaMultipartBody defines parameters for UploadMedia.
 type UploadMediaMultipartBody struct {
@@ -563,17 +864,32 @@ type CreateCategoryJSONRequestBody = CategoryInput
 // UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
 type UpdateCategoryJSONRequestBody = CategoryInput
 
+// UpdateCommentJSONRequestBody defines body for UpdateComment for application/json ContentType.
+type UpdateCommentJSONRequestBody = UpdateCommentRequest
+
+// UpdateLinkReportJSONRequestBody defines body for UpdateLinkReport for application/json ContentType.
+type UpdateLinkReportJSONRequestBody = UpdateLinkReportRequest
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
 
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody UploadMediaMultipartBody
 
+// CreateMembershipLevelJSONRequestBody defines body for CreateMembershipLevel for application/json ContentType.
+type CreateMembershipLevelJSONRequestBody = LevelInput
+
+// UpdateMembershipLevelJSONRequestBody defines body for UpdateMembershipLevel for application/json ContentType.
+type UpdateMembershipLevelJSONRequestBody = LevelInput
+
 // CreatePostJSONRequestBody defines body for CreatePost for application/json ContentType.
 type CreatePostJSONRequestBody = PostInput
 
 // UpdatePostJSONRequestBody defines body for UpdatePost for application/json ContentType.
 type UpdatePostJSONRequestBody = PostInput
+
+// UpdateCommentSettingsJSONRequestBody defines body for UpdateCommentSettings for application/json ContentType.
+type UpdateCommentSettingsJSONRequestBody = CommentSettings
 
 // UpdateHomeSettingsJSONRequestBody defines body for UpdateHomeSettings for application/json ContentType.
 type UpdateHomeSettingsJSONRequestBody = HomeSettingsInput
@@ -586,6 +902,9 @@ type UpdateTagJSONRequestBody = TagInput
 
 // UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
 type UpdateUserJSONRequestBody = UpdateUserRequest
+
+// SetUserMembershipJSONRequestBody defines body for SetUserMembership for application/json ContentType.
+type SetUserMembershipJSONRequestBody = SetMembershipRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -613,6 +932,21 @@ type ServerInterface interface {
 	// UpdateCategory 修改分类
 	// (PUT /categories/{id})
 	UpdateCategory(c *gin.Context, id IdPath)
+	// ListComments 评论列表
+	// (GET /comments)
+	ListComments(c *gin.Context, params ListCommentsParams)
+	// DeleteComment 删除评论
+	// (DELETE /comments/{id})
+	DeleteComment(c *gin.Context, id IdPath)
+	// UpdateComment 审核评论
+	// (PATCH /comments/{id})
+	UpdateComment(c *gin.Context, id IdPath)
+	// ListLinkReports 下载地址失效反馈
+	// (GET /link-reports)
+	ListLinkReports(c *gin.Context, params ListLinkReportsParams)
+	// UpdateLinkReport 处理失效反馈
+	// (PATCH /link-reports/{id})
+	UpdateLinkReport(c *gin.Context, id IdPath)
 	// GetMe 当前管理员
 	// (GET /me)
 	GetMe(c *gin.Context)
@@ -622,6 +956,18 @@ type ServerInterface interface {
 	// UploadMedia 上传图片
 	// (POST /media)
 	UploadMedia(c *gin.Context)
+	// ListMembershipLevels 会员等级列表
+	// (GET /membership/levels)
+	ListMembershipLevels(c *gin.Context)
+	// CreateMembershipLevel 新建会员等级
+	// (POST /membership/levels)
+	CreateMembershipLevel(c *gin.Context)
+	// DeleteMembershipLevel 删除会员等级
+	// (DELETE /membership/levels/{id})
+	DeleteMembershipLevel(c *gin.Context, id IdPath)
+	// UpdateMembershipLevel 修改会员等级
+	// (PUT /membership/levels/{id})
+	UpdateMembershipLevel(c *gin.Context, id IdPath)
 	// ListPlatforms 已使用的资源平台
 	// (GET /platforms)
 	ListPlatforms(c *gin.Context)
@@ -643,6 +989,12 @@ type ServerInterface interface {
 	// RestorePost 从回收站恢复
 	// (POST /posts/{id}/restore)
 	RestorePost(c *gin.Context, id IdPath)
+	// GetCommentSettings 评论设置
+	// (GET /settings/comment)
+	GetCommentSettings(c *gin.Context)
+	// UpdateCommentSettings 修改评论设置
+	// (PUT /settings/comment)
+	UpdateCommentSettings(c *gin.Context)
 	// GetHomeSettings 首页设置
 	// (GET /settings/home)
 	GetHomeSettings(c *gin.Context)
@@ -670,6 +1022,12 @@ type ServerInterface interface {
 	// UpdateUser 修改用户角色或状态
 	// (PATCH /users/{id})
 	UpdateUser(c *gin.Context, id int64)
+	// DeleteUserMembership 取消用户的会员
+	// (DELETE /users/{id}/membership)
+	DeleteUserMembership(c *gin.Context, id IdPath)
+	// SetUserMembership 开通或修改用户的会员
+	// (PUT /users/{id}/membership)
+	SetUserMembership(c *gin.Context, id IdPath)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -809,6 +1167,183 @@ func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
 	siw.Handler.UpdateCategory(c, id)
 }
 
+// ListComments operation middleware
+func (siw *ServerInterfaceWrapper) ListComments(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCommentsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", c.Request.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "postId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "postId", c.Request.URL.Query(), &params.PostId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter postId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", c.Request.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter keyword: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListComments(c, params)
+}
+
+// DeleteComment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteComment(c, id)
+}
+
+// UpdateComment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateComment(c, id)
+}
+
+// ListLinkReports operation middleware
+func (siw *ServerInterfaceWrapper) ListLinkReports(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLinkReportsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", c.Request.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListLinkReports(c, params)
+}
+
+// UpdateLinkReport operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLinkReport(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateLinkReport(c, id)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 
@@ -846,6 +1381,82 @@ func (siw *ServerInterfaceWrapper) UploadMedia(c *gin.Context) {
 	}
 
 	siw.Handler.UploadMedia(c)
+}
+
+// ListMembershipLevels operation middleware
+func (siw *ServerInterfaceWrapper) ListMembershipLevels(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMembershipLevels(c)
+}
+
+// CreateMembershipLevel operation middleware
+func (siw *ServerInterfaceWrapper) CreateMembershipLevel(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateMembershipLevel(c)
+}
+
+// DeleteMembershipLevel operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMembershipLevel(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteMembershipLevel(c, id)
+}
+
+// UpdateMembershipLevel operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMembershipLevel(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateMembershipLevel(c, id)
 }
 
 // ListPlatforms operation middleware
@@ -1050,6 +1661,32 @@ func (siw *ServerInterfaceWrapper) RestorePost(c *gin.Context) {
 	}
 
 	siw.Handler.RestorePost(c, id)
+}
+
+// GetCommentSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetCommentSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCommentSettings(c)
+}
+
+// UpdateCommentSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCommentSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateCommentSettings(c)
 }
 
 // GetHomeSettings operation middleware
@@ -1281,6 +1918,56 @@ func (siw *ServerInterfaceWrapper) UpdateUser(c *gin.Context) {
 	siw.Handler.UpdateUser(c, id)
 }
 
+// DeleteUserMembership operation middleware
+func (siw *ServerInterfaceWrapper) DeleteUserMembership(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteUserMembership(c, id)
+}
+
+// SetUserMembership operation middleware
+func (siw *ServerInterfaceWrapper) SetUserMembership(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id IdPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SetUserMembership(c, id)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -1335,6 +2022,19 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
 	router.GET(options.BaseURL+"/settings/home", wrapper.GetHomeSettings)
 	router.PUT(options.BaseURL+"/settings/home", wrapper.UpdateHomeSettings)
+	router.GET(options.BaseURL+"/membership/levels", wrapper.ListMembershipLevels)
+	router.POST(options.BaseURL+"/membership/levels", wrapper.CreateMembershipLevel)
+	router.DELETE(options.BaseURL+"/membership/levels/:id", wrapper.DeleteMembershipLevel)
+	router.PUT(options.BaseURL+"/membership/levels/:id", wrapper.UpdateMembershipLevel)
+	router.DELETE(options.BaseURL+"/users/:id/membership", wrapper.DeleteUserMembership)
+	router.PUT(options.BaseURL+"/users/:id/membership", wrapper.SetUserMembership)
+	router.GET(options.BaseURL+"/comments", wrapper.ListComments)
+	router.DELETE(options.BaseURL+"/comments/:id", wrapper.DeleteComment)
+	router.PATCH(options.BaseURL+"/comments/:id", wrapper.UpdateComment)
+	router.GET(options.BaseURL+"/settings/comment", wrapper.GetCommentSettings)
+	router.PUT(options.BaseURL+"/settings/comment", wrapper.UpdateCommentSettings)
+	router.GET(options.BaseURL+"/link-reports", wrapper.ListLinkReports)
+	router.PATCH(options.BaseURL+"/link-reports/:id", wrapper.UpdateLinkReport)
 }
 
 type BadRequestJSONResponse Error
@@ -1690,6 +2390,246 @@ func (response UpdateCategory409JSONResponse) VisitUpdateCategoryResponse(w http
 	return err
 }
 
+type ListCommentsRequestObject struct {
+	Params ListCommentsParams
+}
+
+type ListCommentsResponseObject interface {
+	VisitListCommentsResponse(w http.ResponseWriter) error
+}
+
+type ListComments200JSONResponse AdminCommentPage
+
+func (response ListComments200JSONResponse) VisitListCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListComments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListComments401JSONResponse) VisitListCommentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCommentRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type DeleteCommentResponseObject interface {
+	VisitDeleteCommentResponse(w http.ResponseWriter) error
+}
+
+type DeleteComment204Response struct {
+}
+
+func (response DeleteComment204Response) VisitDeleteCommentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteComment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteComment401JSONResponse) VisitDeleteCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteComment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteComment404JSONResponse) VisitDeleteCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCommentRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdateCommentJSONRequestBody
+}
+
+type UpdateCommentResponseObject interface {
+	VisitUpdateCommentResponse(w http.ResponseWriter) error
+}
+
+type UpdateComment200JSONResponse AdminComment
+
+func (response UpdateComment200JSONResponse) VisitUpdateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateComment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateComment400JSONResponse) VisitUpdateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateComment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateComment401JSONResponse) VisitUpdateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateComment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateComment404JSONResponse) VisitUpdateCommentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLinkReportsRequestObject struct {
+	Params ListLinkReportsParams
+}
+
+type ListLinkReportsResponseObject interface {
+	VisitListLinkReportsResponse(w http.ResponseWriter) error
+}
+
+type ListLinkReports200JSONResponse LinkReportPage
+
+func (response ListLinkReports200JSONResponse) VisitListLinkReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLinkReports401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLinkReports401JSONResponse) VisitListLinkReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLinkReportRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdateLinkReportJSONRequestBody
+}
+
+type UpdateLinkReportResponseObject interface {
+	VisitUpdateLinkReportResponse(w http.ResponseWriter) error
+}
+
+type UpdateLinkReport204Response struct {
+}
+
+func (response UpdateLinkReport204Response) VisitUpdateLinkReportResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UpdateLinkReport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateLinkReport400JSONResponse) VisitUpdateLinkReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLinkReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateLinkReport401JSONResponse) VisitUpdateLinkReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLinkReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateLinkReport404JSONResponse) VisitUpdateLinkReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1815,6 +2755,242 @@ func (response UploadMedia401JSONResponse) VisitUploadMediaResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembershipLevelsRequestObject struct {
+}
+
+type ListMembershipLevelsResponseObject interface {
+	VisitListMembershipLevelsResponse(w http.ResponseWriter) error
+}
+
+type ListMembershipLevels200JSONResponse AdminLevelList
+
+func (response ListMembershipLevels200JSONResponse) VisitListMembershipLevelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembershipLevels401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMembershipLevels401JSONResponse) VisitListMembershipLevelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMembershipLevelRequestObject struct {
+	Body *CreateMembershipLevelJSONRequestBody
+}
+
+type CreateMembershipLevelResponseObject interface {
+	VisitCreateMembershipLevelResponse(w http.ResponseWriter) error
+}
+
+type CreateMembershipLevel201JSONResponse AdminLevel
+
+func (response CreateMembershipLevel201JSONResponse) VisitCreateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMembershipLevel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateMembershipLevel400JSONResponse) VisitCreateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMembershipLevel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateMembershipLevel401JSONResponse) VisitCreateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMembershipLevel409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateMembershipLevel409JSONResponse) VisitCreateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMembershipLevelRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type DeleteMembershipLevelResponseObject interface {
+	VisitDeleteMembershipLevelResponse(w http.ResponseWriter) error
+}
+
+type DeleteMembershipLevel204Response struct {
+}
+
+func (response DeleteMembershipLevel204Response) VisitDeleteMembershipLevelResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteMembershipLevel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteMembershipLevel401JSONResponse) VisitDeleteMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMembershipLevel404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteMembershipLevel404JSONResponse) VisitDeleteMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMembershipLevel409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteMembershipLevel409JSONResponse) VisitDeleteMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMembershipLevelRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *UpdateMembershipLevelJSONRequestBody
+}
+
+type UpdateMembershipLevelResponseObject interface {
+	VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error
+}
+
+type UpdateMembershipLevel200JSONResponse AdminLevel
+
+func (response UpdateMembershipLevel200JSONResponse) VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMembershipLevel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMembershipLevel400JSONResponse) VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMembershipLevel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMembershipLevel401JSONResponse) VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMembershipLevel404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateMembershipLevel404JSONResponse) VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMembershipLevel409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateMembershipLevel409JSONResponse) VisitUpdateMembershipLevelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2168,6 +3344,91 @@ func (response RestorePost404JSONResponse) VisitRestorePostResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCommentSettingsRequestObject struct {
+}
+
+type GetCommentSettingsResponseObject interface {
+	VisitGetCommentSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetCommentSettings200JSONResponse CommentSettings
+
+func (response GetCommentSettings200JSONResponse) VisitGetCommentSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCommentSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCommentSettings401JSONResponse) VisitGetCommentSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCommentSettingsRequestObject struct {
+	Body *UpdateCommentSettingsJSONRequestBody
+}
+
+type UpdateCommentSettingsResponseObject interface {
+	VisitUpdateCommentSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateCommentSettings200JSONResponse CommentSettings
+
+func (response UpdateCommentSettings200JSONResponse) VisitUpdateCommentSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCommentSettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateCommentSettings400JSONResponse) VisitUpdateCommentSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCommentSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateCommentSettings401JSONResponse) VisitUpdateCommentSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2616,6 +3877,101 @@ func (response UpdateUser404JSONResponse) VisitUpdateUserResponse(w http.Respons
 	return err
 }
 
+type DeleteUserMembershipRequestObject struct {
+	Id IdPath `json:"id"`
+}
+
+type DeleteUserMembershipResponseObject interface {
+	VisitDeleteUserMembershipResponse(w http.ResponseWriter) error
+}
+
+type DeleteUserMembership204Response struct {
+}
+
+func (response DeleteUserMembership204Response) VisitDeleteUserMembershipResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteUserMembership401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteUserMembership401JSONResponse) VisitDeleteUserMembershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserMembershipRequestObject struct {
+	Id   IdPath `json:"id"`
+	Body *SetUserMembershipJSONRequestBody
+}
+
+type SetUserMembershipResponseObject interface {
+	VisitSetUserMembershipResponse(w http.ResponseWriter) error
+}
+
+type SetUserMembership200JSONResponse UserItem
+
+func (response SetUserMembership200JSONResponse) VisitSetUserMembershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserMembership400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetUserMembership400JSONResponse) VisitSetUserMembershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserMembership401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetUserMembership401JSONResponse) VisitSetUserMembershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserMembership404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetUserMembership404JSONResponse) VisitSetUserMembershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetCsrfToken 获取 CSRF 令牌
@@ -2642,6 +3998,21 @@ type StrictServerInterface interface {
 	// UpdateCategory 修改分类
 	// (PUT /categories/{id})
 	UpdateCategory(ctx context.Context, request UpdateCategoryRequestObject) (UpdateCategoryResponseObject, error)
+	// ListComments 评论列表
+	// (GET /comments)
+	ListComments(ctx context.Context, request ListCommentsRequestObject) (ListCommentsResponseObject, error)
+	// DeleteComment 删除评论
+	// (DELETE /comments/{id})
+	DeleteComment(ctx context.Context, request DeleteCommentRequestObject) (DeleteCommentResponseObject, error)
+	// UpdateComment 审核评论
+	// (PATCH /comments/{id})
+	UpdateComment(ctx context.Context, request UpdateCommentRequestObject) (UpdateCommentResponseObject, error)
+	// ListLinkReports 下载地址失效反馈
+	// (GET /link-reports)
+	ListLinkReports(ctx context.Context, request ListLinkReportsRequestObject) (ListLinkReportsResponseObject, error)
+	// UpdateLinkReport 处理失效反馈
+	// (PATCH /link-reports/{id})
+	UpdateLinkReport(ctx context.Context, request UpdateLinkReportRequestObject) (UpdateLinkReportResponseObject, error)
 	// GetMe 当前管理员
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -2651,6 +4022,18 @@ type StrictServerInterface interface {
 	// UploadMedia 上传图片
 	// (POST /media)
 	UploadMedia(ctx context.Context, request UploadMediaRequestObject) (UploadMediaResponseObject, error)
+	// ListMembershipLevels 会员等级列表
+	// (GET /membership/levels)
+	ListMembershipLevels(ctx context.Context, request ListMembershipLevelsRequestObject) (ListMembershipLevelsResponseObject, error)
+	// CreateMembershipLevel 新建会员等级
+	// (POST /membership/levels)
+	CreateMembershipLevel(ctx context.Context, request CreateMembershipLevelRequestObject) (CreateMembershipLevelResponseObject, error)
+	// DeleteMembershipLevel 删除会员等级
+	// (DELETE /membership/levels/{id})
+	DeleteMembershipLevel(ctx context.Context, request DeleteMembershipLevelRequestObject) (DeleteMembershipLevelResponseObject, error)
+	// UpdateMembershipLevel 修改会员等级
+	// (PUT /membership/levels/{id})
+	UpdateMembershipLevel(ctx context.Context, request UpdateMembershipLevelRequestObject) (UpdateMembershipLevelResponseObject, error)
 	// ListPlatforms 已使用的资源平台
 	// (GET /platforms)
 	ListPlatforms(ctx context.Context, request ListPlatformsRequestObject) (ListPlatformsResponseObject, error)
@@ -2672,6 +4055,12 @@ type StrictServerInterface interface {
 	// RestorePost 从回收站恢复
 	// (POST /posts/{id}/restore)
 	RestorePost(ctx context.Context, request RestorePostRequestObject) (RestorePostResponseObject, error)
+	// GetCommentSettings 评论设置
+	// (GET /settings/comment)
+	GetCommentSettings(ctx context.Context, request GetCommentSettingsRequestObject) (GetCommentSettingsResponseObject, error)
+	// UpdateCommentSettings 修改评论设置
+	// (PUT /settings/comment)
+	UpdateCommentSettings(ctx context.Context, request UpdateCommentSettingsRequestObject) (UpdateCommentSettingsResponseObject, error)
 	// GetHomeSettings 首页设置
 	// (GET /settings/home)
 	GetHomeSettings(ctx context.Context, request GetHomeSettingsRequestObject) (GetHomeSettingsResponseObject, error)
@@ -2699,6 +4088,12 @@ type StrictServerInterface interface {
 	// UpdateUser 修改用户角色或状态
 	// (PATCH /users/{id})
 	UpdateUser(ctx context.Context, request UpdateUserRequestObject) (UpdateUserResponseObject, error)
+	// DeleteUserMembership 取消用户的会员
+	// (DELETE /users/{id}/membership)
+	DeleteUserMembership(ctx context.Context, request DeleteUserMembershipRequestObject) (DeleteUserMembershipResponseObject, error)
+	// SetUserMembership 开通或修改用户的会员
+	// (PUT /users/{id}/membership)
+	SetUserMembership(ctx context.Context, request SetUserMembershipRequestObject) (SetUserMembershipResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *gin.Context, request any) (any, error)
@@ -2975,6 +4370,150 @@ func (sh *strictHandler) UpdateCategory(ctx *gin.Context, id IdPath) {
 	}
 }
 
+// ListComments operation middleware
+func (sh *strictHandler) ListComments(ctx *gin.Context, params ListCommentsParams) {
+	var request ListCommentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListComments(ctx, request.(ListCommentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListComments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListCommentsResponseObject); ok {
+		if err := validResponse.VisitListCommentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteComment operation middleware
+func (sh *strictHandler) DeleteComment(ctx *gin.Context, id IdPath) {
+	var request DeleteCommentRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteComment(ctx, request.(DeleteCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteComment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteCommentResponseObject); ok {
+		if err := validResponse.VisitDeleteCommentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateComment operation middleware
+func (sh *strictHandler) UpdateComment(ctx *gin.Context, id IdPath) {
+	var request UpdateCommentRequestObject
+
+	request.Id = id
+
+	var body UpdateCommentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateComment(ctx, request.(UpdateCommentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateComment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateCommentResponseObject); ok {
+		if err := validResponse.VisitUpdateCommentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLinkReports operation middleware
+func (sh *strictHandler) ListLinkReports(ctx *gin.Context, params ListLinkReportsParams) {
+	var request ListLinkReportsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLinkReports(ctx, request.(ListLinkReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLinkReports")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListLinkReportsResponseObject); ok {
+		if err := validResponse.VisitListLinkReportsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateLinkReport operation middleware
+func (sh *strictHandler) UpdateLinkReport(ctx *gin.Context, id IdPath) {
+	var request UpdateLinkReportRequestObject
+
+	request.Id = id
+
+	var body UpdateLinkReportJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateLinkReport(ctx, request.(UpdateLinkReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateLinkReport")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateLinkReportResponseObject); ok {
+		if err := validResponse.VisitUpdateLinkReportResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	var request GetMeRequestObject
@@ -3054,6 +4593,120 @@ func (sh *strictHandler) UploadMedia(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(UploadMediaResponseObject); ok {
 		if err := validResponse.VisitUploadMediaResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMembershipLevels operation middleware
+func (sh *strictHandler) ListMembershipLevels(ctx *gin.Context) {
+	var request ListMembershipLevelsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMembershipLevels(ctx, request.(ListMembershipLevelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMembershipLevels")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMembershipLevelsResponseObject); ok {
+		if err := validResponse.VisitListMembershipLevelsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateMembershipLevel operation middleware
+func (sh *strictHandler) CreateMembershipLevel(ctx *gin.Context) {
+	var request CreateMembershipLevelRequestObject
+
+	var body CreateMembershipLevelJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateMembershipLevel(ctx, request.(CreateMembershipLevelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateMembershipLevel")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateMembershipLevelResponseObject); ok {
+		if err := validResponse.VisitCreateMembershipLevelResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteMembershipLevel operation middleware
+func (sh *strictHandler) DeleteMembershipLevel(ctx *gin.Context, id IdPath) {
+	var request DeleteMembershipLevelRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteMembershipLevel(ctx, request.(DeleteMembershipLevelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteMembershipLevel")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteMembershipLevelResponseObject); ok {
+		if err := validResponse.VisitDeleteMembershipLevelResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMembershipLevel operation middleware
+func (sh *strictHandler) UpdateMembershipLevel(ctx *gin.Context, id IdPath) {
+	var request UpdateMembershipLevelRequestObject
+
+	request.Id = id
+
+	var body UpdateMembershipLevelJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMembershipLevel(ctx, request.(UpdateMembershipLevelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMembershipLevel")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateMembershipLevelResponseObject); ok {
+		if err := validResponse.VisitUpdateMembershipLevelResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -3247,6 +4900,61 @@ func (sh *strictHandler) RestorePost(ctx *gin.Context, id IdPath) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(RestorePostResponseObject); ok {
 		if err := validResponse.VisitRestorePostResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCommentSettings operation middleware
+func (sh *strictHandler) GetCommentSettings(ctx *gin.Context) {
+	var request GetCommentSettingsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCommentSettings(ctx, request.(GetCommentSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCommentSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetCommentSettingsResponseObject); ok {
+		if err := validResponse.VisitGetCommentSettingsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCommentSettings operation middleware
+func (sh *strictHandler) UpdateCommentSettings(ctx *gin.Context) {
+	var request UpdateCommentSettingsRequestObject
+
+	var body UpdateCommentSettingsJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCommentSettings(ctx, request.(UpdateCommentSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCommentSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateCommentSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateCommentSettingsResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -3501,6 +5209,65 @@ func (sh *strictHandler) UpdateUser(ctx *gin.Context, id int64) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(UpdateUserResponseObject); ok {
 		if err := validResponse.VisitUpdateUserResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteUserMembership operation middleware
+func (sh *strictHandler) DeleteUserMembership(ctx *gin.Context, id IdPath) {
+	var request DeleteUserMembershipRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteUserMembership(ctx, request.(DeleteUserMembershipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteUserMembership")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteUserMembershipResponseObject); ok {
+		if err := validResponse.VisitDeleteUserMembershipResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUserMembership operation middleware
+func (sh *strictHandler) SetUserMembership(ctx *gin.Context, id IdPath) {
+	var request SetUserMembershipRequestObject
+
+	request.Id = id
+
+	var body SetUserMembershipJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUserMembership(ctx, request.(SetUserMembershipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUserMembership")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(SetUserMembershipResponseObject); ok {
+		if err := validResponse.VisitSetUserMembershipResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

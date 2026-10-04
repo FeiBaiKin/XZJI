@@ -31,7 +31,7 @@ func (h *Handler) GetSession(ctx context.Context, _ pubapi.GetSessionRequestObje
 	if err != nil {
 		return nil, err
 	}
-	out := toUser(u)
+	out := h.toUser(ctx, u)
 	return pubapi.GetSession200JSONResponse{User: &out}, nil
 }
 
@@ -74,7 +74,7 @@ func (h *Handler) Login(ctx context.Context, req pubapi.LoginRequestObject) (pub
 
 // authResult 网页写入会话 Cookie；App 在响应体中返回令牌。
 func (h *Handler) authResult(c *gin.Context, res auth.Result, persistent bool) pubapi.AuthResult {
-	out := pubapi.AuthResult{User: toUser(res.User)}
+	out := pubapi.AuthResult{User: h.toUser(c, res.User)}
 	if res.Session.Client == session.ClientApp {
 		out.Token = &res.Token
 		return out

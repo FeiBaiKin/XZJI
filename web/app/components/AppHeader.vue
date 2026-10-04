@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { user, ready } = useAuth()
-const { tree } = await useCategories()
+const [{ tree }] = await Promise.all([useCategories(), useLevels()])
 
 // 导航：首页 + 顶级分类 + 会员专区。当前页属于某个顶级分类（含子分类）时，该项高亮
 const nav = computed(() => [
@@ -47,7 +47,10 @@ const loginLink = computed(() => ({ path: '/login', query: route.path === '/' ? 
         </NuxtLink>
         <ClientOnly>
           <NuxtLink v-if="user" to="/user" class="flex items-center gap-2 text-title hover:text-theme">
-            <span class="grid size-8 place-items-center rounded-full bg-jb-orange text-sm font-bold text-white">{{ user.nickname.slice(0, 1) }}</span>
+            <span class="relative grid size-8 place-items-center rounded-full bg-jb-orange text-sm font-bold text-white">
+              {{ user.nickname.slice(0, 1) }}
+              <Icon v-if="user.membership" name="crown" class="absolute -right-1 -bottom-[3px] size-[15px] rounded-full bg-[#2A2A31] p-0.5 text-vip-gold" :title="user.membership.name" />
+            </span>
             <span class="max-w-[8em] truncate max-md:hidden">{{ user.nickname }}</span>
           </NuxtLink>
           <NuxtLink v-else-if="ready" :to="loginLink" class="text-sm text-body hover:text-theme max-md:hidden">登录 / 注册</NuxtLink>

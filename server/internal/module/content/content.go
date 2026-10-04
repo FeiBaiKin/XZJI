@@ -12,8 +12,10 @@ import (
 	"unicode/utf8"
 
 	"xzji/internal/dbgen"
+	"xzji/internal/module/access"
 	"xzji/internal/module/media"
 	"xzji/internal/platform/errs"
+	"xzji/internal/platform/ratelimit"
 )
 
 type Type string
@@ -85,12 +87,33 @@ type ChangelogEntry struct {
 }
 
 type Resource struct {
-	Platform  string
-	Version   string
-	FileSize  string
-	Icon      *media.Media
-	Attrs     []Attr
-	Changelog []ChangelogEntry
+	Platform     string
+	Version      string
+	FileSize     string
+	Icon         *media.Media
+	Attrs        []Attr
+	Changelog    []ChangelogEntry
+	DownloadCond string
+	// Links 只在查询单篇时填充；前台不返回地址和密码
+	Links []Link
+}
+
+// Link 下载地址。Status 为 ok / broken。
+type Link struct {
+	ID            int64
+	Name          string
+	URL           string
+	ExtractCode   string
+	UnzipPassword string
+	Status        string
+}
+
+// HiddenBlock 隐藏内容块，Seq 对应正文中占位符的序号。
+type HiddenBlock struct {
+	Seq         int
+	Cond        string
+	Title       string
+	ContentHTML string
 }
 
 type Post struct {
@@ -109,6 +132,11 @@ type Post struct {
 	Author         Author
 	Status         Status
 	Pinned         bool
+	Price          int64
+	MemberFreeRank int
+	MemberDiscount bool
+	// HiddenBlocks 只在查询单篇时填充；前台详情只返回条件和标题
+	HiddenBlocks   []HiddenBlock
 	ViewCount      int
 	CommentCount   int
 	SEOTitle       string
@@ -140,6 +168,17 @@ var (
 	ErrInvalidDate      = errs.Invalid("INVALID_DATE", "日期格式应为 YYYY-MM-DD")
 	ErrNotInTrash       = errs.Invalid("NOT_IN_TRASH", "只能彻底删除回收站里的内容")
 	ErrInTrash          = errs.Invalid("POST_IN_TRASH", "回收站里的内容需要先恢复才能编辑")
+	ErrNestedHidden     = errs.Invalid("NESTED_HIDDEN", "隐藏内容只能放在正文顶层，不能放在列表、引用或另一个隐藏内容里")
+	ErrTooManyHidden    = errs.Invalid("TOO_MANY_HIDDEN", "一篇内容最多 20 个隐藏块")
+	ErrPaidNoPrice      = errs.Invalid("PAID_NO_PRICE", "设置了“购买后可见”，需要填写价格或会员免费等级")
+	ErrInvalidPrice     = errs.Invalid("INVALID_PRICE", "价格需要在 0 到 99999 元之间")
+	ErrInvalidRank      = errs.Invalid("INVALID_RANK", "会员免费等级不正确")
+	ErrTooManyLinks     = errs.Invalid("TOO_MANY_LINKS", "下载地址最多 10 个")
+	ErrInvalidLink      = errs.Invalid("INVALID_LINK", "下载地址需要填写名称和以 http(s)、magnet、ed2k 开头的网址")
+	ErrLinkNotFound     = errs.NotFound("LINK_NOT_FOUND", "下载地址不存在")
+	ErrLoginRequired    = errs.New(errs.KindUnauthorized, "LOGIN_REQUIRED", "请先登录")
+	ErrAlreadyReported  = errs.New(errs.KindConflict, "ALREADY_REPORTED", "你已经反馈过这个地址了，处理后会尽快补上")
+	ErrDailyLimit       = errs.New(errs.KindTooMany, "DAILY_LIMIT", "今天的会员免费下载次数已经用完了，明天再来，或者单独购买")
 )
 
 func tooLong(field string, n int) *errs.Error {
@@ -214,18 +253,30 @@ type Auditor interface {
 	Record(ctx context.Context, adminID int64, action, targetType string, targetID int64, detail any, ip string) error
 }
 
-type Service struct {
-	db    *sql.DB
-	q     *dbgen.Queries
-	media MediaLookup
-	users UserLookup
-	audit Auditor
-	now   func() time.Time
+// ViewerResolver 查询访问者在某篇内容上的身份，由 access.Service 实现。
+type ViewerResolver interface {
+	Viewer(ctx context.Context, id access.Identity, postID, authorID int64) (access.Viewer, error)
 }
 
-func NewService(db *sql.DB, media MediaLookup, users UserLookup, audit Auditor) *Service {
-	return &Service{db: db, q: dbgen.New(db), media: media, users: users, audit: audit, now: time.Now}
+type Service struct {
+	db      *sql.DB
+	q       *dbgen.Queries
+	media   MediaLookup
+	users   UserLookup
+	audit   Auditor
+	viewers ViewerResolver
+	limiter ratelimit.Limiter
+	// loc 统计“每天”下载次数时的时区
+	loc *time.Location
+	now func() time.Time
 }
+
+func NewService(db *sql.DB, media MediaLookup, users UserLookup, audit Auditor, limiter ratelimit.Limiter, loc *time.Location) *Service {
+	return &Service{db: db, q: dbgen.New(db), media: media, users: users, audit: audit, limiter: limiter, loc: loc, now: time.Now}
+}
+
+// SetViewerResolver access.Service 依赖评论模块，评论模块又依赖本模块，所以装配后再注入。
+func (s *Service) SetViewerResolver(v ViewerResolver) { s.viewers = v }
 
 func nullInt64(p *int64) sql.NullInt64 {
 	if p == nil || *p == 0 {

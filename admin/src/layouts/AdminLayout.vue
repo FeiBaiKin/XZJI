@@ -27,12 +27,15 @@ async function onCommand(cmd: string) {
           <el-menu-item index="/posts">内容列表</el-menu-item>
           <el-menu-item index="/categories">分类管理</el-menu-item>
           <el-menu-item index="/tags">标签管理</el-menu-item>
+          <el-menu-item index="/comments">评论管理</el-menu-item>
+          <el-menu-item index="/link-reports">失效反馈</el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group title="运营">
           <el-menu-item index="/settings/home">首页设置</el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group title="用户">
           <el-menu-item index="/users">用户管理</el-menu-item>
+          <el-menu-item index="/levels">会员等级</el-menu-item>
         </el-menu-item-group>
       </el-menu>
     </el-aside>

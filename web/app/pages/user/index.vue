@@ -73,9 +73,15 @@ async function logout() {
       <div class="-mt-[34px] flex flex-wrap items-end gap-4 px-6 pb-[18px] max-md:px-4">
         <span class="grid size-[84px] shrink-0 place-items-center rounded-full border-4 border-white bg-jb-orange text-[32px] font-bold text-white shadow-card">{{ user.nickname.slice(0, 1) }}</span>
         <div class="min-w-0">
-          <h1 class="truncate text-xl font-bold text-title">{{ user.nickname }}</h1>
+          <h1 class="flex items-center gap-2 truncate text-xl font-bold text-title">
+            {{ user.nickname }}
+            <span v-if="user.membership" class="inline-flex items-center gap-[3px] rounded-full bg-jb-vip px-2 py-1 text-xs leading-none font-bold text-[#F6D48F]">
+              <Icon name="crown" class="size-3" />{{ user.membership.name }}
+            </span>
+          </h1>
           <p class="flex flex-wrap gap-x-4 text-[12.5px] text-muted">
             <span>ID {{ user.id }}</span><span>{{ user.email }}</span><span>注册于 {{ joined }}</span>
+            <span v-if="user.membership">会员{{ user.membership.expiresAt ? `${dateOnly(user.membership.expiresAt)} 到期` : '永久有效' }}</span>
           </p>
         </div>
         <button class="btn btn-soft ml-auto max-md:ml-0" @click="logout">

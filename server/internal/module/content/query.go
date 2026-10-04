@@ -15,37 +15,40 @@ import (
 
 // listRow 列表查询的一行：内容主表加资源扩展信息（文章没有资源信息，相应字段为 NULL）。
 type listRow struct {
-	ID           int64
-	Type         string
-	Title        string
-	Summary      string
-	CoverMediaID sql.NullInt64
-	CategoryID   int64
-	AuthorID     int64
-	Status       string
-	Pinned       bool
-	ViewCount    int32
-	CommentCount int32
-	PublishedAt  sql.NullTime
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Platform     sql.NullString
-	Version      sql.NullString
-	FileSize     sql.NullString
-	IconMediaID  sql.NullInt64
+	ID             int64
+	Type           string
+	Title          string
+	Summary        string
+	CoverMediaID   sql.NullInt64
+	CategoryID     int64
+	AuthorID       int64
+	Status         string
+	Pinned         bool
+	ViewCount      int32
+	CommentCount   int32
+	PublishedAt    sql.NullTime
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Price          int64
+	MemberFreeRank int32
+	Platform       sql.NullString
+	Version        sql.NullString
+	FileSize       sql.NullString
+	IconMediaID    sql.NullInt64
+	DownloadCond   sql.NullString
 }
 
 var listColumns = []string{
 	"p.id", "p.type", "p.title", "p.summary", "p.cover_media_id", "p.category_id", "p.author_id", "p.status",
 	"p.pinned", "p.view_count", "p.comment_count", "p.published_at", "p.created_at", "p.updated_at",
-	"r.platform", "r.version", "r.file_size", "r.icon_media_id",
+	"p.price", "p.member_free_rank", "r.platform", "r.version", "r.file_size", "r.icon_media_id", "r.download_cond",
 }
 
 func (r *listRow) dest() []any {
 	return []any{
 		&r.ID, &r.Type, &r.Title, &r.Summary, &r.CoverMediaID, &r.CategoryID, &r.AuthorID, &r.Status,
 		&r.Pinned, &r.ViewCount, &r.CommentCount, &r.PublishedAt, &r.CreatedAt, &r.UpdatedAt,
-		&r.Platform, &r.Version, &r.FileSize, &r.IconMediaID,
+		&r.Price, &r.MemberFreeRank, &r.Platform, &r.Version, &r.FileSize, &r.IconMediaID, &r.DownloadCond,
 	}
 }
 
@@ -64,7 +67,9 @@ type listFilter struct {
 	categoryIDs []int64
 	tagID       int64
 	platform    string
-	keyword     string
+	// access 按下载区解锁方式筛选资源：free / login / vip / paid
+	access  string
+	keyword string
 	// keywordSummary 关键词同时匹配摘要（前台搜索）
 	keywordSummary bool
 	excludeID      int64
@@ -93,6 +98,16 @@ func (s *Service) where(f listFilter) sq.And {
 	}
 	if f.platform != "" {
 		w = append(w, sq.Eq{"r.platform": f.platform})
+	}
+	switch f.access {
+	case "free":
+		w = append(w, sq.Eq{"r.download_cond": "public"})
+	case "login":
+		w = append(w, sq.Eq{"r.download_cond": []string{"login", "comment"}})
+	case "vip":
+		w = append(w, sq.Or{sq.Like{"r.download_cond": "member:%"}, sq.And{sq.Eq{"r.download_cond": "paid"}, sq.Gt{"p.member_free_rank": 0}}})
+	case "paid":
+		w = append(w, sq.Eq{"r.download_cond": "paid"}, sq.Gt{"p.price": 0})
 	}
 	if f.keyword != "" {
 		like := platformdb.LikeContains(f.keyword)
@@ -204,7 +219,8 @@ func (s *Service) hydrate(ctx context.Context, rows []listRow) ([]*Post, error) 
 		p := &Post{
 			ID: r.ID, Type: Type(r.Type), Title: r.Title, Summary: r.Summary,
 			Category: catRef[r.CategoryID], Tags: tags[r.ID], Author: Author{ID: r.AuthorID, Nickname: names[r.AuthorID]},
-			Status: Status(r.Status), Pinned: r.Pinned, ViewCount: int(r.ViewCount), CommentCount: int(r.CommentCount),
+			Status: Status(r.Status), Pinned: r.Pinned, Price: r.Price, MemberFreeRank: int(r.MemberFreeRank),
+			ViewCount: int(r.ViewCount), CommentCount: int(r.CommentCount),
 			PublishedAt: ptrTime(r.PublishedAt), CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 		}
 		if p.Tags == nil {
@@ -214,7 +230,7 @@ func (s *Service) hydrate(ctx context.Context, rows []listRow) ([]*Post, error) 
 			p.Cover = &m
 		}
 		if Type(r.Type) == TypeResource {
-			p.Resource = &Resource{Platform: r.Platform.String, Version: r.Version.String, FileSize: r.FileSize.String}
+			p.Resource = &Resource{Platform: r.Platform.String, Version: r.Version.String, FileSize: r.FileSize.String, DownloadCond: r.DownloadCond.String}
 			if m, ok := medias[r.IconMediaID.Int64]; ok {
 				p.Resource.Icon = &m
 			}
@@ -249,7 +265,9 @@ type PublicQuery struct {
 	Category string
 	Tag      string
 	Platform string
-	Keyword  string
+	// Access 按下载区解锁方式筛选资源：free / login / vip / paid
+	Access  string
+	Keyword string
 	// Sort 为 views 时按浏览量排序，否则置顶在前、按发布时间倒序
 	Sort     string
 	Page     int
@@ -272,7 +290,7 @@ func (s *Service) categoryScope(ctx context.Context, slug string) ([]int64, erro
 
 // ListPublished 前台列表，只返回已发布且到了发布时间的内容。
 func (s *Service) ListPublished(ctx context.Context, in PublicQuery) (PostPage, error) {
-	f := listFilter{public: true, typ: in.Type, platform: strings.TrimSpace(in.Platform), keywordSummary: true}
+	f := listFilter{public: true, typ: in.Type, platform: strings.TrimSpace(in.Platform), access: in.Access, keywordSummary: true}
 	f.page, f.size = normPage(in.Page, in.PageSize, 12, 50)
 	f.keyword = strings.TrimSpace(in.Keyword)
 	if in.Sort == "views" {

@@ -41,6 +41,38 @@ type Category struct {
 	UpdatedAt      time.Time
 }
 
+// 评论
+type Comment struct {
+	ID     int64
+	PostID int64
+	UserID int64
+	// 所属的一级评论，NULL 表示本身是一级评论
+	ParentID sql.NullInt64
+	// 回复楼中楼时被回复的用户，用于显示 @昵称
+	ReplyToUserID sql.NullInt64
+	// 纯文本
+	Content string
+	// pending / approved / spam
+	Status    string
+	Ip        string
+	UserAgent string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// 下载记录
+type DownloadLog struct {
+	ID int64
+	// 0 表示未登录
+	UserID int64
+	PostID int64
+	LinkID int64
+	// 靠会员身份免费下载，只有这类下载计入每日次数
+	IsMemberFree bool
+	Ip           string
+	CreatedAt    time.Time
+}
+
 // 邮箱验证码
 type EmailCode struct {
 	ID    int64
@@ -54,6 +86,19 @@ type EmailCode struct {
 	ExpiresAt time.Time
 	// 已使用或已作废的时间
 	UsedAt    sql.NullTime
+	CreatedAt time.Time
+}
+
+// 下载地址失效反馈
+type LinkReport struct {
+	ID     int64
+	LinkID int64
+	PostID int64
+	UserID int64
+	Reason string
+	// pending / resolved / ignored
+	Status    string
+	HandledAt sql.NullTime
 	CreatedAt time.Time
 }
 
@@ -72,6 +117,22 @@ type Media struct {
 	// 各尺寸缩略图路径
 	Variants  []byte
 	CreatedAt time.Time
+}
+
+// 会员等级
+type MembershipLevel struct {
+	ID   int64
+	Name string
+	// 数字越大等级越高
+	Rank int32
+	// 80 表示 8 折，100 表示不打折
+	DiscountRate int32
+	// 每天靠会员身份免费下载的次数，0 表示不限
+	DailyDownloadLimit int32
+	// active / disabled
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // 内容（文章和资源）
@@ -103,6 +164,25 @@ type Post struct {
 	PublishedAt sql.NullTime
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	// 单独购买的价格（分），0 表示不能单独购买
+	Price int64
+	// 会员等级达到该 rank 即免费，0 表示会员也不免费
+	MemberFreeRank int32
+	// 等级不够免费的会员是否享受等级折扣
+	MemberDiscount bool
+}
+
+// 隐藏内容块
+type PostHiddenBlock struct {
+	ID     int64
+	PostID int64
+	// 对应正文中占位符的序号，从 1 开始
+	Seq int32
+	// 解锁条件，同 resources.download_cond
+	Cond string
+	// 未解锁时显示的标题
+	Title       string
+	ContentHtml string
 }
 
 // 内容与标签
@@ -126,6 +206,24 @@ type Resource struct {
 	Attrs []byte
 	// 更新日志 [{version, date, note}]，新的在前
 	Changelog []byte
+	// 下载区解锁条件：public / login / comment / paid / member:N
+	DownloadCond string
+}
+
+// 下载地址
+type ResourceLink struct {
+	ID     int64
+	PostID int64
+	// 如：百度网盘、夸克网盘
+	Name          string
+	Url           string
+	ExtractCode   string
+	UnzipPassword string
+	Sort          int32
+	// ok / broken
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // 登录会话
@@ -175,4 +273,13 @@ type User struct {
 	LastLoginAt     sql.NullTime
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+}
+
+// 用户当前的会员状态
+type UserMembership struct {
+	UserID  int64
+	LevelID int64
+	// NULL 表示永久
+	ExpiresAt sql.NullTime
+	UpdatedAt time.Time
 }

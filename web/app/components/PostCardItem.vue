@@ -11,7 +11,7 @@ const version = computed(() => props.post.resource?.version)
     class="group flex flex-col overflow-hidden rounded-card bg-card transition duration-200 hover:-translate-y-[3px] hover:shadow-[0_10px_24px_-10px_rgba(38,42,49,.22)]"
     :class="flat ? 'border border-line' : 'shadow-card'"
   >
-    <PostCover :post="post" pin />
+    <PostCover :post="post" pin ribbon />
     <span class="flex flex-1 flex-col gap-2 px-3.5 py-3 max-md:p-2.5">
       <b class="line-clamp-2 min-h-[3em] text-[15px] leading-normal font-semibold text-title group-hover:text-theme max-md:text-sm">
         {{ post.title }}<em v-if="version" class="ml-1 font-medium not-italic text-theme">v{{ version }}</em>

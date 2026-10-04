@@ -1,5 +1,6 @@
 # 生产环境后端配置样例，复制为 /opt/xzji/server/config.yaml 后修改
 env: prod
+timezone: Asia/Shanghai
 
 http:
   addr: 127.0.0.1:8080 # 分机部署时改为 0.0.0.0:8080 并用防火墙限制来源
