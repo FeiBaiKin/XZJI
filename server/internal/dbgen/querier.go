@@ -14,6 +14,8 @@ import (
 type Querier interface {
 	AddHiddenBlock(ctx context.Context, arg AddHiddenBlockParams) error
 	AddPostTag(ctx context.Context, arg AddPostTagParams) error
+	AddPurchase(ctx context.Context, arg AddPurchaseParams) (int64, error)
+	CloseOrder(ctx context.Context, id int64) (int64, error)
 	CountActivePostsByCategory(ctx context.Context) ([]CountActivePostsByCategoryRow, error)
 	CountApprovedComments(ctx context.Context, postID int64) (int64, error)
 	CountChildCategories(ctx context.Context, parentID sql.NullInt64) (int64, error)
@@ -21,20 +23,28 @@ type Querier interface {
 	CountLinkReports(ctx context.Context, arg CountLinkReportsParams) (int64, error)
 	CountMemberFreeDownloadsSince(ctx context.Context, arg CountMemberFreeDownloadsSinceParams) (int64, error)
 	CountMembersOfLevel(ctx context.Context, levelID int64) (int64, error)
+	CountPlansOfLevel(ctx context.Context, levelID int64) (int64, error)
 	CountPostsInCategory(ctx context.Context, categoryID int64) (int64, error)
 	CountPublishedPostsByCategory(ctx context.Context, publishedAt sql.NullTime) ([]CountPublishedPostsByCategoryRow, error)
 	CountPublishedPostsByTag(ctx context.Context, arg CountPublishedPostsByTagParams) (int64, error)
 	CountRootComments(ctx context.Context, arg CountRootCommentsParams) (int64, error)
 	CountTags(ctx context.Context, arg CountTagsParams) (int64, error)
+	CountUserLedger(ctx context.Context, arg CountUserLedgerParams) (int64, error)
+	CountUserOrders(ctx context.Context, arg CountUserOrdersParams) (int64, error)
+	CountUserPurchases(ctx context.Context, userID int64) (int64, error)
 	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
 	CreateAdminLog(ctx context.Context, arg CreateAdminLogParams) error
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (int64, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) (int64, error)
 	CreateDownloadLog(ctx context.Context, arg CreateDownloadLogParams) error
 	CreateEmailCode(ctx context.Context, arg CreateEmailCodeParams) error
+	CreateLedgerEntry(ctx context.Context, arg CreateLedgerEntryParams) error
 	CreateLinkReport(ctx context.Context, arg CreateLinkReportParams) error
 	CreateMedia(ctx context.Context, arg CreateMediaParams) (int64, error)
 	CreateMembershipLevel(ctx context.Context, arg CreateMembershipLevelParams) (int64, error)
+	CreateMembershipPlan(ctx context.Context, arg CreateMembershipPlanParams) (int64, error)
+	CreateOrder(ctx context.Context, arg CreateOrderParams) (int64, error)
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) error
 	CreatePost(ctx context.Context, arg CreatePostParams) (int64, error)
 	CreateResourceLink(ctx context.Context, arg CreateResourceLinkParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
@@ -44,12 +54,15 @@ type Querier interface {
 	DeleteComment(ctx context.Context, id int64) error
 	DeleteCommentReplies(ctx context.Context, parentID sql.NullInt64) error
 	DeleteExpiredEmailCodes(ctx context.Context, expiresAt time.Time) (int64, error)
+	DeleteExpiredMemberships(ctx context.Context, expiresAt sql.NullTime) (int64, error)
 	DeleteExpiredSessions(ctx context.Context, expiresAt time.Time) (int64, error)
 	DeleteHiddenBlocks(ctx context.Context, postID int64) error
 	DeleteMembershipLevel(ctx context.Context, id int64) error
+	DeleteMembershipPlan(ctx context.Context, id int64) error
 	DeletePost(ctx context.Context, id int64) error
 	DeletePostTags(ctx context.Context, postID int64) error
 	DeletePostTagsByTag(ctx context.Context, tagID int64) error
+	DeletePurchaseOfOrder(ctx context.Context, arg DeletePurchaseOfOrderParams) (int64, error)
 	DeleteResource(ctx context.Context, postID int64) error
 	DeleteResourceLink(ctx context.Context, arg DeleteResourceLinkParams) error
 	DeleteResourceLinks(ctx context.Context, postID int64) error
@@ -57,6 +70,9 @@ type Querier interface {
 	DeleteTag(ctx context.Context, id int64) error
 	DeleteUserMembership(ctx context.Context, userID int64) error
 	DeleteUserSessionsExcept(ctx context.Context, arg DeleteUserSessionsExceptParams) error
+	// 用 ON DUPLICATE KEY UPDATE 直接拿行的排他锁；INSERT IGNORE 遇到已有行只拿共享锁，
+	// 随后 FOR UPDATE 升级为排他锁时，并发的两个事务会互相死锁
+	EnsureWallet(ctx context.Context, userID int64) error
 	ExtendSession(ctx context.Context, arg ExtendSessionParams) error
 	GetActiveSession(ctx context.Context, arg GetActiveSessionParams) (GetActiveSessionRow, error)
 	GetCategory(ctx context.Context, id int64) (Category, error)
@@ -65,6 +81,11 @@ type Querier interface {
 	GetLinkReport(ctx context.Context, id int64) (LinkReport, error)
 	GetMedia(ctx context.Context, id int64) (Media, error)
 	GetMembershipLevel(ctx context.Context, id int64) (MembershipLevel, error)
+	GetMembershipPlan(ctx context.Context, id int64) (MembershipPlan, error)
+	GetOrder(ctx context.Context, id int64) (Order, error)
+	GetOrderByNo(ctx context.Context, orderNo string) (Order, error)
+	GetOrderByNoForUpdate(ctx context.Context, orderNo string) (Order, error)
+	GetPaymentByTrade(ctx context.Context, arg GetPaymentByTradeParams) (Payment, error)
 	GetPost(ctx context.Context, id int64) (Post, error)
 	GetResource(ctx context.Context, postID int64) (Resource, error)
 	GetResourceLink(ctx context.Context, arg GetResourceLinkParams) (ResourceLink, error)
@@ -75,19 +96,28 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserMembership(ctx context.Context, userID int64) (GetUserMembershipRow, error)
+	GetUserMembershipForUpdate(ctx context.Context, userID int64) (UserMembership, error)
+	GetWalletBalance(ctx context.Context, userID int64) (int64, error)
+	GetWalletForUpdate(ctx context.Context, userID int64) (int64, error)
 	HasApprovedComment(ctx context.Context, arg HasApprovedCommentParams) (bool, error)
 	HasMemberFreeDownloadSince(ctx context.Context, arg HasMemberFreeDownloadSinceParams) (bool, error)
 	HasPendingLinkReport(ctx context.Context, arg HasPendingLinkReportParams) (bool, error)
+	HasPurchase(ctx context.Context, arg HasPurchaseParams) (bool, error)
 	IncrEmailCodeAttempts(ctx context.Context, id int64) error
 	InvalidateEmailCodes(ctx context.Context, arg InvalidateEmailCodesParams) error
+	// 已发起第三方支付、还没确认到账的订单，用于补单
+	ListAwaitingOrders(ctx context.Context, arg ListAwaitingOrdersParams) ([]Order, error)
 	ListCategories(ctx context.Context) ([]Category, error)
 	ListCommentReplies(ctx context.Context, arg ListCommentRepliesParams) ([]Comment, error)
 	ListCommentsAdmin(ctx context.Context, arg ListCommentsAdminParams) ([]Comment, error)
+	ListExpiredPendingOrders(ctx context.Context, arg ListExpiredPendingOrdersParams) ([]Order, error)
 	ListHiddenBlocks(ctx context.Context, postID int64) ([]PostHiddenBlock, error)
 	ListHotTags(ctx context.Context, arg ListHotTagsParams) ([]ListHotTagsRow, error)
 	ListLinkReports(ctx context.Context, arg ListLinkReportsParams) ([]ListLinkReportsRow, error)
 	ListMediaByIDs(ctx context.Context, ids []int64) ([]Media, error)
 	ListMembershipLevels(ctx context.Context) ([]ListMembershipLevelsRow, error)
+	ListMembershipPlans(ctx context.Context) ([]MembershipPlan, error)
+	ListPaymentsOfOrder(ctx context.Context, orderID int64) ([]Payment, error)
 	ListPlatformNames(ctx context.Context) ([]string, error)
 	ListPostTitles(ctx context.Context, ids []int64) ([]ListPostTitlesRow, error)
 	ListResourceLinks(ctx context.Context, postID int64) ([]ResourceLink, error)
@@ -95,15 +125,29 @@ type Querier interface {
 	ListTagsByNames(ctx context.Context, names []string) ([]Tag, error)
 	ListTagsByPostIDs(ctx context.Context, postIds []int64) ([]ListTagsByPostIDsRow, error)
 	ListTagsWithCount(ctx context.Context, arg ListTagsWithCountParams) ([]ListTagsWithCountRow, error)
+	ListUserBriefs(ctx context.Context, ids []int64) ([]ListUserBriefsRow, error)
+	ListUserLedger(ctx context.Context, arg ListUserLedgerParams) ([]WalletLedger, error)
 	ListUserMemberships(ctx context.Context, userIds []int64) ([]ListUserMembershipsRow, error)
 	ListUserNicknames(ctx context.Context, ids []int64) ([]ListUserNicknamesRow, error)
+	ListUserOrders(ctx context.Context, arg ListUserOrdersParams) ([]Order, error)
+	ListUserPurchases(ctx context.Context, arg ListUserPurchasesParams) ([]ListUserPurchasesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	ListWalletBalances(ctx context.Context, userIds []int64) ([]ListWalletBalancesRow, error)
 	MarkEmailCodeUsed(ctx context.Context, arg MarkEmailCodeUsedParams) (int64, error)
+	MarkOrderPaid(ctx context.Context, arg MarkOrderPaidParams) (int64, error)
+	// 渠道确认到账时，已超时关闭的订单同样改为已支付：钱已经收到，不能不认
+	MarkOrderPaidByChannel(ctx context.Context, arg MarkOrderPaidByChannelParams) (int64, error)
+	RefundOrder(ctx context.Context, arg RefundOrderParams) (int64, error)
+	SetOrderSnapshot(ctx context.Context, arg SetOrderSnapshotParams) error
 	SetPostCommentCount(ctx context.Context, arg SetPostCommentCountParams) error
+	SetWalletBalance(ctx context.Context, arg SetWalletBalanceParams) error
+	StartOrderPay(ctx context.Context, arg StartOrderPayParams) (int64, error)
+	SumUserSpent(ctx context.Context, userID int64) (int64, error)
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
 	UpdateCommentStatus(ctx context.Context, arg UpdateCommentStatusParams) error
 	UpdateLinkReportStatus(ctx context.Context, arg UpdateLinkReportStatusParams) error
 	UpdateMembershipLevel(ctx context.Context, arg UpdateMembershipLevelParams) error
+	UpdateMembershipPlan(ctx context.Context, arg UpdateMembershipPlanParams) error
 	UpdatePost(ctx context.Context, arg UpdatePostParams) error
 	UpdatePostStatus(ctx context.Context, arg UpdatePostStatusParams) (int64, error)
 	UpdateResourceLink(ctx context.Context, arg UpdateResourceLinkParams) error

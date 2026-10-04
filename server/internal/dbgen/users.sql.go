@@ -118,6 +118,49 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	return i, err
 }
 
+const listUserBriefs = `-- name: ListUserBriefs :many
+SELECT id, nickname, email FROM users WHERE id IN (/*SLICE:ids*/?)
+`
+
+type ListUserBriefsRow struct {
+	ID       int64
+	Nickname string
+	Email    string
+}
+
+func (q *Queries) ListUserBriefs(ctx context.Context, ids []int64) ([]ListUserBriefsRow, error) {
+	query := listUserBriefs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserBriefsRow{}
+	for rows.Next() {
+		var i ListUserBriefsRow
+		if err := rows.Scan(&i.ID, &i.Nickname, &i.Email); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserNicknames = `-- name: ListUserNicknames :many
 SELECT id, nickname FROM users WHERE id IN (/*SLICE:ids*/?)
 `

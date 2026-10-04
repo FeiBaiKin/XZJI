@@ -20,6 +20,7 @@ export default defineNuxtConfig({
   routeRules: {
     // 用户中心、登录相关页面不需要 SEO，只在浏览器端渲染
     '/user/**': { ssr: false },
+    '/pay/**': { ssr: false },
     '/login': { ssr: false },
     '/forgot': { ssr: false },
   },

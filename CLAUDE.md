@@ -32,6 +32,7 @@ deploy/          Nginx、systemd、建库 SQL 等部署样例
 - 首次环境：`task tools`、`task install`，复制 `server/config.example.yaml` 为 `server/config.yaml`
 - 集成测试连接 `server/.env.test` 中的 `XZJI_TEST_DB_DSN`（库名必须以 `_test` 结尾，测试会清空它），复制 `.env.test.example` 后修改
 - 创建管理员：`cd server && go run ./cmd/xzji admin create -email 你的邮箱`
+- 支付：开发环境在 `config.yaml` 设 `pay.mock: true`，微信、支付宝走模拟渠道，支付弹窗出现“模拟支付成功”按钮；真实渠道参数在后台“支付设置”填写，私钥用 `secret_key_file` 加密存库
 
 ## 必须遵守的规则
 
@@ -45,7 +46,8 @@ deploy/          Nginx、systemd、建库 SQL 等部署样例
 - 表结构只能通过新增迁移文件修改，已经发布的迁移文件不再改动。
 - 查询写在 `db/queries/*.sql` 由 sqlc 生成；后台多条件筛选可用 squirrel 拼接，必须参数绑定。不用 ORM。
 - 金额一律 BIGINT 存"分"；时间存 UTC（连接已强制 UTC）；字符集 utf8mb4。
-- 余额只能通过写流水变动，同一事务内先写 `wallet_ledger` 再改 `wallets.balance`。
+- 余额只能通过写流水变动，同一事务内先写 `wallet_ledger` 再改 `wallets.balance`（用 `wallet.Service.ChangeTx`）。
+- 跨模块的事务（如支付成功后发放权益）由 service 提供接收 `*sql.Tx` 的方法，加锁顺序固定为订单 → 钱包 → 会员/已购，避免死锁。
 - 订单状态更新必须带原状态条件（`WHERE id=? AND status='pending'`），以影响行数判断是否成功，保证幂等。
 
 **模块边界**

@@ -27,6 +27,8 @@ tags:
     description: 评论
   - name: membership
     description: 会员
+  - name: orders
+    description: 订单与支付
 paths:
   /health:
     get:
@@ -614,6 +616,304 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
+  /membership/plans:
+    get:
+      operationId: listMembershipPlans
+      summary: 会员套餐
+      description: 启用的等级及其启用的套餐，按 rank 从低到高。用于会员页展示价格，具体应付金额以报价接口为准。
+      tags: [membership]
+      responses:
+        "200":
+          description: 等级与套餐
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanCatalog"
+
+  /orders/quote:
+    get:
+      operationId: quoteOrder
+      summary: 下单前报价
+      description: |
+        按当前用户的身份计算价格明细（会员折扣、续费顺延、升级折算），同时返回各支付方式是否可用。
+        只计算不下单；金额一律以服务端计算为准。
+      tags: [orders]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/OrderType"
+        - name: targetId
+          in: query
+          description: 内容 ID 或套餐 ID，充值不用传
+          schema:
+            type: integer
+            format: int64
+        - name: amount
+          in: query
+          description: 充值金额（分），1 到 5000 元
+          schema:
+            type: integer
+            format: int64
+        - name: scene
+          in: query
+          schema:
+            $ref: "#/components/schemas/PayScene"
+      responses:
+        "200":
+          description: 价格明细
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderQuote"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /orders:
+    post:
+      operationId: createOrder
+      summary: 下单并发起支付
+      description: |
+        按服务端计算的价格创建订单（30 分钟内未支付自动关闭），并用选定的方式发起支付：
+        余额支付直接完成；微信、支付宝返回二维码内容或跳转地址，之后轮询订单状态确认结果。
+      tags: [orders]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: 订单与支付操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /orders/{orderNo}:
+    get:
+      operationId: getOrder
+      summary: 订单详情
+      description: 支付页轮询用。待支付的订单会顺便向支付渠道查询一次，回调延迟时也能尽快确认。
+      tags: [orders]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      responses:
+        "200":
+          description: 订单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{orderNo}/pay:
+    post:
+      operationId: payOrder
+      summary: 继续支付
+      description: 为自己的待支付订单重新发起支付，可以换一种支付方式；换渠道时会先关闭原渠道的交易。
+      tags: [orders]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayOrderRequest"
+      responses:
+        "200":
+          description: 订单与支付操作
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /orders/{orderNo}/mock-pay:
+    post:
+      operationId: mockPayOrder
+      summary: 模拟支付成功（仅开发环境）
+      description: 后端开启模拟支付时可用，模拟在微信或支付宝完成付款；生产环境始终返回 404。
+      tags: [orders]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      responses:
+        "200":
+          description: 订单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /pay/notify/{channel}:
+    post:
+      operationId: payNotify
+      summary: 支付渠道异步回调
+      description: |
+        由微信支付、支付宝的服务器调用，请求体格式由渠道决定（微信为 JSON，支付宝为表单），
+        验签通过并处理完成后返回纯文本 success；处理失败返回错误，渠道会稍后重试。
+      tags: [orders]
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [wechat, alipay]
+      responses:
+        "200":
+          description: 已处理
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /me/overview:
+    get:
+      operationId: getAccountOverview
+      summary: 用户中心概览
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      responses:
+        "200":
+          description: 余额、已购、今日下载
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/orders:
+    get:
+      operationId: listMyOrders
+      summary: 我的订单
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 订单分页列表，新的在前
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/purchases:
+    get:
+      operationId: listMyPurchases
+      summary: 已购内容
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 已购内容分页列表，新的在前
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchasePage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /me/wallet/ledger:
+    get:
+      operationId: listMyLedger
+      summary: 余额明细
+      tags: [me]
+      security:
+        - cookieAuth: []
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 余额流水分页列表，新的在前
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   parameters:
     PostIdPath:
@@ -630,6 +930,28 @@ components:
       schema:
         type: integer
         format: int64
+    OrderNoPath:
+      name: orderNo
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 32
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
 
   securitySchemes:
     cookieAuth:
@@ -673,6 +995,12 @@ components:
             $ref: "#/components/schemas/Error"
     TooManyRequests:
       description: 操作太频繁
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unavailable:
+      description: 依赖的服务暂时不可用
       content:
         application/json:
           schema:
@@ -1453,6 +1781,422 @@ components:
           type: integer
           format: int64
           description: 要回复的评论，回复楼中楼时传被回复的那条
+
+    MembershipPlan:
+      type: object
+      required: [id, levelId, name, durationDays, price, originalPrice, badge]
+      properties:
+        id:
+          type: integer
+          format: int64
+        levelId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: 年卡
+        durationDays:
+          type: integer
+          description: 0 表示永久
+        price:
+          type: integer
+          format: int64
+          description: 售价（分）
+        originalPrice:
+          type: integer
+          format: int64
+          description: 划线价（分），0 表示不显示
+        badge:
+          type: string
+          description: 角标，如“最多人选”，可能为空
+
+    LevelPlans:
+      type: object
+      required: [id, name, description, rank, discountRate, dailyDownloadLimit, perks, plans]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+          description: 一句话介绍，可能为空
+        rank:
+          type: integer
+        discountRate:
+          type: integer
+          description: 80 表示 8 折，100 表示不打折
+        dailyDownloadLimit:
+          type: integer
+          description: 每天靠会员身份免费下载的次数，0 表示不限
+        perks:
+          type: array
+          description: 后台填写的自定义权益，显示在折扣、下载次数之后
+          items:
+            type: string
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/MembershipPlan"
+
+    PlanCatalog:
+      type: object
+      required: [levels]
+      properties:
+        levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/LevelPlans"
+
+    OrderType:
+      type: string
+      enum: [post, membership, recharge]
+      description: post 购买内容 / membership 开通会员 / recharge 余额充值
+
+    OrderStatus:
+      type: string
+      enum: [pending, paid, closed, refunded]
+
+    PayMethod:
+      type: string
+      enum: [wechat, alipay, balance]
+
+    PayScene:
+      type: string
+      enum: [pc, mobile]
+      default: pc
+      description: pc 电脑（扫码或跳转收银台）/ mobile 手机浏览器（跳转渠道 H5 页面）
+
+    MembershipQuote:
+      type: object
+      required: [kind, levelName, planName, rank, durationDays, fromPermanent, remainingDays, remainingValue, convertedDays, deduct, expiresAt]
+      description: 购买会员的折算明细
+      properties:
+        kind:
+          type: string
+          enum: [new, renew, upgrade]
+          description: new 新开通 / renew 同等级续费，到期时间顺延 / upgrade 升级，剩余价值折算
+        levelName:
+          type: string
+        planName:
+          type: string
+        rank:
+          type: integer
+        durationDays:
+          type: integer
+          description: 0 表示永久
+        fromLevel:
+          type: string
+          description: 购买前的有效会员等级，不是会员时不返回
+        fromExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 购买前的到期时间
+        fromPermanent:
+          type: boolean
+        remainingDays:
+          type: integer
+          description: 升级时原等级剩余的整天数
+        remainingValue:
+          type: integer
+          format: int64
+          description: 剩余天数按原等级日均价折算的价值（分）
+        convertedDays:
+          type: integer
+          description: 升级到有限期套餐时，剩余价值折算成新等级的天数
+        deduct:
+          type: integer
+          format: int64
+          description: 升级到永久套餐时抵扣的金额（分）
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 按现在支付计算的到期时间，null 表示永久
+
+    PayMethodState:
+      type: object
+      required: [method, available]
+      properties:
+        method:
+          $ref: "#/components/schemas/PayMethod"
+        available:
+          type: boolean
+        reason:
+          type: string
+          description: 不可用的原因，如“余额不足”
+
+    OrderQuote:
+      type: object
+      required: [type, targetId, title, amount, discountAmount, payAmount, balance, methods]
+      properties:
+        type:
+          $ref: "#/components/schemas/OrderType"
+        targetId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        amount:
+          type: integer
+          format: int64
+          description: 原价（分）
+        discountAmount:
+          type: integer
+          format: int64
+          description: 会员折扣或升级抵扣（分）
+        payAmount:
+          type: integer
+          format: int64
+          description: 应付金额（分）
+        membership:
+          $ref: "#/components/schemas/MembershipQuote"
+        balance:
+          type: integer
+          format: int64
+          description: 当前余额（分）
+        methods:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayMethodState"
+
+    CreateOrderRequest:
+      type: object
+      required: [type, payMethod]
+      properties:
+        type:
+          $ref: "#/components/schemas/OrderType"
+        targetId:
+          type: integer
+          format: int64
+          description: 内容 ID 或套餐 ID，充值不用传
+        amount:
+          type: integer
+          format: int64
+          description: 充值金额（分），只用于充值
+        payMethod:
+          $ref: "#/components/schemas/PayMethod"
+        scene:
+          $ref: "#/components/schemas/PayScene"
+
+    PayOrderRequest:
+      type: object
+      required: [payMethod]
+      properties:
+        payMethod:
+          $ref: "#/components/schemas/PayMethod"
+        scene:
+          $ref: "#/components/schemas/PayScene"
+
+    OrderGrant:
+      type: object
+      required: [permanent, expiresAt]
+      description: 支付后的发放结果
+      properties:
+        permanent:
+          type: boolean
+          description: 会员订单：开通的是永久会员
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 会员订单：开通后的到期时间
+        balanceAfter:
+          type: integer
+          format: int64
+          description: 充值订单：到账后的余额
+        failed:
+          type: boolean
+          description: 支付成功但权益没有发放成功，客服会人工处理
+
+    Order:
+      type: object
+      required: [orderNo, type, targetId, title, amount, discountAmount, payAmount, payMethod, status, expiresAt, paidAt, createdAt]
+      properties:
+        orderNo:
+          type: string
+          example: "20261004153000123456"
+        type:
+          $ref: "#/components/schemas/OrderType"
+        targetId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        discountAmount:
+          type: integer
+          format: int64
+        payAmount:
+          type: integer
+          format: int64
+        payMethod:
+          type: string
+          enum: ["", wechat, alipay, balance]
+          description: 空表示还没发起支付
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        expiresAt:
+          type: string
+          format: date-time
+          description: 待支付订单的自动关闭时间
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        membership:
+          $ref: "#/components/schemas/MembershipQuote"
+        grant:
+          $ref: "#/components/schemas/OrderGrant"
+        createdAt:
+          type: string
+          format: date-time
+
+    PayAction:
+      type: object
+      required: [kind, mock]
+      properties:
+        kind:
+          type: string
+          enum: [qrcode, redirect, paid]
+          description: qrcode 展示 qrCode 内容的二维码 / redirect 跳转到 url / paid 已支付（余额支付）
+        qrCode:
+          type: string
+        url:
+          type: string
+        mock:
+          type: boolean
+          description: 模拟支付，前台显示“模拟支付成功”按钮
+
+    PayResult:
+      type: object
+      required: [order, action]
+      properties:
+        order:
+          $ref: "#/components/schemas/Order"
+        action:
+          $ref: "#/components/schemas/PayAction"
+
+    OrderPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AccountOverview:
+      type: object
+      required: [balance, purchaseCount, spent, todayFreeDownloads, dailyLimit]
+      properties:
+        balance:
+          type: integer
+          format: int64
+          description: 余额（分）
+        purchaseCount:
+          type: integer
+          format: int64
+        spent:
+          type: integer
+          format: int64
+          description: 累计消费（分），不含充值
+        todayFreeDownloads:
+          type: integer
+          description: 今天已用的会员免费下载次数
+        dailyLimit:
+          type: integer
+          description: 当前会员等级每天的免费下载次数，0 表示不限或不是会员
+
+    Purchase:
+      type: object
+      required: [postId, title, orderNo, amount, payAmount, createdAt]
+      properties:
+        postId:
+          type: integer
+          format: int64
+        title:
+          type: string
+          description: 下单时的标题
+        orderNo:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        payAmount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        post:
+          $ref: "#/components/schemas/PostCard"
+
+    PurchasePage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Purchase"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    LedgerEntry:
+      type: object
+      required: [id, amount, balanceAfter, bizType, remark, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        amount:
+          type: integer
+          format: int64
+          description: 正数入账，负数出账（分）
+        balanceAfter:
+          type: integer
+          format: int64
+        bizType:
+          type: string
+          enum: [recharge, purchase, refund, admin_adjust]
+        remark:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    LedgerPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LedgerEntry"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
 
     Error:
       type: object

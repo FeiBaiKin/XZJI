@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -55,6 +57,7 @@ func (f *fakeMailer) count(to string) int {
 }
 
 type env struct {
+	db     *sql.DB
 	srv    *httptest.Server
 	svc    *Services
 	mailer *fakeMailer
@@ -70,6 +73,9 @@ func newEnv(t *testing.T) *env {
 		CORS:     config.CORS{AllowOrigins: []string{testOrigin}},
 		Media:    config.Media{Dir: t.TempDir(), BaseURL: "http://img.test", MaxSizeMB: 2},
 		Timezone: "Asia/Shanghai",
+		Pay:      config.Pay{Mock: true},
+
+		SecretKeyFile: filepath.Join(t.TempDir(), "secret.key"),
 	}
 	mailer := &fakeMailer{sent: map[string][]mail.Message{}}
 	svc, err := NewServices(db, mailer, log, cfg)
@@ -82,7 +88,7 @@ func newEnv(t *testing.T) *env {
 	}
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
-	return &env{srv: srv, svc: svc, mailer: mailer}
+	return &env{db: db, srv: srv, svc: svc, mailer: mailer}
 }
 
 // browser 模拟浏览器：自动带 Cookie 和 Origin，写请求前先取 CSRF 令牌。

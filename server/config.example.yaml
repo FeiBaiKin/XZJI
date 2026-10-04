@@ -46,3 +46,12 @@ media:
   base_url: http://localhost:8080/uploads # 上传文件的对外地址前缀，末尾不带 /
   max_size_mb: 10
   serve: true # 由后端直接提供上传文件（开发用），生产改为 false 交给 Nginx
+
+# 加密数据库里敏感配置（后台填写的支付私钥等）的密钥文件，不存在时自动生成。
+# 备份时单独保管；丢失后需要在后台重新填写支付参数
+secret_key_file: data/secret.key
+
+pay:
+  # 模拟支付：微信、支付宝不连真实渠道，前台显示“模拟支付成功”按钮。只能用于开发环境
+  # 支付参数（商户号、密钥）在后台“支付设置”里填写
+  mock: true

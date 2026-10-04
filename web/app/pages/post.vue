@@ -1,8 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ path: '/:id(\\d+).html' })
 
-const route = useRoute()
-const id = Number(route.params.id)
+const id = Number(useRoute().params.id)
 const api = useApi()
 const { byId, parentOf } = await useCategories()
 
@@ -71,10 +70,17 @@ onBeforeUnmount(() => observer?.disconnect())
 
 // 解锁情况只在浏览器端获取；发表评论后重新获取（不审核时评论可见的内容会立即解锁）
 const { state: unlock, refresh: refreshUnlock } = useUnlock(id)
-const toast = useToast()
+const route = useRoute()
+const { levelName } = useLevelMap()
+const buying = ref(false)
 function buy() {
-  toast.error('在线支付即将开放，现在可以开通会员免费查看')
+  if (!unlock.value?.viewer.loggedIn) return navigateTo({ path: '/login', query: { redirect: route.fullPath } })
+  buying.value = true
 }
+const buyHint = computed(() => {
+  const rank = post.value.memberFreeRank
+  return rank > 0 ? { text: `开通 ${levelName(rank)} 可以免费查看这篇内容`, link: '去看看会员', to: '/vip' } : undefined
+})
 
 const image = computed(() => post.value.cover?.url ?? res.value?.icon?.url)
 useSeoMeta({
@@ -137,6 +143,7 @@ useHead({ meta: [{ name: 'keywords', content: () => post.value.seoKeywords || un
       </article>
 
       <CommentSection :post-id="post.id" :count="post.commentCount" @changed="refreshUnlock" />
+      <PayDialog v-model="buying" type="post" :target-id="post.id" :hint="buyHint" @paid="refreshUnlock" />
 
       <section v-if="data.related.length" class="card mt-5 px-[18px] pt-4 pb-[18px]">
         <h2 class="sec-title mb-3">相关推荐</h2>

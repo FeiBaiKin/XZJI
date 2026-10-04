@@ -318,3 +318,26 @@ func (s *Service) Exists(ctx context.Context, id int64) error {
 	_, err := s.Get(ctx, id)
 	return err
 }
+
+// Brief 用户的简要信息，用于后台订单、流水列表。
+type Brief struct {
+	ID       int64
+	Nickname string
+	Email    string
+}
+
+// Briefs 批量查询昵称和邮箱，不存在的 ID 不出现在结果里。
+func (s *Service) Briefs(ctx context.Context, ids []int64) (map[int64]Brief, error) {
+	out := make(map[int64]Brief, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := s.q.ListUserBriefs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("批量查询用户：%w", err)
+	}
+	for _, r := range rows {
+		out[r.ID] = Brief{ID: r.ID, Nickname: r.Nickname, Email: r.Email}
+	}
+	return out, nil
+}

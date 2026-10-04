@@ -25,14 +25,18 @@ import (
 	"xzji/internal/module/content"
 	"xzji/internal/module/media"
 	"xzji/internal/module/membership"
+	"xzji/internal/module/order"
+	"xzji/internal/module/payment"
 	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	"xzji/internal/module/verifycode"
+	"xzji/internal/module/wallet"
 	platformdb "xzji/internal/platform/db"
 	"xzji/internal/platform/mail"
 	"xzji/internal/platform/ratelimit"
 	"xzji/internal/platform/scheduler"
+	"xzji/internal/platform/secret"
 	"xzji/internal/platform/storage"
 )
 
@@ -51,6 +55,9 @@ type Services struct {
 	Members  *membership.Service
 	Comments *comment.Service
 	Access   *access.Service
+	Wallet   *wallet.Service
+	Orders   *order.Service
+	Payment  *payment.Service
 }
 
 func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.Config) (*Services, error) {
@@ -81,8 +88,16 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 	s.Members = membership.NewService(q, s.Users, s.AdminLog)
 	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog, s.Limiter, cfg.Location())
 	s.Comments = comment.NewService(q, s.Content, s.Users, s.Members, s.Settings, s.Limiter)
-	s.Access = access.NewService(s.Members, s.Comments, nil)
+	s.Wallet = wallet.NewService(db, s.Users, s.AdminLog)
+	s.Orders = order.NewService(db, s.Content, s.Members, s.Wallet, s.AdminLog, s.Limiter, cfg.Location())
+	s.Access = access.NewService(s.Members, s.Comments, s.Orders)
 	s.Content.SetViewerResolver(s.Access)
+	s.Orders.SetViewerResolver(s.Access)
+	box, err := secret.LoadOrCreate(cfg.SecretKeyFile)
+	if err != nil {
+		return nil, err
+	}
+	s.Payment = payment.NewService(s.Settings, box, s.Orders, s.AdminLog, s.Limiter, log, cfg.Pay.Mock)
 	return s, nil
 }
 
@@ -91,6 +106,7 @@ func NewRouter(cfg *config.Config, db *sql.DB, log *slog.Logger, s *Services) (*
 		Config: cfg, DB: db, Log: log,
 		Settings: s.Settings, Auth: s.Auth, Users: s.Users, Sessions: s.Sessions,
 		Media: s.Media, Content: s.Content, Home: s.Home, Members: s.Members, Comments: s.Comments,
+		Orders: s.Orders, Payment: s.Payment, Wallet: s.Wallet,
 	})
 }
 
@@ -127,6 +143,12 @@ func Serve(ctx context.Context, cfg *config.Config) error {
 	go svc.Limiter.Sweep(ctx, 5*time.Minute)
 	go scheduler.Every(ctx, log, "清理过期会话", time.Hour, svc.Sessions.Cleanup)
 	go scheduler.Every(ctx, log, "清理过期验证码", time.Hour, svc.Codes.Cleanup)
+	go scheduler.Every(ctx, log, "清理过期会员", time.Hour, svc.Members.CleanupExpired)
+	go scheduler.Every(ctx, log, "支付补单", time.Minute, svc.Payment.Reconcile)
+	go scheduler.Every(ctx, log, "关闭超时订单", time.Minute, svc.Payment.CloseExpired)
+	if cfg.Pay.Mock {
+		log.Warn("模拟支付已开启：微信、支付宝不连真实渠道，只能用于开发环境")
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.HTTP.Addr,

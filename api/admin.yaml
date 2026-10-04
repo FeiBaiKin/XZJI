@@ -24,7 +24,9 @@ tags:
   - name: comments
     description: 评论审核
   - name: membership
-    description: 会员等级
+    description: 会员等级与套餐
+  - name: orders
+    description: 订单与余额
 paths:
   /auth/csrf:
     get:
@@ -956,6 +958,359 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /membership/plans:
+    get:
+      operationId: listMembershipPlans
+      summary: 会员套餐列表
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 全部套餐，按等级和排序
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createMembershipPlan
+      summary: 新建会员套餐
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanInput"
+      responses:
+        "201":
+          description: 新建的套餐
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /membership/plans/{id}:
+    put:
+      operationId: updateMembershipPlan
+      summary: 修改会员套餐
+      description: 已下单的订单按下单时的快照计价和开通，不受修改影响。
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanInput"
+      responses:
+        "200":
+          description: 修改后的套餐
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteMembershipPlan
+      summary: 删除会员套餐
+      tags: [membership]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: 已删除
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders:
+    get:
+      operationId: listOrders
+      summary: 订单列表
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: orderNo
+          in: query
+          description: 订单号，支持前缀匹配
+          schema:
+            type: string
+        - name: email
+          in: query
+          description: 下单用户的邮箱，精确匹配
+          schema:
+            type: string
+        - name: userId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderType"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - name: payMethod
+          in: query
+          schema:
+            type: string
+            enum: [wechat, alipay, balance]
+        - name: duplicate
+          in: query
+          description: 只看有重复支付、需要人工退款的订单
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 订单分页列表，新的在前
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /orders/{orderNo}:
+    get:
+      operationId: getOrder
+      summary: 订单详情
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      responses:
+        "200":
+          description: 订单、快照与支付记录
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders/{orderNo}/refund:
+    post:
+      operationId: refundOrder
+      summary: 退款
+      description: |
+        订单改为已退款并收回已购内容。退回余额会写入退款流水；原路退回表示已在支付平台操作，这里只记录。
+        余额支付的订单只能退回余额；充值订单只能原路退回，同时扣回充值的余额；会员订单不自动扣减时长。
+        操作会写入后台日志。
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundRequest"
+      responses:
+        "200":
+          description: 退款后的订单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /orders/{orderNo}/sync:
+    post:
+      operationId: syncOrder
+      summary: 查询渠道补单
+      description: 向支付渠道查询待支付订单，已到账则确认并发放权益。
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      responses:
+        "200":
+          description: 查询后的订单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /orders/{orderNo}/close:
+    post:
+      operationId: closeOrder
+      summary: 关闭订单
+      description: 关闭待支付订单。关闭前先查询一次渠道，已到账的改为确认支付。操作会写入后台日志。
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/OrderNoPath"
+      responses:
+        "200":
+          description: 关闭后的订单
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
+  /ledger:
+    get:
+      operationId: listLedger
+      summary: 余额流水
+      tags: [orders]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: bizType
+          in: query
+          schema:
+            $ref: "#/components/schemas/LedgerBizType"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: 流水分页列表，新的在前
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLedgerPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/{id}/wallet:
+    post:
+      operationId: adjustBalance
+      summary: 调整用户余额
+      description: 写入 admin_adjust 流水，必须填写原因。操作会写入后台日志。
+      tags: [users]
+      security:
+        - adminCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustBalanceRequest"
+      responses:
+        "200":
+          description: 调整后的余额
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /settings/payment:
+    get:
+      operationId: getPaymentSettings
+      summary: 支付设置
+      description: 私钥和 APIv3 密钥只返回是否已填写，不返回内容。
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 支付设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updatePaymentSettings
+      summary: 修改支付设置
+      description: |
+        密钥字段留空表示不修改。启用的渠道会用填写的参数实际创建一次客户端（微信未填写支付公钥时会下载平台证书），
+        参数有误时拒绝保存。私钥和 APIv3 密钥加密后保存。操作会写入后台日志。
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentSettingsInput"
+      responses:
+        "200":
+          description: 保存后的支付设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     adminCookieAuth:
@@ -971,6 +1326,13 @@ components:
       schema:
         type: integer
         format: int64
+    OrderNoPath:
+      name: orderNo
+      in: path
+      required: true
+      schema:
+        type: string
+        maxLength: 32
     Page:
       name: page
       in: query
@@ -1014,6 +1376,12 @@ components:
             $ref: "#/components/schemas/Error"
     TooManyRequests:
       description: 操作太频繁
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unavailable:
+      description: 依赖的服务暂时不可用
       content:
         application/json:
           schema:
@@ -1073,7 +1441,7 @@ components:
 
     UserItem:
       type: object
-      required: [id, email, nickname, role, status, emailVerified, createdAt]
+      required: [id, email, nickname, role, status, emailVerified, balance, createdAt]
       properties:
         id:
           type: integer
@@ -1098,6 +1466,10 @@ components:
           nullable: true
         membership:
           $ref: "#/components/schemas/UserMembership"
+        balance:
+          type: integer
+          format: int64
+          description: 余额（分）
         createdAt:
           type: string
           format: date-time
@@ -1695,13 +2067,19 @@ components:
 
     AdminLevel:
       type: object
-      required: [id, name, rank, discountRate, dailyDownloadLimit, status, memberCount]
+      required: [id, name, description, rank, discountRate, dailyDownloadLimit, perks, status, memberCount]
       properties:
         id:
           type: integer
           format: int64
         name:
           type: string
+        description:
+          type: string
+        perks:
+          type: array
+          items:
+            type: string
         rank:
           type: integer
         discountRate:
@@ -1735,6 +2113,14 @@ components:
         name:
           type: string
           example: VIP
+        description:
+          type: string
+          description: 一句话介绍，最多 32 个字，如“适合经常下载”
+        perks:
+          type: array
+          description: 自定义权益说明，最多 8 条，每条最多 20 个字；折扣和下载次数由前台自动生成，不用写
+          items:
+            type: string
         rank:
           type: integer
           description: 1 到 99，数字越大等级越高
@@ -1908,6 +2294,430 @@ components:
       properties:
         status:
           $ref: "#/components/schemas/ReportStatus"
+
+    MembershipPlan:
+      type: object
+      required: [id, levelId, name, durationDays, price, originalPrice, badge, status, sort]
+      properties:
+        id:
+          type: integer
+          format: int64
+        levelId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        durationDays:
+          type: integer
+          description: 0 表示永久
+        price:
+          type: integer
+          format: int64
+          description: 售价（分）
+        originalPrice:
+          type: integer
+          format: int64
+          description: 划线价（分），0 表示不显示
+        badge:
+          type: string
+        status:
+          $ref: "#/components/schemas/LevelStatus"
+        sort:
+          type: integer
+
+    PlanList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MembershipPlan"
+
+    PlanInput:
+      type: object
+      required: [levelId, name, durationDays, price]
+      properties:
+        levelId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: 年卡
+        durationDays:
+          type: integer
+          description: 0 到 3650，0 表示永久；365 天的套餐作为升级折算的日均价依据
+        price:
+          type: integer
+          format: int64
+          description: 售价（分），0.01 到 99999 元
+        originalPrice:
+          type: integer
+          format: int64
+          description: 划线价（分），需要高于售价，0 表示不显示
+        badge:
+          type: string
+          description: 角标，最多 6 个字
+        status:
+          $ref: "#/components/schemas/LevelStatus"
+        sort:
+          type: integer
+          description: 越小越靠前
+
+    OrderType:
+      type: string
+      enum: [post, membership, recharge]
+
+    OrderStatus:
+      type: string
+      enum: [pending, paid, closed, refunded]
+
+    UserBrief:
+      type: object
+      required: [id, nickname, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        email:
+          type: string
+
+    AdminOrder:
+      type: object
+      required: [orderNo, user, type, targetId, title, amount, discountAmount, payAmount, payMethod, status, expiresAt, paidAt, refundMethod, refundRemark, refundedAt, createdAt]
+      properties:
+        orderNo:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserBrief"
+        type:
+          $ref: "#/components/schemas/OrderType"
+        targetId:
+          type: integer
+          format: int64
+          description: 内容 ID 或套餐 ID，充值为 0
+        title:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        discountAmount:
+          type: integer
+          format: int64
+        payAmount:
+          type: integer
+          format: int64
+        payMethod:
+          type: string
+          enum: ["", wechat, alipay, balance]
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        expiresAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        refundMethod:
+          type: string
+          enum: ["", balance, original]
+        refundRemark:
+          type: string
+        refundedAt:
+          type: string
+          format: date-time
+          nullable: true
+        grantError:
+          type: string
+          description: 支付成功但权益没有发放成功的原因，需要人工处理
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminOrderPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrder"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AdminPayment:
+      type: object
+      required: [id, channel, tradeNo, amount, status, raw, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        channel:
+          type: string
+          enum: [wechat, alipay]
+        tradeNo:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [success, duplicate]
+          description: duplicate 表示订单已由其他交易支付，这笔需要在支付平台人工退款
+        raw:
+          type: string
+          description: 回调或查询的原文
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminOrderDetail:
+      type: object
+      required: [order, snapshot, payments]
+      properties:
+        order:
+          $ref: "#/components/schemas/AdminOrder"
+        snapshot:
+          type: object
+          additionalProperties: true
+          description: 下单时的商品快照与支付后的发放结果
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPayment"
+
+    RefundRequest:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [balance, original]
+          description: balance 退回余额 / original 已在支付平台原路退回，这里只记录
+        remark:
+          type: string
+          description: 备注，最多 100 个字
+
+    LedgerBizType:
+      type: string
+      enum: [recharge, purchase, refund, admin_adjust]
+
+    AdminLedgerEntry:
+      type: object
+      required: [id, user, amount, balanceAfter, bizType, bizId, remark, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        user:
+          $ref: "#/components/schemas/UserBrief"
+        amount:
+          type: integer
+          format: int64
+          description: 正数入账，负数出账（分）
+        balanceAfter:
+          type: integer
+          format: int64
+        bizType:
+          $ref: "#/components/schemas/LedgerBizType"
+        bizId:
+          type: integer
+          format: int64
+          description: 订单 ID；后台调整时为管理员 ID
+        remark:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminLedgerPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLedgerEntry"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    AdjustBalanceRequest:
+      type: object
+      required: [amount, remark]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: 调整金额（分），正数增加、负数扣减，不能为 0
+        remark:
+          type: string
+          description: 调整原因，1 到 100 个字，用户在余额明细里能看到
+
+    Wallet:
+      type: object
+      required: [balance]
+      properties:
+        balance:
+          type: integer
+          format: int64
+
+    AlipaySettings:
+      type: object
+      required: [enabled, sandbox, appId, keyMode, alipayPublicKey, appCert, rootCert, alipayCert, hasPrivateKey]
+      properties:
+        enabled:
+          type: boolean
+        sandbox:
+          type: boolean
+          description: 使用支付宝沙箱环境
+        appId:
+          type: string
+        keyMode:
+          type: string
+          enum: [key, cert]
+          description: key 支付宝公钥 / cert 公钥证书
+        alipayPublicKey:
+          type: string
+        appCert:
+          type: string
+          description: 应用公钥证书内容
+        rootCert:
+          type: string
+          description: 支付宝根证书内容
+        alipayCert:
+          type: string
+          description: 支付宝公钥证书内容
+        hasPrivateKey:
+          type: boolean
+
+    WechatSettings:
+      type: object
+      required: [enabled, h5, appId, mchId, serialNo, publicKeyId, publicKey, hasApiV3Key, hasPrivateKey]
+      properties:
+        enabled:
+          type: boolean
+        h5:
+          type: boolean
+          description: 已开通 H5 支付，手机浏览器可用
+        appId:
+          type: string
+        mchId:
+          type: string
+        serialNo:
+          type: string
+          description: 商户 API 证书序列号
+        publicKeyId:
+          type: string
+          description: 微信支付公钥 ID（PUB_KEY_ID_ 开头），留空时自动下载平台证书验签
+        publicKey:
+          type: string
+          description: 微信支付公钥内容
+        hasApiV3Key:
+          type: boolean
+        hasPrivateKey:
+          type: boolean
+
+    PaymentSettings:
+      type: object
+      required: [notifyBaseUrl, siteUrl, balance, mock, notifyUrls, alipay, wechat]
+      properties:
+        notifyBaseUrl:
+          type: string
+          description: 接口的对外地址，如 https://api.example.com
+        siteUrl:
+          type: string
+          description: 前台地址，支付完成后跳回 {siteUrl}/pay/result
+        balance:
+          type: boolean
+          description: 允许余额支付
+        mock:
+          type: boolean
+          description: 后端以模拟支付模式运行（仅开发环境），微信、支付宝都不连真实渠道
+        notifyUrls:
+          type: object
+          required: [wechat, alipay]
+          description: 需要在支付平台填写的回调地址
+          properties:
+            wechat:
+              type: string
+            alipay:
+              type: string
+        alipay:
+          $ref: "#/components/schemas/AlipaySettings"
+        wechat:
+          $ref: "#/components/schemas/WechatSettings"
+
+    PaymentSettingsInput:
+      type: object
+      required: [notifyBaseUrl, siteUrl, balance, alipay, wechat]
+      properties:
+        notifyBaseUrl:
+          type: string
+        siteUrl:
+          type: string
+        balance:
+          type: boolean
+        alipay:
+          type: object
+          required: [enabled, sandbox, appId, keyMode]
+          properties:
+            enabled:
+              type: boolean
+            sandbox:
+              type: boolean
+            appId:
+              type: string
+            keyMode:
+              type: string
+              enum: [key, cert]
+            privateKey:
+              type: string
+              description: 应用私钥，留空表示不修改
+            alipayPublicKey:
+              type: string
+            appCert:
+              type: string
+            rootCert:
+              type: string
+            alipayCert:
+              type: string
+        wechat:
+          type: object
+          required: [enabled, h5, appId, mchId, serialNo]
+          properties:
+            enabled:
+              type: boolean
+            h5:
+              type: boolean
+            appId:
+              type: string
+            mchId:
+              type: string
+            serialNo:
+              type: string
+            apiV3Key:
+              type: string
+              description: APIv3 密钥，留空表示不修改
+            privateKey:
+              type: string
+              description: 商户 API 私钥，留空表示不修改
+            publicKeyId:
+              type: string
+            publicKey:
+              type: string
 
     Error:
       type: object

@@ -4,7 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { errorMessage, type AdminSchemas } from '@xzji/api-client/admin'
 import { api, formatTime } from '../api'
 import { me } from '../auth'
-import { levels, loadLevels } from '../content'
+import { levels, loadLevels, yuan } from '../content'
 
 type UserItem = AdminSchemas['UserItem']
 type Role = AdminSchemas['Role']
@@ -117,6 +117,32 @@ async function revokeMember() {
   ElMessage.success('会员已取消')
 }
 
+// 调整余额：写入后台调整流水，用户在余额明细里能看到原因
+const walletDialog = ref(false)
+const walletRow = ref<UserItem | null>(null)
+const walletForm = reactive({ direction: 1, yuan: 0, remark: '' })
+const walletSaving = ref(false)
+
+function openWallet(row: UserItem) {
+  walletRow.value = row
+  Object.assign(walletForm, { direction: 1, yuan: 0, remark: '' })
+  walletDialog.value = true
+}
+
+async function saveWallet() {
+  const row = walletRow.value
+  if (!row) return
+  const amount = Math.round(walletForm.yuan * 100) * walletForm.direction
+  if (!amount) return ElMessage.warning('请填写调整金额')
+  walletSaving.value = true
+  const { data, error } = await api.POST('/users/{id}/wallet', { params: { path: { id: row.id } }, body: { amount, remark: walletForm.remark } })
+  walletSaving.value = false
+  if (!data) return ElMessage.error(errorMessage(error))
+  row.balance = data.balance
+  walletDialog.value = false
+  ElMessage.success(`已调整，当前余额 ¥${yuan(data.balance)}`)
+}
+
 onMounted(() => {
   loadLevels()
   load()
@@ -172,6 +198,11 @@ onMounted(() => {
           <span v-else class="self">-</span>
         </template>
       </el-table-column>
+      <el-table-column label="余额" width="110">
+        <template #default="{ row }">
+          <RouterLink :to="{ name: 'ledger', query: { userId: row.id } }" class="money">¥{{ yuan(row.balance) }}</RouterLink>
+        </template>
+      </el-table-column>
       <el-table-column label="邀请人" width="90">
         <template #default="{ row }">{{ row.inviterId ?? '-' }}</template>
       </el-table-column>
@@ -181,9 +212,11 @@ onMounted(() => {
       <el-table-column label="注册时间" width="150">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="250" fixed="right">
+      <el-table-column label="操作" width="330" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openMember(row)">设置会员</el-button>
+          <el-button link type="primary" @click="openWallet(row)">调整余额</el-button>
+          <RouterLink :to="{ name: 'orders', query: { userId: row.id } }" class="op-link">订单</RouterLink>
           <template v-if="row.id !== me?.id">
             <el-button link :type="row.status === 'banned' ? 'primary' : 'danger'" @click="toggleBan(row)">{{ row.status === 'banned' ? '解封' : '封禁' }}</el-button>
             <el-button link type="primary" @click="toggleAdmin(row)">{{ row.role === 'admin' ? '取消管理员' : '设为管理员' }}</el-button>
@@ -235,6 +268,29 @@ onMounted(() => {
       <el-button type="primary" :loading="memberSaving" @click="saveMember">保存</el-button>
     </template>
   </el-dialog>
+
+  <el-dialog v-model="walletDialog" title="调整余额" width="440px" destroy-on-close>
+    <p class="who-line">{{ walletRow?.nickname }}（{{ walletRow?.email }}），当前余额 ¥{{ yuan(walletRow?.balance ?? 0) }}</p>
+    <el-form label-width="72px">
+      <el-form-item label="方向">
+        <el-radio-group v-model="walletForm.direction">
+          <el-radio :value="1">增加</el-radio>
+          <el-radio :value="-1">扣减</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="金额">
+        <el-input-number v-model="walletForm.yuan" :min="0" :max="100000" :precision="2" :step="1" controls-position="right" />
+        <span class="unit">元</span>
+      </el-form-item>
+      <el-form-item label="原因" required>
+        <el-input v-model="walletForm.remark" maxlength="100" placeholder="用户在余额明细里能看到，如：下载地址失效补偿" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="walletDialog = false">取消</el-button>
+      <el-button type="primary" :loading="walletSaving" @click="saveWallet">确认调整</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -247,4 +303,8 @@ onMounted(() => {
 .exp { display: block; font-size: 12px; color: #8A9099; }
 .who-line { margin: 0 0 12px; color: #262A31; }
 .hint { margin: 4px 0 0; font-size: 12px; color: #8A9099; }
+.money { color: #262A31; text-decoration: none; }
+.money:hover { color: #2F6BFF; }
+.op-link { margin: 0 12px 0 12px; font-size: 14px; color: #2F6BFF; text-decoration: none; }
+.unit { margin-left: 8px; font-size: 12px; color: #8A9099; }
 </style>

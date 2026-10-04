@@ -18,8 +18,11 @@ import (
 	"xzji/internal/module/content"
 	"xzji/internal/module/media"
 	"xzji/internal/module/membership"
+	"xzji/internal/module/order"
+	"xzji/internal/module/payment"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
+	"xzji/internal/module/wallet"
 	platformdb "xzji/internal/platform/db"
 )
 
@@ -36,6 +39,9 @@ type Deps struct {
 	Home     *setting.HomeService
 	Members  *membership.Service
 	Comments *comment.Service
+	Orders   *order.Service
+	Payment  *payment.Service
+	Wallet   *wallet.Service
 }
 
 type Handler struct {

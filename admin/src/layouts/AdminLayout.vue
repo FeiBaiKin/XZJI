@@ -35,7 +35,12 @@ async function onCommand(cmd: string) {
         </el-menu-item-group>
         <el-menu-item-group title="用户">
           <el-menu-item index="/users">用户管理</el-menu-item>
-          <el-menu-item index="/levels">会员等级</el-menu-item>
+          <el-menu-item index="/levels">会员与套餐</el-menu-item>
+        </el-menu-item-group>
+        <el-menu-item-group title="交易">
+          <el-menu-item index="/orders">订单管理</el-menu-item>
+          <el-menu-item index="/ledger">余额流水</el-menu-item>
+          <el-menu-item index="/settings/payment">支付设置</el-menu-item>
         </el-menu-item-group>
       </el-menu>
     </el-aside>

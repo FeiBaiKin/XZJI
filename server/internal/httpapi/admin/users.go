@@ -38,9 +38,14 @@ func (h *Handler) ListUsers(ctx context.Context, req adminapi.ListUsersRequestOb
 	if err != nil {
 		return nil, err
 	}
+	balances, err := h.Wallet.Balances(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]adminapi.UserItem, len(users))
 	for i, u := range users {
 		items[i] = toUserItem(u)
+		items[i].Balance = balances[u.ID]
 		if m, ok := members[u.ID]; ok {
 			items[i].Membership = toUserMembership(&m)
 		}
@@ -78,6 +83,9 @@ func (h *Handler) userItem(ctx context.Context, u user.User) (adminapi.UserItem,
 		return item, err
 	}
 	item.Membership = toUserMembership(m)
+	if item.Balance, err = h.Wallet.Balance(ctx, u.ID); err != nil {
+		return item, err
+	}
 	return item, nil
 }
 

@@ -24,6 +24,9 @@ type Config struct {
 	Auth     Auth   `yaml:"auth"`
 	Mail     Mail   `yaml:"mail"`
 	Media    Media  `yaml:"media"`
+	Pay      Pay    `yaml:"pay"`
+	// SecretKeyFile 加密数据库里敏感配置（支付私钥等）的密钥文件，不存在时自动生成；丢失后需要在后台重新填写这些配置
+	SecretKeyFile string `yaml:"secret_key_file"`
 }
 
 type HTTP struct {
@@ -84,6 +87,11 @@ type Media struct {
 	Serve bool `yaml:"serve"`
 }
 
+type Pay struct {
+	// Mock 模拟支付：微信、支付宝不连真实渠道，前台显示“模拟支付成功”按钮。只能用于开发环境
+	Mock bool `yaml:"mock"`
+}
+
 const (
 	EnvDev  = "dev"
 	EnvProd = "prod"
@@ -128,6 +136,8 @@ func defaults() *Config {
 		Log:      Log{Level: "info", Format: "text"},
 		Mail:     Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
 		Media:    Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
+
+		SecretKeyFile: "data/secret.key",
 	}
 }
 
@@ -178,7 +188,13 @@ func (c *Config) validate() error {
 	if c.Media.MaxSizeMB < 1 || c.Media.MaxSizeMB > 100 {
 		errs = append(errs, errors.New("media.max_size_mb 需要在 1 到 100 之间"))
 	}
+	if c.SecretKeyFile == "" {
+		errs = append(errs, errors.New("secret_key_file 不能为空"))
+	}
 	if c.IsProd() {
+		if c.Pay.Mock {
+			errs = append(errs, errors.New("生产环境不能开启模拟支付（pay.mock）"))
+		}
 		if !c.Auth.CookieSecure {
 			errs = append(errs, errors.New("生产环境必须开启 auth.cookie_secure"))
 		}

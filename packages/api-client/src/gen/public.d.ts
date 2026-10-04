@@ -453,6 +453,217 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/membership/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 会员套餐
+         * @description 启用的等级及其启用的套餐，按 rank 从低到高。用于会员页展示价格，具体应付金额以报价接口为准。
+         */
+        get: operations["listMembershipPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 下单前报价
+         * @description 按当前用户的身份计算价格明细（会员折扣、续费顺延、升级折算），同时返回各支付方式是否可用。
+         *     只计算不下单；金额一律以服务端计算为准。
+         */
+        get: operations["quoteOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 下单并发起支付
+         * @description 按服务端计算的价格创建订单（30 分钟内未支付自动关闭），并用选定的方式发起支付：
+         *     余额支付直接完成；微信、支付宝返回二维码内容或跳转地址，之后轮询订单状态确认结果。
+         */
+        post: operations["createOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderNo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 订单详情
+         * @description 支付页轮询用。待支付的订单会顺便向支付渠道查询一次，回调延迟时也能尽快确认。
+         */
+        get: operations["getOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderNo}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 继续支付
+         * @description 为自己的待支付订单重新发起支付，可以换一种支付方式；换渠道时会先关闭原渠道的交易。
+         */
+        post: operations["payOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{orderNo}/mock-pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 模拟支付成功（仅开发环境）
+         * @description 后端开启模拟支付时可用，模拟在微信或支付宝完成付款；生产环境始终返回 404。
+         */
+        post: operations["mockPayOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pay/notify/{channel}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 支付渠道异步回调
+         * @description 由微信支付、支付宝的服务器调用，请求体格式由渠道决定（微信为 JSON，支付宝为表单），
+         *     验签通过并处理完成后返回纯文本 success；处理失败返回错误，渠道会稍后重试。
+         */
+        post: operations["payNotify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 用户中心概览 */
+        get: operations["getAccountOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 我的订单 */
+        get: operations["listMyOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/purchases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 已购内容 */
+        get: operations["listMyPurchases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/wallet/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 余额明细 */
+        get: operations["listMyLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -880,6 +1091,286 @@ export interface components {
              */
             replyToId?: number;
         };
+        MembershipPlan: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            levelId: number;
+            /** @example 年卡 */
+            name: string;
+            /** @description 0 表示永久 */
+            durationDays: number;
+            /**
+             * Format: int64
+             * @description 售价（分）
+             */
+            price: number;
+            /**
+             * Format: int64
+             * @description 划线价（分），0 表示不显示
+             */
+            originalPrice: number;
+            /** @description 角标，如“最多人选”，可能为空 */
+            badge: string;
+        };
+        LevelPlans: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @description 一句话介绍，可能为空 */
+            description: string;
+            rank: number;
+            /** @description 80 表示 8 折，100 表示不打折 */
+            discountRate: number;
+            /** @description 每天靠会员身份免费下载的次数，0 表示不限 */
+            dailyDownloadLimit: number;
+            /** @description 后台填写的自定义权益，显示在折扣、下载次数之后 */
+            perks: string[];
+            plans: components["schemas"]["MembershipPlan"][];
+        };
+        PlanCatalog: {
+            levels: components["schemas"]["LevelPlans"][];
+        };
+        /**
+         * @description post 购买内容 / membership 开通会员 / recharge 余额充值
+         * @enum {string}
+         */
+        OrderType: "post" | "membership" | "recharge";
+        /** @enum {string} */
+        OrderStatus: "pending" | "paid" | "closed" | "refunded";
+        /** @enum {string} */
+        PayMethod: "wechat" | "alipay" | "balance";
+        /**
+         * @description pc 电脑（扫码或跳转收银台）/ mobile 手机浏览器（跳转渠道 H5 页面）
+         * @default pc
+         * @enum {string}
+         */
+        PayScene: "pc" | "mobile";
+        /** @description 购买会员的折算明细 */
+        MembershipQuote: {
+            /**
+             * @description new 新开通 / renew 同等级续费，到期时间顺延 / upgrade 升级，剩余价值折算
+             * @enum {string}
+             */
+            kind: "new" | "renew" | "upgrade";
+            levelName: string;
+            planName: string;
+            rank: number;
+            /** @description 0 表示永久 */
+            durationDays: number;
+            /** @description 购买前的有效会员等级，不是会员时不返回 */
+            fromLevel?: string;
+            /**
+             * Format: date-time
+             * @description 购买前的到期时间
+             */
+            fromExpiresAt?: string | null;
+            fromPermanent: boolean;
+            /** @description 升级时原等级剩余的整天数 */
+            remainingDays: number;
+            /**
+             * Format: int64
+             * @description 剩余天数按原等级日均价折算的价值（分）
+             */
+            remainingValue: number;
+            /** @description 升级到有限期套餐时，剩余价值折算成新等级的天数 */
+            convertedDays: number;
+            /**
+             * Format: int64
+             * @description 升级到永久套餐时抵扣的金额（分）
+             */
+            deduct: number;
+            /**
+             * Format: date-time
+             * @description 按现在支付计算的到期时间，null 表示永久
+             */
+            expiresAt: string | null;
+        };
+        PayMethodState: {
+            method: components["schemas"]["PayMethod"];
+            available: boolean;
+            /** @description 不可用的原因，如“余额不足” */
+            reason?: string;
+        };
+        OrderQuote: {
+            type: components["schemas"]["OrderType"];
+            /** Format: int64 */
+            targetId: number;
+            title: string;
+            /**
+             * Format: int64
+             * @description 原价（分）
+             */
+            amount: number;
+            /**
+             * Format: int64
+             * @description 会员折扣或升级抵扣（分）
+             */
+            discountAmount: number;
+            /**
+             * Format: int64
+             * @description 应付金额（分）
+             */
+            payAmount: number;
+            membership?: components["schemas"]["MembershipQuote"];
+            /**
+             * Format: int64
+             * @description 当前余额（分）
+             */
+            balance: number;
+            methods: components["schemas"]["PayMethodState"][];
+        };
+        CreateOrderRequest: {
+            type: components["schemas"]["OrderType"];
+            /**
+             * Format: int64
+             * @description 内容 ID 或套餐 ID，充值不用传
+             */
+            targetId?: number;
+            /**
+             * Format: int64
+             * @description 充值金额（分），只用于充值
+             */
+            amount?: number;
+            payMethod: components["schemas"]["PayMethod"];
+            scene?: components["schemas"]["PayScene"];
+        };
+        PayOrderRequest: {
+            payMethod: components["schemas"]["PayMethod"];
+            scene?: components["schemas"]["PayScene"];
+        };
+        /** @description 支付后的发放结果 */
+        OrderGrant: {
+            /** @description 会员订单：开通的是永久会员 */
+            permanent: boolean;
+            /**
+             * Format: date-time
+             * @description 会员订单：开通后的到期时间
+             */
+            expiresAt: string | null;
+            /**
+             * Format: int64
+             * @description 充值订单：到账后的余额
+             */
+            balanceAfter?: number;
+            /** @description 支付成功但权益没有发放成功，客服会人工处理 */
+            failed?: boolean;
+        };
+        Order: {
+            /** @example 20261004153000123456 */
+            orderNo: string;
+            type: components["schemas"]["OrderType"];
+            /** Format: int64 */
+            targetId: number;
+            title: string;
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            discountAmount: number;
+            /** Format: int64 */
+            payAmount: number;
+            /**
+             * @description 空表示还没发起支付
+             * @enum {string}
+             */
+            payMethod: "" | "wechat" | "alipay" | "balance";
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Format: date-time
+             * @description 待支付订单的自动关闭时间
+             */
+            expiresAt: string;
+            /** Format: date-time */
+            paidAt: string | null;
+            membership?: components["schemas"]["MembershipQuote"];
+            grant?: components["schemas"]["OrderGrant"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PayAction: {
+            /**
+             * @description qrcode 展示 qrCode 内容的二维码 / redirect 跳转到 url / paid 已支付（余额支付）
+             * @enum {string}
+             */
+            kind: "qrcode" | "redirect" | "paid";
+            qrCode?: string;
+            url?: string;
+            /** @description 模拟支付，前台显示“模拟支付成功”按钮 */
+            mock: boolean;
+        };
+        PayResult: {
+            order: components["schemas"]["Order"];
+            action: components["schemas"]["PayAction"];
+        };
+        OrderPage: {
+            items: components["schemas"]["Order"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        AccountOverview: {
+            /**
+             * Format: int64
+             * @description 余额（分）
+             */
+            balance: number;
+            /** Format: int64 */
+            purchaseCount: number;
+            /**
+             * Format: int64
+             * @description 累计消费（分），不含充值
+             */
+            spent: number;
+            /** @description 今天已用的会员免费下载次数 */
+            todayFreeDownloads: number;
+            /** @description 当前会员等级每天的免费下载次数，0 表示不限或不是会员 */
+            dailyLimit: number;
+        };
+        Purchase: {
+            /** Format: int64 */
+            postId: number;
+            /** @description 下单时的标题 */
+            title: string;
+            orderNo: string;
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            payAmount: number;
+            /** Format: date-time */
+            createdAt: string;
+            post?: components["schemas"]["PostCard"];
+        };
+        PurchasePage: {
+            items: components["schemas"]["Purchase"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        LedgerEntry: {
+            /** Format: int64 */
+            id: number;
+            /**
+             * Format: int64
+             * @description 正数入账，负数出账（分）
+             */
+            amount: number;
+            /** Format: int64 */
+            balanceAfter: number;
+            /** @enum {string} */
+            bizType: "recharge" | "purchase" | "refund" | "admin_adjust";
+            remark: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        LedgerPage: {
+            items: components["schemas"]["LedgerEntry"][];
+            /** Format: int64 */
+            total: number;
+            page: number;
+            pageSize: number;
+        };
         Error: {
             error: {
                 /**
@@ -950,10 +1441,22 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description 依赖的服务暂时不可用 */
+        Unavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
     };
     parameters: {
         PostIdPath: number;
         LinkIdPath: number;
+        OrderNoPath: string;
+        Page: number;
+        PageSize: number;
     };
     requestBodies: never;
     headers: never;
@@ -1572,6 +2075,286 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMembershipPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 等级与套餐 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanCatalog"];
+                };
+            };
+        };
+    };
+    quoteOrder: {
+        parameters: {
+            query: {
+                type: components["schemas"]["OrderType"];
+                /** @description 内容 ID 或套餐 ID，充值不用传 */
+                targetId?: number;
+                /** @description 充值金额（分），1 到 5000 元 */
+                amount?: number;
+                scene?: components["schemas"]["PayScene"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 价格明细 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderQuote"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description 订单与支付操作 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderNo: components["parameters"]["OrderNoPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 订单 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    payOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderNo: components["parameters"]["OrderNoPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description 订单与支付操作 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    mockPayOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderNo: components["parameters"]["OrderNoPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 订单 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    payNotify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                channel: "wechat" | "alipay";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已处理 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAccountOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 余额、已购、今日下载 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOverview"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyOrders: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["OrderStatus"];
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 订单分页列表，新的在前 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyPurchases: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已购内容分页列表，新的在前 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasePage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyLedger: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                pageSize?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 余额流水分页列表，新的在前 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
 }

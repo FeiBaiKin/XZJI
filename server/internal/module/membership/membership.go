@@ -1,9 +1,10 @@
-// Package membership 管理会员等级和用户的会员状态。套餐售卖和开通订单在 M4 接入。
+// Package membership 管理会员等级、售卖套餐和用户的会员状态。
 package membership
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -29,6 +30,8 @@ var (
 	ErrInvalidDiscount = errs.Invalid("INVALID_DISCOUNT", "折扣需要在 1 到 100 之间，100 表示不打折")
 	ErrInvalidLimit    = errs.Invalid("INVALID_LIMIT", "每日下载次数不能小于 0")
 	ErrInvalidName     = errs.Invalid("INVALID_NAME", "等级名称需要 1 到 16 个字")
+	ErrInvalidDesc     = errs.Invalid("INVALID_DESCRIPTION", "等级介绍不能超过 32 个字")
+	ErrInvalidPerks    = errs.Invalid("INVALID_PERKS", "自定义权益最多 8 条，每条 1 到 20 个字")
 	ErrInvalidStatus   = errs.Invalid("INVALID_STATUS", "状态不正确")
 	ErrExpired         = errs.Invalid("INVALID_EXPIRES", "到期时间需要晚于现在")
 )
@@ -36,11 +39,14 @@ var (
 type Level struct {
 	ID                 int64
 	Name               string
+	Description        string
 	Rank               int
 	DiscountRate       int
 	DailyDownloadLimit int
-	Status             string
-	MemberCount        int64
+	// Perks 自定义权益说明，显示在由折扣、下载次数自动生成的权益之后
+	Perks       []string
+	Status      string
+	MemberCount int64
 }
 
 // Membership 用户的会员状态；ExpiresAt 为 nil 表示永久。
@@ -56,9 +62,11 @@ func (m Membership) Active(now time.Time) bool {
 
 type LevelInput struct {
 	Name               string
+	Description        string
 	Rank               int
 	DiscountRate       int
 	DailyDownloadLimit int
+	Perks              []string
 	Status             string
 }
 
@@ -91,8 +99,8 @@ func (s *Service) Levels(ctx context.Context) ([]Level, error) {
 	out := make([]Level, len(rows))
 	for i, r := range rows {
 		out[i] = Level{
-			ID: r.ID, Name: r.Name, Rank: int(r.Rank), DiscountRate: int(r.DiscountRate),
-			DailyDownloadLimit: int(r.DailyDownloadLimit), Status: r.Status, MemberCount: r.MemberCount,
+			ID: r.ID, Name: r.Name, Description: r.Description, Rank: int(r.Rank), DiscountRate: int(r.DiscountRate),
+			DailyDownloadLimit: int(r.DailyDownloadLimit), Perks: decodePerks(r.Perks), Status: r.Status, MemberCount: r.MemberCount,
 		}
 	}
 	return out, nil
@@ -121,7 +129,18 @@ func (s *Service) getLevel(ctx context.Context, id int64) (Level, error) {
 	if err != nil {
 		return Level{}, fmt.Errorf("查询会员等级 %d：%w", id, err)
 	}
-	return Level{ID: r.ID, Name: r.Name, Rank: int(r.Rank), DiscountRate: int(r.DiscountRate), DailyDownloadLimit: int(r.DailyDownloadLimit), Status: r.Status}, nil
+	return Level{
+		ID: r.ID, Name: r.Name, Description: r.Description, Rank: int(r.Rank), DiscountRate: int(r.DiscountRate),
+		DailyDownloadLimit: int(r.DailyDownloadLimit), Perks: decodePerks(r.Perks), Status: r.Status,
+	}, nil
+}
+
+func decodePerks(raw []byte) []string {
+	out := []string{}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &out)
+	}
+	return out
 }
 
 func validateLevel(in LevelInput) (LevelInput, error) {
@@ -129,6 +148,23 @@ func validateLevel(in LevelInput) (LevelInput, error) {
 	if n := utf8.RuneCountInString(in.Name); n == 0 || n > 16 {
 		return in, ErrInvalidName
 	}
+	in.Description = strings.TrimSpace(in.Description)
+	if utf8.RuneCountInString(in.Description) > 32 {
+		return in, ErrInvalidDesc
+	}
+	perks := make([]string, 0, len(in.Perks))
+	for _, p := range in.Perks {
+		if p = strings.TrimSpace(p); p != "" {
+			if utf8.RuneCountInString(p) > 20 {
+				return in, ErrInvalidPerks
+			}
+			perks = append(perks, p)
+		}
+	}
+	if len(perks) > 8 {
+		return in, ErrInvalidPerks
+	}
+	in.Perks = perks
 	if in.Rank < 1 || in.Rank > maxRank {
 		return in, ErrInvalidLevel
 	}
@@ -152,8 +188,10 @@ func (s *Service) CreateLevel(ctx context.Context, in LevelInput) (Level, error)
 	if err != nil {
 		return Level{}, err
 	}
+	perks, _ := json.Marshal(in.Perks)
 	id, err := s.q.CreateMembershipLevel(ctx, dbgen.CreateMembershipLevelParams{
-		Name: in.Name, Rank: int32(in.Rank), DiscountRate: int32(in.DiscountRate), DailyDownloadLimit: int32(in.DailyDownloadLimit), Status: in.Status,
+		Name: in.Name, Description: in.Description, Rank: int32(in.Rank), DiscountRate: int32(in.DiscountRate),
+		DailyDownloadLimit: int32(in.DailyDownloadLimit), Perks: perks, Status: in.Status,
 	})
 	if platformdb.IsDuplicate(err) {
 		return Level{}, ErrRankTaken
@@ -172,8 +210,10 @@ func (s *Service) UpdateLevel(ctx context.Context, id int64, in LevelInput) (Lev
 	if err != nil {
 		return Level{}, err
 	}
+	perks, _ := json.Marshal(in.Perks)
 	err = s.q.UpdateMembershipLevel(ctx, dbgen.UpdateMembershipLevelParams{
-		Name: in.Name, Rank: int32(in.Rank), DiscountRate: int32(in.DiscountRate), DailyDownloadLimit: int32(in.DailyDownloadLimit), Status: in.Status, ID: id,
+		Name: in.Name, Description: in.Description, Rank: int32(in.Rank), DiscountRate: int32(in.DiscountRate),
+		DailyDownloadLimit: int32(in.DailyDownloadLimit), Perks: perks, Status: in.Status, ID: id,
 	})
 	if platformdb.IsDuplicate(err) {
 		return Level{}, ErrRankTaken
@@ -194,6 +234,12 @@ func (s *Service) DeleteLevel(ctx context.Context, id int64) error {
 	}
 	if n > 0 {
 		return ErrLevelInUse
+	}
+	if n, err = s.q.CountPlansOfLevel(ctx, id); err != nil {
+		return fmt.Errorf("统计等级套餐数：%w", err)
+	}
+	if n > 0 {
+		return ErrLevelHasPlans
 	}
 	if err := s.q.DeleteMembershipLevel(ctx, id); err != nil {
 		return fmt.Errorf("删除会员等级 %d：%w", id, err)

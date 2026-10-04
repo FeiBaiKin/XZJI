@@ -36,3 +36,6 @@ WHERE (sqlc.narg(keyword) IS NULL OR email LIKE sqlc.narg(keyword) OR nickname L
 
 -- name: ListUserNicknames :many
 SELECT id, nickname FROM users WHERE id IN (sqlc.slice(ids));
+
+-- name: ListUserBriefs :many
+SELECT id, nickname, email FROM users WHERE id IN (sqlc.slice(ids));

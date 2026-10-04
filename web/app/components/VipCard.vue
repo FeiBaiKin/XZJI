@@ -1,7 +1,19 @@
 <script setup lang="ts">
-// 会员权益卡片。会员等级和价格在 M4 接入后改为读取后台配置
+// 会员权益卡片，折扣和下载次数取自后台配置的会员等级
 defineProps<{ note?: string }>()
-const perks = ['会员资源免费', '付费资源折扣', '更多下载次数', '专属会员标识']
+const { levels } = useLevelMap()
+const perks = computed(() => {
+  const ls = levels.value
+  const min = Math.min(100, ...ls.map(l => l.discountRate))
+  const unlimited = ls.some(l => l.dailyDownloadLimit === 0)
+  const most = Math.max(0, ...ls.map(l => l.dailyDownloadLimit))
+  return [
+    '会员资源免费',
+    min < 100 ? `付费资源低至 ${min / 10} 折` : '付费资源折扣',
+    unlimited ? '免费下载不限次数' : most ? `每天最多 ${most} 次下载` : '更多下载次数',
+    '专属会员标识',
+  ]
+})
 </script>
 
 <template>

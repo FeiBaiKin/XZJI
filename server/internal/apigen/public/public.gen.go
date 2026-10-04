@@ -35,16 +35,16 @@ func (e ClientType) Valid() bool {
 
 // Defines values for CommentStatus.
 const (
-	Approved CommentStatus = "approved"
-	Pending  CommentStatus = "pending"
+	CommentStatusApproved CommentStatus = "approved"
+	CommentStatusPending  CommentStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the CommentStatus enum.
 func (e CommentStatus) Valid() bool {
 	switch e {
-	case Approved:
+	case CommentStatusApproved:
 		return true
-	case Pending:
+	case CommentStatusPending:
 		return true
 	default:
 		return false
@@ -105,6 +105,30 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for LedgerEntryBizType.
+const (
+	LedgerEntryBizTypeAdminAdjust LedgerEntryBizType = "admin_adjust"
+	LedgerEntryBizTypePurchase    LedgerEntryBizType = "purchase"
+	LedgerEntryBizTypeRecharge    LedgerEntryBizType = "recharge"
+	LedgerEntryBizTypeRefund      LedgerEntryBizType = "refund"
+)
+
+// Valid indicates whether the value is a known member of the LedgerEntryBizType enum.
+func (e LedgerEntryBizType) Valid() bool {
+	switch e {
+	case LedgerEntryBizTypeAdminAdjust:
+		return true
+	case LedgerEntryBizTypePurchase:
+		return true
+	case LedgerEntryBizTypeRecharge:
+		return true
+	case LedgerEntryBizTypeRefund:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LinkInfoStatus.
 const (
 	LinkInfoStatusBroken LinkInfoStatus = "broken"
@@ -141,6 +165,156 @@ func (e LockReason) Valid() bool {
 	case LockReasonMember:
 		return true
 	case LockReasonPaid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MembershipQuoteKind.
+const (
+	New     MembershipQuoteKind = "new"
+	Renew   MembershipQuoteKind = "renew"
+	Upgrade MembershipQuoteKind = "upgrade"
+)
+
+// Valid indicates whether the value is a known member of the MembershipQuoteKind enum.
+func (e MembershipQuoteKind) Valid() bool {
+	switch e {
+	case New:
+		return true
+	case Renew:
+		return true
+	case Upgrade:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderPayMethod.
+const (
+	OrderPayMethodAlipay  OrderPayMethod = "alipay"
+	OrderPayMethodBalance OrderPayMethod = "balance"
+	OrderPayMethodEmpty   OrderPayMethod = ""
+	OrderPayMethodWechat  OrderPayMethod = "wechat"
+)
+
+// Valid indicates whether the value is a known member of the OrderPayMethod enum.
+func (e OrderPayMethod) Valid() bool {
+	switch e {
+	case OrderPayMethodAlipay:
+		return true
+	case OrderPayMethodBalance:
+		return true
+	case OrderPayMethodEmpty:
+		return true
+	case OrderPayMethodWechat:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderStatus.
+const (
+	OrderStatusClosed   OrderStatus = "closed"
+	OrderStatusPaid     OrderStatus = "paid"
+	OrderStatusPending  OrderStatus = "pending"
+	OrderStatusRefunded OrderStatus = "refunded"
+)
+
+// Valid indicates whether the value is a known member of the OrderStatus enum.
+func (e OrderStatus) Valid() bool {
+	switch e {
+	case OrderStatusClosed:
+		return true
+	case OrderStatusPaid:
+		return true
+	case OrderStatusPending:
+		return true
+	case OrderStatusRefunded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderType.
+const (
+	OrderTypeMembership OrderType = "membership"
+	OrderTypePost       OrderType = "post"
+	OrderTypeRecharge   OrderType = "recharge"
+)
+
+// Valid indicates whether the value is a known member of the OrderType enum.
+func (e OrderType) Valid() bool {
+	switch e {
+	case OrderTypeMembership:
+		return true
+	case OrderTypePost:
+		return true
+	case OrderTypeRecharge:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PayActionKind.
+const (
+	PayActionKindPaid     PayActionKind = "paid"
+	PayActionKindQrcode   PayActionKind = "qrcode"
+	PayActionKindRedirect PayActionKind = "redirect"
+)
+
+// Valid indicates whether the value is a known member of the PayActionKind enum.
+func (e PayActionKind) Valid() bool {
+	switch e {
+	case PayActionKindPaid:
+		return true
+	case PayActionKindQrcode:
+		return true
+	case PayActionKindRedirect:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PayMethod.
+const (
+	PayMethodAlipay  PayMethod = "alipay"
+	PayMethodBalance PayMethod = "balance"
+	PayMethodWechat  PayMethod = "wechat"
+)
+
+// Valid indicates whether the value is a known member of the PayMethod enum.
+func (e PayMethod) Valid() bool {
+	switch e {
+	case PayMethodAlipay:
+		return true
+	case PayMethodBalance:
+		return true
+	case PayMethodWechat:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PayScene.
+const (
+	Mobile PayScene = "mobile"
+	Pc     PayScene = "pc"
+)
+
+// Valid indicates whether the value is a known member of the PayScene enum.
+func (e PayScene) Valid() bool {
+	switch e {
+	case Mobile:
+		return true
+	case Pc:
 		return true
 	default:
 		return false
@@ -201,6 +375,24 @@ func (e UserRole) Valid() bool {
 	}
 }
 
+// Defines values for PayNotifyParamsChannel.
+const (
+	PayNotifyParamsChannelAlipay PayNotifyParamsChannel = "alipay"
+	PayNotifyParamsChannelWechat PayNotifyParamsChannel = "wechat"
+)
+
+// Valid indicates whether the value is a known member of the PayNotifyParamsChannel enum.
+func (e PayNotifyParamsChannel) Valid() bool {
+	switch e {
+	case PayNotifyParamsChannelAlipay:
+		return true
+	case PayNotifyParamsChannelWechat:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListPostsParamsAccess.
 const (
 	ListPostsParamsAccessFree  ListPostsParamsAccess = "free"
@@ -241,6 +433,22 @@ func (e ListPostsParamsSort) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AccountOverview defines model for AccountOverview.
+type AccountOverview struct {
+	// Balance 余额（分）
+	Balance int64 `json:"balance"`
+
+	// DailyLimit 当前会员等级每天的免费下载次数，0 表示不限或不是会员
+	DailyLimit    int   `json:"dailyLimit"`
+	PurchaseCount int64 `json:"purchaseCount"`
+
+	// Spent 累计消费（分），不含充值
+	Spent int64 `json:"spent"`
+
+	// TodayFreeDownloads 今天已用的会员免费下载次数
+	TodayFreeDownloads int `json:"todayFreeDownloads"`
 }
 
 // Attr defines model for Attr.
@@ -387,6 +595,22 @@ type CreateCommentRequest struct {
 	ReplyToId *int64 `json:"replyToId,omitempty"`
 }
 
+// CreateOrderRequest defines model for CreateOrderRequest.
+type CreateOrderRequest struct {
+	// Amount 充值金额（分），只用于充值
+	Amount    *int64    `json:"amount,omitempty"`
+	PayMethod PayMethod `json:"payMethod"`
+
+	// Scene pc 电脑（扫码或跳转收银台）/ mobile 手机浏览器（跳转渠道 H5 页面）
+	Scene *PayScene `json:"scene,omitempty"`
+
+	// TargetId 内容 ID 或套餐 ID，充值不用传
+	TargetId *int64 `json:"targetId,omitempty"`
+
+	// Type post 购买内容 / membership 开通会员 / recharge 余额充值
+	Type OrderType `json:"type"`
+}
+
 // CsrfToken defines model for CsrfToken.
 type CsrfToken struct {
 	Token string `json:"token"`
@@ -482,9 +706,50 @@ type Image struct {
 	Width  int     `json:"width"`
 }
 
+// LedgerEntry defines model for LedgerEntry.
+type LedgerEntry struct {
+	// Amount 正数入账，负数出账（分）
+	Amount       int64              `json:"amount"`
+	BalanceAfter int64              `json:"balanceAfter"`
+	BizType      LedgerEntryBizType `json:"bizType"`
+	CreatedAt    time.Time          `json:"createdAt"`
+	Id           int64              `json:"id"`
+	Remark       string             `json:"remark"`
+}
+
+// LedgerEntryBizType defines model for LedgerEntry.BizType.
+type LedgerEntryBizType string
+
+// LedgerPage defines model for LedgerPage.
+type LedgerPage struct {
+	Items    []LedgerEntry `json:"items"`
+	Page     int           `json:"page"`
+	PageSize int           `json:"pageSize"`
+	Total    int64         `json:"total"`
+}
+
 // LevelList defines model for LevelList.
 type LevelList struct {
 	Items []MembershipLevel `json:"items"`
+}
+
+// LevelPlans defines model for LevelPlans.
+type LevelPlans struct {
+	// DailyDownloadLimit 每天靠会员身份免费下载的次数，0 表示不限
+	DailyDownloadLimit int `json:"dailyDownloadLimit"`
+
+	// Description 一句话介绍，可能为空
+	Description string `json:"description"`
+
+	// DiscountRate 80 表示 8 折，100 表示不打折
+	DiscountRate int    `json:"discountRate"`
+	Id           int64  `json:"id"`
+	Name         string `json:"name"`
+
+	// Perks 后台填写的自定义权益，显示在折扣、下载次数之后
+	Perks []string         `json:"perks"`
+	Plans []MembershipPlan `json:"plans"`
+	Rank  int              `json:"rank"`
 }
 
 // LinkInfo defines model for LinkInfo.
@@ -540,6 +805,197 @@ type MembershipLevel struct {
 
 	// Rank 数字越大等级越高
 	Rank int `json:"rank"`
+}
+
+// MembershipPlan defines model for MembershipPlan.
+type MembershipPlan struct {
+	// Badge 角标，如“最多人选”，可能为空
+	Badge string `json:"badge"`
+
+	// DurationDays 0 表示永久
+	DurationDays int   `json:"durationDays"`
+	Id           int64 `json:"id"`
+	LevelId      int64 `json:"levelId"`
+
+	// Name Example: 年卡
+	Name string `json:"name"`
+
+	// OriginalPrice 划线价（分），0 表示不显示
+	OriginalPrice int64 `json:"originalPrice"`
+
+	// Price 售价（分）
+	Price int64 `json:"price"`
+}
+
+// MembershipQuote 购买会员的折算明细
+type MembershipQuote struct {
+	// ConvertedDays 升级到有限期套餐时，剩余价值折算成新等级的天数
+	ConvertedDays int `json:"convertedDays"`
+
+	// Deduct 升级到永久套餐时抵扣的金额（分）
+	Deduct int64 `json:"deduct"`
+
+	// DurationDays 0 表示永久
+	DurationDays int `json:"durationDays"`
+
+	// ExpiresAt 按现在支付计算的到期时间，null 表示永久
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	// FromExpiresAt 购买前的到期时间
+	FromExpiresAt *time.Time `json:"fromExpiresAt,omitempty"`
+
+	// FromLevel 购买前的有效会员等级，不是会员时不返回
+	FromLevel     *string `json:"fromLevel,omitempty"`
+	FromPermanent bool    `json:"fromPermanent"`
+
+	// Kind new 新开通 / renew 同等级续费，到期时间顺延 / upgrade 升级，剩余价值折算
+	Kind      MembershipQuoteKind `json:"kind"`
+	LevelName string              `json:"levelName"`
+	PlanName  string              `json:"planName"`
+	Rank      int                 `json:"rank"`
+
+	// RemainingDays 升级时原等级剩余的整天数
+	RemainingDays int `json:"remainingDays"`
+
+	// RemainingValue 剩余天数按原等级日均价折算的价值（分）
+	RemainingValue int64 `json:"remainingValue"`
+}
+
+// MembershipQuoteKind new 新开通 / renew 同等级续费，到期时间顺延 / upgrade 升级，剩余价值折算
+type MembershipQuoteKind string
+
+// Order defines model for Order.
+type Order struct {
+	Amount         int64     `json:"amount"`
+	CreatedAt      time.Time `json:"createdAt"`
+	DiscountAmount int64     `json:"discountAmount"`
+
+	// ExpiresAt 待支付订单的自动关闭时间
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Grant 支付后的发放结果
+	Grant *OrderGrant `json:"grant,omitempty"`
+
+	// Membership 购买会员的折算明细
+	Membership *MembershipQuote `json:"membership,omitempty"`
+
+	// OrderNo Example: 20261004153000123456
+	OrderNo   string     `json:"orderNo"`
+	PaidAt    *time.Time `json:"paidAt"`
+	PayAmount int64      `json:"payAmount"`
+
+	// PayMethod 空表示还没发起支付
+	PayMethod OrderPayMethod `json:"payMethod"`
+	Status    OrderStatus    `json:"status"`
+	TargetId  int64          `json:"targetId"`
+	Title     string         `json:"title"`
+
+	// Type post 购买内容 / membership 开通会员 / recharge 余额充值
+	Type OrderType `json:"type"`
+}
+
+// OrderPayMethod 空表示还没发起支付
+type OrderPayMethod string
+
+// OrderGrant 支付后的发放结果
+type OrderGrant struct {
+	// BalanceAfter 充值订单：到账后的余额
+	BalanceAfter *int64 `json:"balanceAfter,omitempty"`
+
+	// ExpiresAt 会员订单：开通后的到期时间
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	// Failed 支付成功但权益没有发放成功，客服会人工处理
+	Failed *bool `json:"failed,omitempty"`
+
+	// Permanent 会员订单：开通的是永久会员
+	Permanent bool `json:"permanent"`
+}
+
+// OrderPage defines model for OrderPage.
+type OrderPage struct {
+	Items    []Order `json:"items"`
+	Page     int     `json:"page"`
+	PageSize int     `json:"pageSize"`
+	Total    int64   `json:"total"`
+}
+
+// OrderQuote defines model for OrderQuote.
+type OrderQuote struct {
+	// Amount 原价（分）
+	Amount int64 `json:"amount"`
+
+	// Balance 当前余额（分）
+	Balance int64 `json:"balance"`
+
+	// DiscountAmount 会员折扣或升级抵扣（分）
+	DiscountAmount int64 `json:"discountAmount"`
+
+	// Membership 购买会员的折算明细
+	Membership *MembershipQuote `json:"membership,omitempty"`
+	Methods    []PayMethodState `json:"methods"`
+
+	// PayAmount 应付金额（分）
+	PayAmount int64  `json:"payAmount"`
+	TargetId  int64  `json:"targetId"`
+	Title     string `json:"title"`
+
+	// Type post 购买内容 / membership 开通会员 / recharge 余额充值
+	Type OrderType `json:"type"`
+}
+
+// OrderStatus defines model for OrderStatus.
+type OrderStatus string
+
+// OrderType post 购买内容 / membership 开通会员 / recharge 余额充值
+type OrderType string
+
+// PayAction defines model for PayAction.
+type PayAction struct {
+	// Kind qrcode 展示 qrCode 内容的二维码 / redirect 跳转到 url / paid 已支付（余额支付）
+	Kind PayActionKind `json:"kind"`
+
+	// Mock 模拟支付，前台显示“模拟支付成功”按钮
+	Mock   bool    `json:"mock"`
+	QrCode *string `json:"qrCode,omitempty"`
+	Url    *string `json:"url,omitempty"`
+}
+
+// PayActionKind qrcode 展示 qrCode 内容的二维码 / redirect 跳转到 url / paid 已支付（余额支付）
+type PayActionKind string
+
+// PayMethod defines model for PayMethod.
+type PayMethod string
+
+// PayMethodState defines model for PayMethodState.
+type PayMethodState struct {
+	Available bool      `json:"available"`
+	Method    PayMethod `json:"method"`
+
+	// Reason 不可用的原因，如“余额不足”
+	Reason *string `json:"reason,omitempty"`
+}
+
+// PayOrderRequest defines model for PayOrderRequest.
+type PayOrderRequest struct {
+	PayMethod PayMethod `json:"payMethod"`
+
+	// Scene pc 电脑（扫码或跳转收银台）/ mobile 手机浏览器（跳转渠道 H5 页面）
+	Scene *PayScene `json:"scene,omitempty"`
+}
+
+// PayResult defines model for PayResult.
+type PayResult struct {
+	Action PayAction `json:"action"`
+	Order  Order     `json:"order"`
+}
+
+// PayScene pc 电脑（扫码或跳转收银台）/ mobile 手机浏览器（跳转渠道 H5 页面）
+type PayScene string
+
+// PlanCatalog defines model for PlanCatalog.
+type PlanCatalog struct {
+	Levels []LevelPlans `json:"levels"`
 }
 
 // PlatformCount defines model for PlatformCount.
@@ -632,6 +1088,27 @@ type PostPage struct {
 
 // PostType article 文章；resource 资源
 type PostType string
+
+// Purchase defines model for Purchase.
+type Purchase struct {
+	Amount    int64     `json:"amount"`
+	CreatedAt time.Time `json:"createdAt"`
+	OrderNo   string    `json:"orderNo"`
+	PayAmount int64     `json:"payAmount"`
+	Post      *PostCard `json:"post,omitempty"`
+	PostId    int64     `json:"postId"`
+
+	// Title 下单时的标题
+	Title string `json:"title"`
+}
+
+// PurchasePage defines model for PurchasePage.
+type PurchasePage struct {
+	Items    []Purchase `json:"items"`
+	Page     int        `json:"page"`
+	PageSize int        `json:"pageSize"`
+	Total    int64      `json:"total"`
+}
 
 // RegisterRequest defines model for RegisterRequest.
 type RegisterRequest struct {
@@ -796,6 +1273,15 @@ type ViewerState struct {
 // LinkIdPath defines model for LinkIdPath.
 type LinkIdPath = int64
 
+// OrderNoPath defines model for OrderNoPath.
+type OrderNoPath = string
+
+// Page defines model for Page.
+type Page = int
+
+// PageSize defines model for PageSize.
+type PageSize = int
+
 // PostIdPath defines model for PostIdPath.
 type PostIdPath = int64
 
@@ -816,6 +1302,43 @@ type TooManyRequests = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// Unavailable defines model for Unavailable.
+type Unavailable = Error
+
+// ListMyOrdersParams defines parameters for ListMyOrders.
+type ListMyOrdersParams struct {
+	Status   *OrderStatus `form:"status,omitempty" json:"status,omitempty"`
+	Page     *Page        `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize    `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// ListMyPurchasesParams defines parameters for ListMyPurchases.
+type ListMyPurchasesParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// ListMyLedgerParams defines parameters for ListMyLedger.
+type ListMyLedgerParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
+// QuoteOrderParams defines parameters for QuoteOrder.
+type QuoteOrderParams struct {
+	Type OrderType `form:"type" json:"type"`
+
+	// TargetId 内容 ID 或套餐 ID，充值不用传
+	TargetId *int64 `form:"targetId,omitempty" json:"targetId,omitempty"`
+
+	// Amount 充值金额（分），1 到 5000 元
+	Amount *int64    `form:"amount,omitempty" json:"amount,omitempty"`
+	Scene  *PayScene `form:"scene,omitempty" json:"scene,omitempty"`
+}
+
+// PayNotifyParamsChannel defines parameters for PayNotify.
+type PayNotifyParamsChannel string
 
 // ListPlatformsParams defines parameters for ListPlatforms.
 type ListPlatformsParams struct {
@@ -888,6 +1411,12 @@ type UpdateMeJSONRequestBody = UpdateProfileRequest
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
 
+// CreateOrderJSONRequestBody defines body for CreateOrder for application/json ContentType.
+type CreateOrderJSONRequestBody = CreateOrderRequest
+
+// PayOrderJSONRequestBody defines body for PayOrder for application/json ContentType.
+type PayOrderJSONRequestBody = PayOrderRequest
+
 // CreateCommentJSONRequestBody defines body for CreateComment for application/json ContentType.
 type CreateCommentJSONRequestBody = CreateCommentRequest
 
@@ -929,12 +1458,45 @@ type ServerInterface interface {
 	// UpdateMe 修改个人资料
 	// (PATCH /me)
 	UpdateMe(c *gin.Context)
+	// ListMyOrders 我的订单
+	// (GET /me/orders)
+	ListMyOrders(c *gin.Context, params ListMyOrdersParams)
+	// GetAccountOverview 用户中心概览
+	// (GET /me/overview)
+	GetAccountOverview(c *gin.Context)
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(c *gin.Context)
+	// ListMyPurchases 已购内容
+	// (GET /me/purchases)
+	ListMyPurchases(c *gin.Context, params ListMyPurchasesParams)
+	// ListMyLedger 余额明细
+	// (GET /me/wallet/ledger)
+	ListMyLedger(c *gin.Context, params ListMyLedgerParams)
 	// ListMembershipLevels 会员等级
 	// (GET /membership/levels)
 	ListMembershipLevels(c *gin.Context)
+	// ListMembershipPlans 会员套餐
+	// (GET /membership/plans)
+	ListMembershipPlans(c *gin.Context)
+	// CreateOrder 下单并发起支付
+	// (POST /orders)
+	CreateOrder(c *gin.Context)
+	// QuoteOrder 下单前报价
+	// (GET /orders/quote)
+	QuoteOrder(c *gin.Context, params QuoteOrderParams)
+	// GetOrder 订单详情
+	// (GET /orders/{orderNo})
+	GetOrder(c *gin.Context, orderNo OrderNoPath)
+	// MockPayOrder 模拟支付成功（仅开发环境）
+	// (POST /orders/{orderNo}/mock-pay)
+	MockPayOrder(c *gin.Context, orderNo OrderNoPath)
+	// PayOrder 继续支付
+	// (POST /orders/{orderNo}/pay)
+	PayOrder(c *gin.Context, orderNo OrderNoPath)
+	// PayNotify 支付渠道异步回调
+	// (POST /pay/notify/{channel})
+	PayNotify(c *gin.Context, channel PayNotifyParamsChannel)
 	// ListPlatforms 资源平台
 	// (GET /platforms)
 	ListPlatforms(c *gin.Context, params ListPlatformsParams)
@@ -1125,6 +1687,62 @@ func (siw *ServerInterfaceWrapper) UpdateMe(c *gin.Context) {
 	siw.Handler.UpdateMe(c)
 }
 
+// ListMyOrders operation middleware
+func (siw *ServerInterfaceWrapper) ListMyOrders(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyOrdersParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", c.Request.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMyOrders(c, params)
+}
+
+// GetAccountOverview operation middleware
+func (siw *ServerInterfaceWrapper) GetAccountOverview(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAccountOverview(c)
+}
+
 // ChangePassword operation middleware
 func (siw *ServerInterfaceWrapper) ChangePassword(c *gin.Context) {
 
@@ -1138,6 +1756,76 @@ func (siw *ServerInterfaceWrapper) ChangePassword(c *gin.Context) {
 	siw.Handler.ChangePassword(c)
 }
 
+// ListMyPurchases operation middleware
+func (siw *ServerInterfaceWrapper) ListMyPurchases(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyPurchasesParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMyPurchases(c, params)
+}
+
+// ListMyLedger operation middleware
+func (siw *ServerInterfaceWrapper) ListMyLedger(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyLedgerParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", c.Request.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "pageSize" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", c.Request.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter pageSize: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMyLedger(c, params)
+}
+
 // ListMembershipLevels operation middleware
 func (siw *ServerInterfaceWrapper) ListMembershipLevels(c *gin.Context) {
 
@@ -1149,6 +1837,183 @@ func (siw *ServerInterfaceWrapper) ListMembershipLevels(c *gin.Context) {
 	}
 
 	siw.Handler.ListMembershipLevels(c)
+}
+
+// ListMembershipPlans operation middleware
+func (siw *ServerInterfaceWrapper) ListMembershipPlans(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListMembershipPlans(c)
+}
+
+// CreateOrder operation middleware
+func (siw *ServerInterfaceWrapper) CreateOrder(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateOrder(c)
+}
+
+// QuoteOrder operation middleware
+func (siw *ServerInterfaceWrapper) QuoteOrder(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QuoteOrderParams
+
+	// ------------- Required query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "type", c.Request.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter type: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "targetId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "targetId", c.Request.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter targetId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "amount" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "amount", c.Request.URL.Query(), &params.Amount, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter amount: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "scene" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "scene", c.Request.URL.Query(), &params.Scene, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter scene: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.QuoteOrder(c, params)
+}
+
+// GetOrder operation middleware
+func (siw *ServerInterfaceWrapper) GetOrder(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderNo" -------------
+	var orderNo OrderNoPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderNo", c.Param("orderNo"), &orderNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter orderNo: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetOrder(c, orderNo)
+}
+
+// MockPayOrder operation middleware
+func (siw *ServerInterfaceWrapper) MockPayOrder(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderNo" -------------
+	var orderNo OrderNoPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderNo", c.Param("orderNo"), &orderNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter orderNo: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.MockPayOrder(c, orderNo)
+}
+
+// PayOrder operation middleware
+func (siw *ServerInterfaceWrapper) PayOrder(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderNo" -------------
+	var orderNo OrderNoPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderNo", c.Param("orderNo"), &orderNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter orderNo: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PayOrder(c, orderNo)
+}
+
+// PayNotify operation middleware
+func (siw *ServerInterfaceWrapper) PayNotify(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "channel" -------------
+	var channel PayNotifyParamsChannel
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channel", c.Param("channel"), &channel, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter channel: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PayNotify(c, channel)
 }
 
 // ListPlatforms operation middleware
@@ -1609,6 +2474,17 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/posts/:id/links/:linkId/reports", wrapper.ReportLink)
 	router.GET(options.BaseURL+"/posts/:id/comments", wrapper.ListComments)
 	router.POST(options.BaseURL+"/posts/:id/comments", wrapper.CreateComment)
+	router.GET(options.BaseURL+"/membership/plans", wrapper.ListMembershipPlans)
+	router.GET(options.BaseURL+"/orders/quote", wrapper.QuoteOrder)
+	router.POST(options.BaseURL+"/orders", wrapper.CreateOrder)
+	router.GET(options.BaseURL+"/orders/:orderNo", wrapper.GetOrder)
+	router.POST(options.BaseURL+"/orders/:orderNo/pay", wrapper.PayOrder)
+	router.POST(options.BaseURL+"/orders/:orderNo/mock-pay", wrapper.MockPayOrder)
+	router.POST(options.BaseURL+"/pay/notify/:channel", wrapper.PayNotify)
+	router.GET(options.BaseURL+"/me/overview", wrapper.GetAccountOverview)
+	router.GET(options.BaseURL+"/me/orders", wrapper.ListMyOrders)
+	router.GET(options.BaseURL+"/me/purchases", wrapper.ListMyPurchases)
+	router.GET(options.BaseURL+"/me/wallet/ledger", wrapper.ListMyLedger)
 }
 
 type BadRequestJSONResponse Error
@@ -1622,6 +2498,8 @@ type NotFoundJSONResponse Error
 type TooManyRequestsJSONResponse Error
 
 type UnauthorizedJSONResponse Error
+
+type UnavailableJSONResponse Error
 
 type GetCsrfTokenRequestObject struct {
 }
@@ -2065,6 +2943,77 @@ func (response UpdateMe401JSONResponse) VisitUpdateMeResponse(w http.ResponseWri
 	return err
 }
 
+type ListMyOrdersRequestObject struct {
+	Params ListMyOrdersParams
+}
+
+type ListMyOrdersResponseObject interface {
+	VisitListMyOrdersResponse(w http.ResponseWriter) error
+}
+
+type ListMyOrders200JSONResponse OrderPage
+
+func (response ListMyOrders200JSONResponse) VisitListMyOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyOrders401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyOrders401JSONResponse) VisitListMyOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccountOverviewRequestObject struct {
+}
+
+type GetAccountOverviewResponseObject interface {
+	VisitGetAccountOverviewResponse(w http.ResponseWriter) error
+}
+
+type GetAccountOverview200JSONResponse AccountOverview
+
+func (response GetAccountOverview200JSONResponse) VisitGetAccountOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccountOverview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetAccountOverview401JSONResponse) VisitGetAccountOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ChangePasswordRequestObject struct {
 	Body *ChangePasswordJSONRequestBody
 }
@@ -2109,6 +3058,78 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type ListMyPurchasesRequestObject struct {
+	Params ListMyPurchasesParams
+}
+
+type ListMyPurchasesResponseObject interface {
+	VisitListMyPurchasesResponse(w http.ResponseWriter) error
+}
+
+type ListMyPurchases200JSONResponse PurchasePage
+
+func (response ListMyPurchases200JSONResponse) VisitListMyPurchasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyPurchases401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyPurchases401JSONResponse) VisitListMyPurchasesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLedgerRequestObject struct {
+	Params ListMyLedgerParams
+}
+
+type ListMyLedgerResponseObject interface {
+	VisitListMyLedgerResponse(w http.ResponseWriter) error
+}
+
+type ListMyLedger200JSONResponse LedgerPage
+
+func (response ListMyLedger200JSONResponse) VisitListMyLedgerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLedger401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyLedger401JSONResponse) VisitListMyLedgerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListMembershipLevelsRequestObject struct {
 }
 
@@ -2126,6 +3147,479 @@ func (response ListMembershipLevels200JSONResponse) VisitListMembershipLevelsRes
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMembershipPlansRequestObject struct {
+}
+
+type ListMembershipPlansResponseObject interface {
+	VisitListMembershipPlansResponse(w http.ResponseWriter) error
+}
+
+type ListMembershipPlans200JSONResponse PlanCatalog
+
+func (response ListMembershipPlans200JSONResponse) VisitListMembershipPlansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrderRequestObject struct {
+	Body *CreateOrderJSONRequestBody
+}
+
+type CreateOrderResponseObject interface {
+	VisitCreateOrderResponse(w http.ResponseWriter) error
+}
+
+type CreateOrder201JSONResponse PayResult
+
+func (response CreateOrder201JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateOrder400JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateOrder401JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateOrder404JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateOrder409JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response CreateOrder429JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOrder503JSONResponse struct{ UnavailableJSONResponse }
+
+func (response CreateOrder503JSONResponse) VisitCreateOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QuoteOrderRequestObject struct {
+	Params QuoteOrderParams
+}
+
+type QuoteOrderResponseObject interface {
+	VisitQuoteOrderResponse(w http.ResponseWriter) error
+}
+
+type QuoteOrder200JSONResponse OrderQuote
+
+func (response QuoteOrder200JSONResponse) VisitQuoteOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QuoteOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QuoteOrder400JSONResponse) VisitQuoteOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QuoteOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response QuoteOrder401JSONResponse) VisitQuoteOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QuoteOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QuoteOrder404JSONResponse) VisitQuoteOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QuoteOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response QuoteOrder409JSONResponse) VisitQuoteOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrderRequestObject struct {
+	OrderNo OrderNoPath `json:"orderNo"`
+}
+
+type GetOrderResponseObject interface {
+	VisitGetOrderResponse(w http.ResponseWriter) error
+}
+
+type GetOrder200JSONResponse Order
+
+func (response GetOrder200JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOrder401JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetOrder404JSONResponse) VisitGetOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MockPayOrderRequestObject struct {
+	OrderNo OrderNoPath `json:"orderNo"`
+}
+
+type MockPayOrderResponseObject interface {
+	VisitMockPayOrderResponse(w http.ResponseWriter) error
+}
+
+type MockPayOrder200JSONResponse Order
+
+func (response MockPayOrder200JSONResponse) VisitMockPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MockPayOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response MockPayOrder400JSONResponse) VisitMockPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MockPayOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response MockPayOrder401JSONResponse) VisitMockPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MockPayOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response MockPayOrder404JSONResponse) VisitMockPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MockPayOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response MockPayOrder409JSONResponse) VisitMockPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrderRequestObject struct {
+	OrderNo OrderNoPath `json:"orderNo"`
+	Body    *PayOrderJSONRequestBody
+}
+
+type PayOrderResponseObject interface {
+	VisitPayOrderResponse(w http.ResponseWriter) error
+}
+
+type PayOrder200JSONResponse PayResult
+
+func (response PayOrder200JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrder400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PayOrder400JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrder401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PayOrder401JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrder404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PayOrder404JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrder409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PayOrder409JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayOrder503JSONResponse struct{ UnavailableJSONResponse }
+
+func (response PayOrder503JSONResponse) VisitPayOrderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayNotifyRequestObject struct {
+	Channel PayNotifyParamsChannel `json:"channel"`
+}
+
+type PayNotifyResponseObject interface {
+	VisitPayNotifyResponse(w http.ResponseWriter) error
+}
+
+type PayNotify200TextResponse string
+
+func (response PayNotify200TextResponse) VisitPayNotifyResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(200)
+
+	_, err := w.Write([]byte(fmt.Sprint(response)))
+	return err
+}
+
+type PayNotify400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PayNotify400JSONResponse) VisitPayNotifyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PayNotify404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PayNotify404JSONResponse) VisitPayNotifyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -2722,12 +4216,45 @@ type StrictServerInterface interface {
 	// UpdateMe 修改个人资料
 	// (PATCH /me)
 	UpdateMe(ctx context.Context, request UpdateMeRequestObject) (UpdateMeResponseObject, error)
+	// ListMyOrders 我的订单
+	// (GET /me/orders)
+	ListMyOrders(ctx context.Context, request ListMyOrdersRequestObject) (ListMyOrdersResponseObject, error)
+	// GetAccountOverview 用户中心概览
+	// (GET /me/overview)
+	GetAccountOverview(ctx context.Context, request GetAccountOverviewRequestObject) (GetAccountOverviewResponseObject, error)
 	// ChangePassword 修改密码
 	// (POST /me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// ListMyPurchases 已购内容
+	// (GET /me/purchases)
+	ListMyPurchases(ctx context.Context, request ListMyPurchasesRequestObject) (ListMyPurchasesResponseObject, error)
+	// ListMyLedger 余额明细
+	// (GET /me/wallet/ledger)
+	ListMyLedger(ctx context.Context, request ListMyLedgerRequestObject) (ListMyLedgerResponseObject, error)
 	// ListMembershipLevels 会员等级
 	// (GET /membership/levels)
 	ListMembershipLevels(ctx context.Context, request ListMembershipLevelsRequestObject) (ListMembershipLevelsResponseObject, error)
+	// ListMembershipPlans 会员套餐
+	// (GET /membership/plans)
+	ListMembershipPlans(ctx context.Context, request ListMembershipPlansRequestObject) (ListMembershipPlansResponseObject, error)
+	// CreateOrder 下单并发起支付
+	// (POST /orders)
+	CreateOrder(ctx context.Context, request CreateOrderRequestObject) (CreateOrderResponseObject, error)
+	// QuoteOrder 下单前报价
+	// (GET /orders/quote)
+	QuoteOrder(ctx context.Context, request QuoteOrderRequestObject) (QuoteOrderResponseObject, error)
+	// GetOrder 订单详情
+	// (GET /orders/{orderNo})
+	GetOrder(ctx context.Context, request GetOrderRequestObject) (GetOrderResponseObject, error)
+	// MockPayOrder 模拟支付成功（仅开发环境）
+	// (POST /orders/{orderNo}/mock-pay)
+	MockPayOrder(ctx context.Context, request MockPayOrderRequestObject) (MockPayOrderResponseObject, error)
+	// PayOrder 继续支付
+	// (POST /orders/{orderNo}/pay)
+	PayOrder(ctx context.Context, request PayOrderRequestObject) (PayOrderResponseObject, error)
+	// PayNotify 支付渠道异步回调
+	// (POST /pay/notify/{channel})
+	PayNotify(ctx context.Context, request PayNotifyRequestObject) (PayNotifyResponseObject, error)
 	// ListPlatforms 资源平台
 	// (GET /platforms)
 	ListPlatforms(ctx context.Context, request ListPlatformsRequestObject) (ListPlatformsResponseObject, error)
@@ -3122,6 +4649,56 @@ func (sh *strictHandler) UpdateMe(ctx *gin.Context) {
 	}
 }
 
+// ListMyOrders operation middleware
+func (sh *strictHandler) ListMyOrders(ctx *gin.Context, params ListMyOrdersParams) {
+	var request ListMyOrdersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyOrders(ctx, request.(ListMyOrdersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyOrders")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMyOrdersResponseObject); ok {
+		if err := validResponse.VisitListMyOrdersResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAccountOverview operation middleware
+func (sh *strictHandler) GetAccountOverview(ctx *gin.Context) {
+	var request GetAccountOverviewRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAccountOverview(ctx, request.(GetAccountOverviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAccountOverview")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetAccountOverviewResponseObject); ok {
+		if err := validResponse.VisitGetAccountOverviewResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ChangePassword operation middleware
 func (sh *strictHandler) ChangePassword(ctx *gin.Context) {
 	var request ChangePasswordRequestObject
@@ -3153,6 +4730,58 @@ func (sh *strictHandler) ChangePassword(ctx *gin.Context) {
 	}
 }
 
+// ListMyPurchases operation middleware
+func (sh *strictHandler) ListMyPurchases(ctx *gin.Context, params ListMyPurchasesParams) {
+	var request ListMyPurchasesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyPurchases(ctx, request.(ListMyPurchasesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyPurchases")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMyPurchasesResponseObject); ok {
+		if err := validResponse.VisitListMyPurchasesResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyLedger operation middleware
+func (sh *strictHandler) ListMyLedger(ctx *gin.Context, params ListMyLedgerParams) {
+	var request ListMyLedgerRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyLedger(ctx, request.(ListMyLedgerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyLedger")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMyLedgerResponseObject); ok {
+		if err := validResponse.VisitListMyLedgerResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListMembershipLevels operation middleware
 func (sh *strictHandler) ListMembershipLevels(ctx *gin.Context) {
 	var request ListMembershipLevelsRequestObject
@@ -3170,6 +4799,198 @@ func (sh *strictHandler) ListMembershipLevels(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ListMembershipLevelsResponseObject); ok {
 		if err := validResponse.VisitListMembershipLevelsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMembershipPlans operation middleware
+func (sh *strictHandler) ListMembershipPlans(ctx *gin.Context) {
+	var request ListMembershipPlansRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMembershipPlans(ctx, request.(ListMembershipPlansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMembershipPlans")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListMembershipPlansResponseObject); ok {
+		if err := validResponse.VisitListMembershipPlansResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOrder operation middleware
+func (sh *strictHandler) CreateOrder(ctx *gin.Context) {
+	var request CreateOrderRequestObject
+
+	var body CreateOrderJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOrder(ctx, request.(CreateOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOrder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateOrderResponseObject); ok {
+		if err := validResponse.VisitCreateOrderResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QuoteOrder operation middleware
+func (sh *strictHandler) QuoteOrder(ctx *gin.Context, params QuoteOrderParams) {
+	var request QuoteOrderRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.QuoteOrder(ctx, request.(QuoteOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QuoteOrder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(QuoteOrderResponseObject); ok {
+		if err := validResponse.VisitQuoteOrderResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOrder operation middleware
+func (sh *strictHandler) GetOrder(ctx *gin.Context, orderNo OrderNoPath) {
+	var request GetOrderRequestObject
+
+	request.OrderNo = orderNo
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOrder(ctx, request.(GetOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOrder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetOrderResponseObject); ok {
+		if err := validResponse.VisitGetOrderResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MockPayOrder operation middleware
+func (sh *strictHandler) MockPayOrder(ctx *gin.Context, orderNo OrderNoPath) {
+	var request MockPayOrderRequestObject
+
+	request.OrderNo = orderNo
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.MockPayOrder(ctx, request.(MockPayOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MockPayOrder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(MockPayOrderResponseObject); ok {
+		if err := validResponse.VisitMockPayOrderResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PayOrder operation middleware
+func (sh *strictHandler) PayOrder(ctx *gin.Context, orderNo OrderNoPath) {
+	var request PayOrderRequestObject
+
+	request.OrderNo = orderNo
+
+	var body PayOrderJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PayOrder(ctx, request.(PayOrderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PayOrder")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(PayOrderResponseObject); ok {
+		if err := validResponse.VisitPayOrderResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PayNotify operation middleware
+func (sh *strictHandler) PayNotify(ctx *gin.Context, channel PayNotifyParamsChannel) {
+	var request PayNotifyRequestObject
+
+	request.Channel = channel
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PayNotify(ctx, request.(PayNotifyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PayNotify")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(PayNotifyResponseObject); ok {
+		if err := validResponse.VisitPayNotifyResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

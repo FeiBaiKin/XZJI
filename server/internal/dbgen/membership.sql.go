@@ -23,25 +23,40 @@ func (q *Queries) CountMembersOfLevel(ctx context.Context, levelID int64) (int64
 	return count, err
 }
 
+const countPlansOfLevel = `-- name: CountPlansOfLevel :one
+SELECT COUNT(*) FROM membership_plans WHERE level_id = ?
+`
+
+func (q *Queries) CountPlansOfLevel(ctx context.Context, levelID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPlansOfLevel, levelID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createMembershipLevel = `-- name: CreateMembershipLevel :execlastid
-INSERT INTO membership_levels (name, ` + "`" + `rank` + "`" + `, discount_rate, daily_download_limit, status)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO membership_levels (name, description, ` + "`" + `rank` + "`" + `, discount_rate, daily_download_limit, perks, status)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateMembershipLevelParams struct {
 	Name               string
+	Description        string
 	Rank               int32
 	DiscountRate       int32
 	DailyDownloadLimit int32
+	Perks              []byte
 	Status             string
 }
 
 func (q *Queries) CreateMembershipLevel(ctx context.Context, arg CreateMembershipLevelParams) (int64, error) {
 	result, err := q.db.ExecContext(ctx, createMembershipLevel,
 		arg.Name,
+		arg.Description,
 		arg.Rank,
 		arg.DiscountRate,
 		arg.DailyDownloadLimit,
+		arg.Perks,
 		arg.Status,
 	)
 	if err != nil {
@@ -50,12 +65,66 @@ func (q *Queries) CreateMembershipLevel(ctx context.Context, arg CreateMembershi
 	return result.LastInsertId()
 }
 
+const createMembershipPlan = `-- name: CreateMembershipPlan :execlastid
+INSERT INTO membership_plans (level_id, name, duration_days, price, original_price, badge, status, sort)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateMembershipPlanParams struct {
+	LevelID       int64
+	Name          string
+	DurationDays  int32
+	Price         int64
+	OriginalPrice int64
+	Badge         string
+	Status        string
+	Sort          int32
+}
+
+func (q *Queries) CreateMembershipPlan(ctx context.Context, arg CreateMembershipPlanParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, createMembershipPlan,
+		arg.LevelID,
+		arg.Name,
+		arg.DurationDays,
+		arg.Price,
+		arg.OriginalPrice,
+		arg.Badge,
+		arg.Status,
+		arg.Sort,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+const deleteExpiredMemberships = `-- name: DeleteExpiredMemberships :execrows
+DELETE FROM user_memberships WHERE expires_at IS NOT NULL AND expires_at < ?
+`
+
+func (q *Queries) DeleteExpiredMemberships(ctx context.Context, expiresAt sql.NullTime) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteExpiredMemberships, expiresAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const deleteMembershipLevel = `-- name: DeleteMembershipLevel :exec
 DELETE FROM membership_levels WHERE id = ?
 `
 
 func (q *Queries) DeleteMembershipLevel(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteMembershipLevel, id)
+	return err
+}
+
+const deleteMembershipPlan = `-- name: DeleteMembershipPlan :exec
+DELETE FROM membership_plans WHERE id = ?
+`
+
+func (q *Queries) DeleteMembershipPlan(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteMembershipPlan, id)
 	return err
 }
 
@@ -69,7 +138,7 @@ func (q *Queries) DeleteUserMembership(ctx context.Context, userID int64) error 
 }
 
 const getMembershipLevel = `-- name: GetMembershipLevel :one
-SELECT id, name, ` + "`" + `rank` + "`" + `, discount_rate, daily_download_limit, status, created_at, updated_at FROM membership_levels WHERE id = ?
+SELECT id, name, ` + "`" + `rank` + "`" + `, discount_rate, daily_download_limit, status, created_at, updated_at, description, perks FROM membership_levels WHERE id = ?
 `
 
 func (q *Queries) GetMembershipLevel(ctx context.Context, id int64) (MembershipLevel, error) {
@@ -82,6 +151,31 @@ func (q *Queries) GetMembershipLevel(ctx context.Context, id int64) (MembershipL
 		&i.DiscountRate,
 		&i.DailyDownloadLimit,
 		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Description,
+		&i.Perks,
+	)
+	return i, err
+}
+
+const getMembershipPlan = `-- name: GetMembershipPlan :one
+SELECT id, level_id, name, duration_days, price, original_price, badge, status, sort, created_at, updated_at FROM membership_plans WHERE id = ?
+`
+
+func (q *Queries) GetMembershipPlan(ctx context.Context, id int64) (MembershipPlan, error) {
+	row := q.db.QueryRowContext(ctx, getMembershipPlan, id)
+	var i MembershipPlan
+	err := row.Scan(
+		&i.ID,
+		&i.LevelID,
+		&i.Name,
+		&i.DurationDays,
+		&i.Price,
+		&i.OriginalPrice,
+		&i.Badge,
+		&i.Status,
+		&i.Sort,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -120,8 +214,24 @@ func (q *Queries) GetUserMembership(ctx context.Context, userID int64) (GetUserM
 	return i, err
 }
 
+const getUserMembershipForUpdate = `-- name: GetUserMembershipForUpdate :one
+SELECT user_id, level_id, expires_at, updated_at FROM user_memberships WHERE user_id = ? FOR UPDATE
+`
+
+func (q *Queries) GetUserMembershipForUpdate(ctx context.Context, userID int64) (UserMembership, error) {
+	row := q.db.QueryRowContext(ctx, getUserMembershipForUpdate, userID)
+	var i UserMembership
+	err := row.Scan(
+		&i.UserID,
+		&i.LevelID,
+		&i.ExpiresAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listMembershipLevels = `-- name: ListMembershipLevels :many
-SELECT l.id, l.name, l.` + "`" + `rank` + "`" + `, l.discount_rate, l.daily_download_limit, l.status, l.created_at, l.updated_at, (SELECT COUNT(*) FROM user_memberships m WHERE m.level_id = l.id) AS member_count
+SELECT l.id, l.name, l.` + "`" + `rank` + "`" + `, l.discount_rate, l.daily_download_limit, l.status, l.created_at, l.updated_at, l.description, l.perks, (SELECT COUNT(*) FROM user_memberships m WHERE m.level_id = l.id) AS member_count
 FROM membership_levels l
 ORDER BY l.` + "`" + `rank` + "`" + `
 `
@@ -135,6 +245,8 @@ type ListMembershipLevelsRow struct {
 	Status             string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+	Description        string
+	Perks              []byte
 	MemberCount        int64
 }
 
@@ -156,7 +268,48 @@ func (q *Queries) ListMembershipLevels(ctx context.Context) ([]ListMembershipLev
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Description,
+			&i.Perks,
 			&i.MemberCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMembershipPlans = `-- name: ListMembershipPlans :many
+SELECT id, level_id, name, duration_days, price, original_price, badge, status, sort, created_at, updated_at FROM membership_plans ORDER BY level_id, sort, id
+`
+
+func (q *Queries) ListMembershipPlans(ctx context.Context) ([]MembershipPlan, error) {
+	rows, err := q.db.QueryContext(ctx, listMembershipPlans)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MembershipPlan{}
+	for rows.Next() {
+		var i MembershipPlan
+		if err := rows.Scan(
+			&i.ID,
+			&i.LevelID,
+			&i.Name,
+			&i.DurationDays,
+			&i.Price,
+			&i.OriginalPrice,
+			&i.Badge,
+			&i.Status,
+			&i.Sort,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -231,15 +384,17 @@ func (q *Queries) ListUserMemberships(ctx context.Context, userIds []int64) ([]L
 
 const updateMembershipLevel = `-- name: UpdateMembershipLevel :exec
 UPDATE membership_levels
-SET name = ?, ` + "`" + `rank` + "`" + ` = ?, discount_rate = ?, daily_download_limit = ?, status = ?
+SET name = ?, description = ?, ` + "`" + `rank` + "`" + ` = ?, discount_rate = ?, daily_download_limit = ?, perks = ?, status = ?
 WHERE id = ?
 `
 
 type UpdateMembershipLevelParams struct {
 	Name               string
+	Description        string
 	Rank               int32
 	DiscountRate       int32
 	DailyDownloadLimit int32
+	Perks              []byte
 	Status             string
 	ID                 int64
 }
@@ -247,10 +402,45 @@ type UpdateMembershipLevelParams struct {
 func (q *Queries) UpdateMembershipLevel(ctx context.Context, arg UpdateMembershipLevelParams) error {
 	_, err := q.db.ExecContext(ctx, updateMembershipLevel,
 		arg.Name,
+		arg.Description,
 		arg.Rank,
 		arg.DiscountRate,
 		arg.DailyDownloadLimit,
+		arg.Perks,
 		arg.Status,
+		arg.ID,
+	)
+	return err
+}
+
+const updateMembershipPlan = `-- name: UpdateMembershipPlan :exec
+UPDATE membership_plans
+SET level_id = ?, name = ?, duration_days = ?, price = ?, original_price = ?, badge = ?, status = ?, sort = ?
+WHERE id = ?
+`
+
+type UpdateMembershipPlanParams struct {
+	LevelID       int64
+	Name          string
+	DurationDays  int32
+	Price         int64
+	OriginalPrice int64
+	Badge         string
+	Status        string
+	Sort          int32
+	ID            int64
+}
+
+func (q *Queries) UpdateMembershipPlan(ctx context.Context, arg UpdateMembershipPlanParams) error {
+	_, err := q.db.ExecContext(ctx, updateMembershipPlan,
+		arg.LevelID,
+		arg.Name,
+		arg.DurationDays,
+		arg.Price,
+		arg.OriginalPrice,
+		arg.Badge,
+		arg.Status,
+		arg.Sort,
 		arg.ID,
 	)
 	return err

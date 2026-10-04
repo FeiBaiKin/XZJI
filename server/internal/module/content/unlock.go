@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"xzji/internal/dbgen"
 	"xzji/internal/module/access"
 	"xzji/internal/platform/errs"
@@ -329,4 +331,69 @@ func (s *Service) SetCommentCount(ctx context.Context, postID int64, n int) erro
 		return fmt.Errorf("更新评论数：%w", err)
 	}
 	return nil
+}
+
+// PurchaseInfo 下单时需要的内容信息。
+type PurchaseInfo struct {
+	Title    string
+	AuthorID int64
+	Rule     access.Rule
+}
+
+// PurchaseInfo 只有前台可见的内容才能购买。
+func (s *Service) PurchaseInfo(ctx context.Context, postID int64) (PurchaseInfo, error) {
+	row, err := s.getRow(ctx, postID)
+	if err != nil {
+		return PurchaseInfo{}, err
+	}
+	if !s.visible(row) {
+		return PurchaseInfo{}, ErrPostNotFound
+	}
+	return PurchaseInfo{Title: row.Title, AuthorID: row.AuthorID, Rule: rule(row)}, nil
+}
+
+// Cards 按 ID 批量查询内容卡片（包括已下线的），用于已购列表。
+func (s *Service) Cards(ctx context.Context, ids []int64) (map[int64]*Post, error) {
+	out := make(map[int64]*Post, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	query, args, err := sq.Select(listColumns...).From("posts p").LeftJoin("resources r ON r.post_id = p.id").
+		Where(sq.Eq{"p.id": ids}).ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("查询内容：%w", err)
+	}
+	defer rows.Close()
+	var list []listRow
+	for rows.Next() {
+		var r listRow
+		if err := rows.Scan(r.dest()...); err != nil {
+			return nil, fmt.Errorf("读取内容：%w", err)
+		}
+		list = append(list, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("读取内容：%w", err)
+	}
+	posts, err := s.hydrate(ctx, list)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range posts {
+		out[p.ID] = p
+	}
+	return out, nil
+}
+
+// UsedToday 今天已用的会员免费下载次数（同一篇内容当天只算一次）。
+func (s *Service) UsedToday(ctx context.Context, userID int64) (int, error) {
+	n, err := s.q.CountMemberFreeDownloadsSince(ctx, dbgen.CountMemberFreeDownloadsSinceParams{UserID: userID, CreatedAt: s.dayStart()})
+	if err != nil {
+		return 0, fmt.Errorf("统计今日下载次数：%w", err)
+	}
+	return int(n), nil
 }

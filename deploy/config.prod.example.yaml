@@ -40,3 +40,9 @@ media:
   base_url: https://img.example.com # 图片域名，由 Nginx 直接提供 data/uploads
   max_size_mb: 10
   serve: false
+
+# 加密后台填写的支付私钥等敏感配置，首次启动自动生成；请和数据库备份分开保管
+secret_key_file: data/secret.key
+
+pay:
+  mock: false # 生产环境必须为 false；支付参数在后台“支付设置”里填写

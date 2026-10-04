@@ -22,9 +22,12 @@ import (
 	"xzji/internal/module/content"
 	"xzji/internal/module/media"
 	"xzji/internal/module/membership"
+	"xzji/internal/module/order"
+	"xzji/internal/module/payment"
 	"xzji/internal/module/session"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
+	"xzji/internal/module/wallet"
 )
 
 const (
@@ -50,6 +53,9 @@ type Deps struct {
 	Home     *setting.HomeService
 	Members  *membership.Service
 	Comments *comment.Service
+	Orders   *order.Service
+	Payment  *payment.Service
+	Wallet   *wallet.Service
 }
 
 func NewRouter(d Deps) (*gin.Engine, error) {
@@ -97,6 +103,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 	pubHandler := public.NewHandler(public.Deps{
 		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
 		Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
+		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet,
 	})
 	pubapi.RegisterHandlersWithOptions(r,
 		pubapi.NewStrictHandlerWithOptions(pubHandler, []pubapi.StrictMiddlewareFunc{requirePublic}, pubapi.StrictGinServerOptions{
@@ -114,6 +121,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 	adminHandler := admin.NewHandler(admin.Deps{
 		DB: d.DB, Log: d.Log, Settings: d.Settings, Auth: d.Auth, Users: d.Users, Realm: adminRealm, CSRF: adminCSRF,
 		Media: d.Media, Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
+		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet,
 	})
 	adminapi.RegisterHandlersWithOptions(r,
 		adminapi.NewStrictHandlerWithOptions(adminHandler, []adminapi.StrictMiddlewareFunc{requireAdmin}, adminapi.StrictGinServerOptions{

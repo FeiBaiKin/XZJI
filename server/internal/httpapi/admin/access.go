@@ -14,14 +14,15 @@ import (
 
 func toAdminLevel(l membership.Level) adminapi.AdminLevel {
 	return adminapi.AdminLevel{
-		Id: l.ID, Name: l.Name, Rank: l.Rank, DiscountRate: l.DiscountRate, DailyDownloadLimit: l.DailyDownloadLimit,
-		Status: adminapi.LevelStatus(l.Status), MemberCount: l.MemberCount,
+		Id: l.ID, Name: l.Name, Description: l.Description, Rank: l.Rank, DiscountRate: l.DiscountRate, DailyDownloadLimit: l.DailyDownloadLimit,
+		Perks: l.Perks, Status: adminapi.LevelStatus(l.Status), MemberCount: l.MemberCount,
 	}
 }
 
 func levelInput(b *adminapi.LevelInput) membership.LevelInput {
 	return membership.LevelInput{
-		Name: b.Name, Rank: b.Rank, DiscountRate: b.DiscountRate, DailyDownloadLimit: b.DailyDownloadLimit, Status: string(deref(b.Status)),
+		Name: b.Name, Description: deref(b.Description), Rank: b.Rank, DiscountRate: b.DiscountRate, DailyDownloadLimit: b.DailyDownloadLimit,
+		Perks: deref(b.Perks), Status: string(deref(b.Status)),
 	}
 }
 

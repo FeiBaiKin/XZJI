@@ -133,6 +133,80 @@ type MembershipLevel struct {
 	Status    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// 一句话介绍，如：适合偶尔下载
+	Description string
+	// 自定义权益说明 ["失效链接优先补", ...]，前台显示在自动生成的权益之后
+	Perks []byte
+}
+
+// 会员套餐
+type MembershipPlan struct {
+	ID      int64
+	LevelID int64
+	// 月卡 / 年卡 / 永久
+	Name string
+	// 0 表示永久
+	DurationDays int32
+	// 售价（分）
+	Price int64
+	// 划线价（分），0 表示不显示
+	OriginalPrice int64
+	// 角标，如：最多人选
+	Badge string
+	// active / disabled
+	Status    string
+	Sort      int32
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// 订单
+type Order struct {
+	ID int64
+	// 对外展示的订单号：站点时区的时间戳 + 随机数
+	OrderNo string
+	UserID  int64
+	// post / membership / recharge
+	Type string
+	// 内容 ID 或套餐 ID，充值为 0
+	TargetID int64
+	Title    string
+	// 下单时的商品快照与支付后的发放结果
+	Snapshot json.RawMessage
+	// 原价（分）
+	Amount int64
+	// 会员折扣或升级抵扣（分）
+	DiscountAmount int64
+	// 应付金额（分）
+	PayAmount int64
+	// wechat / alipay / balance，空表示还没发起支付
+	PayMethod string
+	// pending / paid / closed / refunded
+	Status    string
+	ExpiresAt time.Time
+	PaidAt    sql.NullTime
+	// balance 退回余额 / original 原路退回（只记录）
+	RefundMethod string
+	RefundRemark string
+	RefundedAt   sql.NullTime
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// 第三方支付记录
+type Payment struct {
+	ID      int64
+	OrderID int64
+	// wechat / alipay
+	Channel string
+	// 支付渠道的交易号
+	TradeNo string
+	Amount  int64
+	// success 已入账 / duplicate 订单已由其他交易支付，需人工退款
+	Status string
+	// 回调或查询的原文，排查问题用
+	RawNotify string
+	CreatedAt time.Time
 }
 
 // 内容（文章和资源）
@@ -282,4 +356,37 @@ type UserMembership struct {
 	// NULL 表示永久
 	ExpiresAt sql.NullTime
 	UpdatedAt time.Time
+}
+
+// 已购内容
+type UserPurchase struct {
+	UserID    int64
+	PostID    int64
+	OrderID   int64
+	CreatedAt time.Time
+}
+
+// 钱包
+type Wallet struct {
+	UserID int64
+	// 余额（分），只能通过写流水变动
+	Balance   int64
+	UpdatedAt time.Time
+}
+
+// 余额流水，只增不改
+type WalletLedger struct {
+	ID     int64
+	UserID int64
+	// balance；第二阶段增加 commission
+	Account string
+	// 正数入账，负数出账
+	Amount       int64
+	BalanceAfter int64
+	// recharge / purchase / refund / admin_adjust
+	BizType string
+	// 订单 ID；后台调整为管理员 ID
+	BizID     int64
+	Remark    string
+	CreatedAt time.Time
 }
