@@ -11,10 +11,20 @@ export default defineEventHandler(async (event) => {
   if (!secret || !Number.isSafeInteger(seconds) || expired || !equal(signature, expected)) {
     throw createError({ statusCode: 401, statusMessage: '签名校验失败' })
   }
-  await useStorage('cache').clear()
+  await clearCache()
   setResponseStatus(event, 204)
   return null
 })
+
+// 清空页面缓存。Nitro 打包后的 useStorage('cache').clear() 是空操作（前缀存储没把 clear 前缀化，
+// 实测键还在），所以先调用它，再逐个删掉剩下的键，保证真的清干净。
+async function clearCache(): Promise<void> {
+  const cache = useStorage('cache')
+  await cache.clear()
+  for (const key of await cache.getKeys()) {
+    await cache.removeItem(key)
+  }
+}
 
 async function sign(secret: string, message: string): Promise<string> {
   const encoder = new TextEncoder()
