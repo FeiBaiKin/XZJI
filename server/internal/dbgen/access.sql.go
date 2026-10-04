@@ -444,7 +444,7 @@ func (q *Queries) ListResourceLinks(ctx context.Context, postID int64) ([]Resour
 }
 
 const setPostCommentCount = `-- name: SetPostCommentCount :exec
-UPDATE posts SET comment_count = ? WHERE id = ?
+UPDATE posts SET comment_count = ?, updated_at = updated_at WHERE id = ?
 `
 
 type SetPostCommentCountParams struct {
@@ -452,6 +452,7 @@ type SetPostCommentCountParams struct {
 	ID           int64
 }
 
+// updated_at 保持原值，否则“最近更新”和 sitemap 的 lastmod 会随评论一起变
 func (q *Queries) SetPostCommentCount(ctx context.Context, arg SetPostCommentCountParams) error {
 	_, err := q.db.ExecContext(ctx, setPostCommentCount, arg.CommentCount, arg.ID)
 	return err

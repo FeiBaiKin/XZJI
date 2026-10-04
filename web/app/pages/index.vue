@@ -44,6 +44,21 @@ const notice = computed(() => (data.value?.notice ?? '').split('\n').map(s => s.
 const iconPosts = computed(() => (data.value?.latest ?? []).filter(p => p.resource?.icon))
 
 useSeoMeta({ title: useSiteTitle(undefined) })
+
+// 首页的结构化数据：站点信息和站内搜索
+const { public: { siteUrl, siteName } } = useRuntimeConfig()
+useJsonLd(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteName,
+  url: `${siteUrl}/`,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${siteUrl}/search?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+}))
+
 </script>
 
 <template>

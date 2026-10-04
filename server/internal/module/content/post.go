@@ -624,3 +624,15 @@ func (s *Service) loadPost(ctx context.Context, row dbgen.Post) (*Post, error) {
 func (p *Post) EditorHTML() string {
 	return mergeHidden(p.ContentHTML, p.HiddenBlocks)
 }
+
+// HasDuePublished 判断 (after, before] 之间有没有定时发布的内容到期，用于到点后清缓存。
+func (s *Service) HasDuePublished(ctx context.Context, after, before time.Time) (bool, error) {
+	n, err := s.q.CountPostsPublishedBetween(ctx, dbgen.CountPostsPublishedBetweenParams{
+		After:  sql.NullTime{Time: after, Valid: true},
+		Before: sql.NullTime{Time: before, Valid: true},
+	})
+	if err != nil {
+		return false, fmt.Errorf("统计定时发布的内容：%w", err)
+	}
+	return n > 0, nil
+}

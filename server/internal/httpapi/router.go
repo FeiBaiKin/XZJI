@@ -25,9 +25,11 @@ import (
 	"xzji/internal/module/order"
 	"xzji/internal/module/payment"
 	"xzji/internal/module/session"
+	"xzji/internal/module/seo"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	"xzji/internal/module/wallet"
+	"xzji/internal/platform/cache"
 )
 
 const (
@@ -51,11 +53,14 @@ type Deps struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service
 	Orders   *order.Service
 	Payment  *payment.Service
 	Wallet   *wallet.Service
+	Cache    cache.Cache
+	Purger   Purger
 }
 
 func NewRouter(d Deps) (*gin.Engine, error) {
@@ -74,6 +79,9 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 		middleware.AccessLog(d.Log),
 		middleware.Recovery(d.Log),
 		middleware.CORS(d.Config.CORS.AllowOrigins),
+		// 放在最后：前面的中间件照常执行，命中的请求在缓存中间件里直接返回
+		cacheResponses(d.Cache, CookiePublicSession),
+		purgeOnAdminWrite(d.Purger),
 	)
 	r.NoRoute(func(c *gin.Context) { apierr.Write(c, apierr.NotFound) })
 	r.NoMethod(func(c *gin.Context) { apierr.Write(c, apierr.MethodNotAllowed) })
@@ -103,7 +111,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 	pubHandler := public.NewHandler(public.Deps{
 		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
 		Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
-		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet,
+		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet, Seo: d.Seo,
 	})
 	pubapi.RegisterHandlersWithOptions(r,
 		pubapi.NewStrictHandlerWithOptions(pubHandler, []pubapi.StrictMiddlewareFunc{requirePublic}, pubapi.StrictGinServerOptions{

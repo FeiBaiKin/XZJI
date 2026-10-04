@@ -13,6 +13,8 @@ import (
 type Storage interface {
 	// Put 保存文件，key 为以 / 分隔的相对路径。
 	Put(ctx context.Context, key string, data []byte) error
+	// Get 读取文件内容。
+	Get(ctx context.Context, key string) ([]byte, error)
 	Delete(ctx context.Context, key string) error
 }
 
@@ -57,6 +59,19 @@ func (l *Local) Put(_ context.Context, key string, data []byte) error {
 		return fmt.Errorf("保存文件：%w", err)
 	}
 	return nil
+}
+
+// Get 读取文件内容。
+func (l *Local) Get(_ context.Context, key string) ([]byte, error) {
+	p, err := l.path(key)
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil, fmt.Errorf("读取文件：%w", err)
+	}
+	return data, nil
 }
 
 func (l *Local) Delete(_ context.Context, key string) error {

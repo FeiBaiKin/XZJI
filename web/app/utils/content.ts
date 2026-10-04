@@ -8,6 +8,12 @@ export type MembershipLevel = PublicSchemas['MembershipLevel']
 export type HiddenBlockInfo = PublicSchemas['HiddenBlockInfo']
 export type UnlockState = PublicSchemas['UnlockState']
 export type Lock = PublicSchemas['Lock']
+export type Image = PublicSchemas['Image']
+
+// 图片的 srcset：有缩略图时按宽度列出让浏览器挑，没有就用原图
+export function srcsetOf(image?: Image | null): string | undefined {
+  return image?.variants?.length ? image.variants.map(v => `${v.url} ${v.width}w`).join(', ') : undefined
+}
 
 export const postUrl = (id: number) => `/${id}.html`
 export const categoryUrl = (slug: string, page = 1) => page > 1 ? `/category/${slug}/page/${page}/` : `/category/${slug}/`

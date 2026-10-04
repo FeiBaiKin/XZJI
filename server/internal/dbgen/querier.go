@@ -14,6 +14,8 @@ import (
 type Querier interface {
 	AddHiddenBlock(ctx context.Context, arg AddHiddenBlockParams) error
 	AddPostTag(ctx context.Context, arg AddPostTagParams) error
+	// updated_at 保持原值，浏览量变化不算内容更新
+	AddPostViews(ctx context.Context, arg AddPostViewsParams) error
 	AddPurchase(ctx context.Context, arg AddPurchaseParams) (int64, error)
 	CloseOrder(ctx context.Context, id int64) (int64, error)
 	CountActivePostsByCategory(ctx context.Context) ([]CountActivePostsByCategoryRow, error)
@@ -25,6 +27,8 @@ type Querier interface {
 	CountMembersOfLevel(ctx context.Context, levelID int64) (int64, error)
 	CountPlansOfLevel(ctx context.Context, levelID int64) (int64, error)
 	CountPostsInCategory(ctx context.Context, categoryID int64) (int64, error)
+	// 定时发布：统计发布时间落在区间内的已发布内容，到点后要清缓存
+	CountPostsPublishedBetween(ctx context.Context, arg CountPostsPublishedBetweenParams) (int64, error)
 	CountPublishedPostsByCategory(ctx context.Context, publishedAt sql.NullTime) ([]CountPublishedPostsByCategoryRow, error)
 	CountPublishedPostsByTag(ctx context.Context, arg CountPublishedPostsByTagParams) (int64, error)
 	CountRootComments(ctx context.Context, arg CountRootCommentsParams) (int64, error)
@@ -108,6 +112,7 @@ type Querier interface {
 	// 已发起第三方支付、还没确认到账的订单，用于补单
 	ListAwaitingOrders(ctx context.Context, arg ListAwaitingOrdersParams) ([]Order, error)
 	ListCategories(ctx context.Context) ([]Category, error)
+	ListCategorySlugs(ctx context.Context) ([]string, error)
 	ListCommentReplies(ctx context.Context, arg ListCommentRepliesParams) ([]Comment, error)
 	ListCommentsAdmin(ctx context.Context, arg ListCommentsAdminParams) ([]Comment, error)
 	ListExpiredPendingOrders(ctx context.Context, arg ListExpiredPendingOrdersParams) ([]Order, error)
@@ -115,13 +120,18 @@ type Querier interface {
 	ListHotTags(ctx context.Context, arg ListHotTagsParams) ([]ListHotTagsRow, error)
 	ListLinkReports(ctx context.Context, arg ListLinkReportsParams) ([]ListLinkReportsRow, error)
 	ListMediaByIDs(ctx context.Context, ids []int64) ([]Media, error)
+	ListMediaForVariants(ctx context.Context) ([]ListMediaForVariantsRow, error)
 	ListMembershipLevels(ctx context.Context) ([]ListMembershipLevelsRow, error)
 	ListMembershipPlans(ctx context.Context) ([]MembershipPlan, error)
 	ListPaymentsOfOrder(ctx context.Context, orderID int64) ([]Payment, error)
 	ListPlatformNames(ctx context.Context) ([]string, error)
 	ListPostTitles(ctx context.Context, ids []int64) ([]ListPostTitlesRow, error)
+	// sitemap 用：已发布内容的 ID 和更新时间，定时未到的不算
+	ListPublishedPostUpdates(ctx context.Context, at sql.NullTime) ([]ListPublishedPostUpdatesRow, error)
 	ListResourceLinks(ctx context.Context, postID int64) ([]ResourceLink, error)
 	ListRootComments(ctx context.Context, arg ListRootCommentsParams) ([]Comment, error)
+	// 只有还有已发布内容的标签才进 sitemap
+	ListTagSlugsWithPosts(ctx context.Context, at sql.NullTime) ([]string, error)
 	ListTagsByNames(ctx context.Context, names []string) ([]Tag, error)
 	ListTagsByPostIDs(ctx context.Context, postIds []int64) ([]ListTagsByPostIDsRow, error)
 	ListTagsWithCount(ctx context.Context, arg ListTagsWithCountParams) ([]ListTagsWithCountRow, error)
@@ -139,6 +149,7 @@ type Querier interface {
 	MarkOrderPaidByChannel(ctx context.Context, arg MarkOrderPaidByChannelParams) (int64, error)
 	RefundOrder(ctx context.Context, arg RefundOrderParams) (int64, error)
 	SetOrderSnapshot(ctx context.Context, arg SetOrderSnapshotParams) error
+	// updated_at 保持原值，否则“最近更新”和 sitemap 的 lastmod 会随评论一起变
 	SetPostCommentCount(ctx context.Context, arg SetPostCommentCountParams) error
 	SetWalletBalance(ctx context.Context, arg SetWalletBalanceParams) error
 	StartOrderPay(ctx context.Context, arg StartOrderPayParams) (int64, error)
@@ -146,6 +157,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error
 	UpdateCommentStatus(ctx context.Context, arg UpdateCommentStatusParams) error
 	UpdateLinkReportStatus(ctx context.Context, arg UpdateLinkReportStatusParams) error
+	UpdateMediaVariants(ctx context.Context, arg UpdateMediaVariantsParams) error
 	UpdateMembershipLevel(ctx context.Context, arg UpdateMembershipLevelParams) error
 	UpdateMembershipPlan(ctx context.Context, arg UpdateMembershipPlanParams) error
 	UpdatePost(ctx context.Context, arg UpdatePostParams) error

@@ -11,18 +11,19 @@ import (
 )
 
 const createMedia = `-- name: CreateMedia :execlastid
-INSERT INTO media (user_id, path, mime, size, width, height, color)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO media (user_id, path, mime, size, width, height, color, variants)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreateMediaParams struct {
-	UserID int64
-	Path   string
-	Mime   string
-	Size   int64
-	Width  int32
-	Height int32
-	Color  string
+	UserID   int64
+	Path     string
+	Mime     string
+	Size     int64
+	Width    int32
+	Height   int32
+	Color    string
+	Variants []byte
 }
 
 func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (int64, error) {
@@ -34,6 +35,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (int64
 		arg.Width,
 		arg.Height,
 		arg.Color,
+		arg.Variants,
 	)
 	if err != nil {
 		return 0, err
@@ -109,4 +111,57 @@ func (q *Queries) ListMediaByIDs(ctx context.Context, ids []int64) ([]Media, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const listMediaForVariants = `-- name: ListMediaForVariants :many
+SELECT id, path, mime, variants FROM media ORDER BY id
+`
+
+type ListMediaForVariantsRow struct {
+	ID       int64
+	Path     string
+	Mime     string
+	Variants []byte
+}
+
+func (q *Queries) ListMediaForVariants(ctx context.Context) ([]ListMediaForVariantsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMediaForVariants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMediaForVariantsRow{}
+	for rows.Next() {
+		var i ListMediaForVariantsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Path,
+			&i.Mime,
+			&i.Variants,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateMediaVariants = `-- name: UpdateMediaVariants :exec
+UPDATE media SET variants = ? WHERE id = ?
+`
+
+type UpdateMediaVariantsParams struct {
+	Variants []byte
+	ID       int64
+}
+
+func (q *Queries) UpdateMediaVariants(ctx context.Context, arg UpdateMediaVariantsParams) error {
+	_, err := q.db.ExecContext(ctx, updateMediaVariants, arg.Variants, arg.ID)
+	return err
 }

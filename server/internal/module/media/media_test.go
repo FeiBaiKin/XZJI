@@ -7,6 +7,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,9 +69,27 @@ type fakeStore struct {
 
 func (f *fakeStore) CreateMedia(_ context.Context, a dbgen.CreateMediaParams) (int64, error) {
 	id := int64(len(f.rows) + 1)
-	f.rows = append(f.rows, dbgen.Media{ID: id, UserID: a.UserID, Path: a.Path, Mime: a.Mime, Size: a.Size, Width: a.Width, Height: a.Height, Color: a.Color})
+	f.rows = append(f.rows, dbgen.Media{
+		ID: id, UserID: a.UserID, Path: a.Path, Mime: a.Mime, Size: a.Size,
+		Width: a.Width, Height: a.Height, Color: a.Color, Variants: a.Variants,
+	})
 	return id, nil
 }
+
+func (f *fakeStore) UpdateMediaVariants(_ context.Context, a dbgen.UpdateMediaVariantsParams) error {
+	f.rows[a.ID-1].Variants = a.Variants
+	return nil
+}
+
+func (f *fakeStore) ListMediaForVariants(context.Context) ([]dbgen.ListMediaForVariantsRow, error) {
+	out := make([]dbgen.ListMediaForVariantsRow, len(f.rows))
+	for i, r := range f.rows {
+		out[i] = dbgen.ListMediaForVariantsRow{ID: r.ID, Path: r.Path, Mime: r.Mime, Variants: r.Variants}
+	}
+	return out, nil
+}
+
+func testLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
 
 func (f *fakeStore) GetMedia(_ context.Context, id int64) (dbgen.Media, error) {
 	return f.rows[id-1], nil
@@ -90,7 +110,7 @@ func pngBytes(t *testing.T, w, h int) []byte {
 
 func TestUpload(t *testing.T) {
 	dir := t.TempDir()
-	svc := NewService(&fakeStore{}, storage.NewLocal(dir), "https://img.example.com", 1<<20)
+	svc := NewService(&fakeStore{}, storage.NewLocal(dir), "https://img.example.com", 1<<20, testLogger())
 
 	m, err := svc.Upload(context.Background(), 7, bytes.NewReader(pngBytes(t, 40, 20)))
 	if err != nil {

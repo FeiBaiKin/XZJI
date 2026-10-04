@@ -213,6 +213,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sitemap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * sitemap 数据
+         * @description 已发布内容的 ID 和更新时间，以及全部分类和有内容的标签的 slug，供前台生成 sitemap.xml。
+         *     这个量级一次返回即可；站点超过 5 万条 URL 时再拆成多个 sitemap 和索引文件。
+         */
+        get: operations["getSitemap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -287,6 +308,27 @@ export interface paths {
         get: operations["listRelatedPosts"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{id}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上报一次浏览量
+         * @description 由浏览器在详情页加载完成后调用，不需要登录。命中页面缓存时服务端不执行，只能在浏览器端统计。
+         *     同一 IP 对同一内容 30 分钟内只计一次；后端先在内存里累加，每分钟批量写库。
+         */
+        post: operations["recordPostView"];
         delete?: never;
         options?: never;
         head?: never;
@@ -767,6 +809,13 @@ export interface components {
              * @example #2F6BFF
              */
             color?: string;
+            /** @description 各尺寸缩略图（WebP），按宽度从小到大；没有时直接用 url 的原图 */
+            variants?: components["schemas"]["ImageVariant"][];
+        };
+        ImageVariant: {
+            url: string;
+            width: number;
+            height: number;
         };
         Banner: {
             /** @description 标题上方的小标签，可能为空 */
@@ -782,6 +831,19 @@ export interface components {
             banners: components["schemas"]["Banner"][];
             /** @description 公告，按换行分段 */
             notice: string;
+        };
+        SitemapData: {
+            posts: components["schemas"]["SitemapPost"][];
+            /** @description 全部分类的 slug */
+            categories: string[];
+            /** @description 有已发布内容的标签的 slug */
+            tags: string[];
+        };
+        SitemapPost: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            updatedAt: string;
         };
         CategoryNode: {
             /** Format: int64 */
@@ -1746,6 +1808,26 @@ export interface operations {
             };
         };
     };
+    getSitemap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description sitemap 数据 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitemapData"];
+                };
+            };
+        };
+    };
     listCategories: {
         parameters: {
             query?: never;
@@ -1850,6 +1932,26 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    recordPostView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已记录（内容不存在时同样返回 204，避免探测） */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listTags: {

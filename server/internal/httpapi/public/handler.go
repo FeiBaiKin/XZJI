@@ -18,6 +18,7 @@ import (
 	"xzji/internal/module/membership"
 	"xzji/internal/module/order"
 	"xzji/internal/module/payment"
+	"xzji/internal/module/seo"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	"xzji/internal/module/wallet"
@@ -32,6 +33,7 @@ type Deps struct {
 	CSRF     *authn.CSRF
 	Content  *content.Service
 	Home     *setting.HomeService
+	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service
 	Orders   *order.Service

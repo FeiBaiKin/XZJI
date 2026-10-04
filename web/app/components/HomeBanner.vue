@@ -36,7 +36,17 @@ onBeforeUnmount(() => clearInterval(timer))
       :tabindex="i === current ? 0 : -1"
     >
       <template v-if="b.image">
-        <img :src="b.image.url" alt="" :width="b.image.width" :height="b.image.height" :loading="i === 0 ? 'eager' : 'lazy'" class="absolute inset-0 size-full object-cover">
+        <img
+          :src="b.image.url"
+          :srcset="srcsetOf(b.image)"
+          sizes="(max-width: 1100px) 100vw, 880px"
+          alt=""
+          :width="b.image.width"
+          :height="b.image.height"
+          :loading="i === 0 ? 'eager' : 'lazy'"
+          :fetchpriority="i === 0 ? 'high' : undefined"
+          class="absolute inset-0 size-full object-cover"
+        >
         <span class="absolute inset-0 bg-linear-to-r from-black/55 via-black/25 to-transparent" />
       </template>
       <span class="relative">

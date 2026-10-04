@@ -1,5 +1,19 @@
 <script setup lang="ts">
-defineProps<{ items: { label: string, to?: string }[] }>()
+const props = defineProps<{ items: { label: string, to?: string }[] }>()
+const siteUrl = useRuntimeConfig().public.siteUrl
+
+// 结构化数据的面包屑与页面上的面包屑保持一致：都以首页开头，最后一项不带地址
+const crumbs = computed(() => [{ label: '首页', to: '/' }, ...props.items])
+useJsonLd(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: crumbs.value.map((it, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: it.label,
+    ...(it.to && i < crumbs.value.length - 1 ? { item: siteUrl + it.to } : {}),
+  })),
+}))
 </script>
 
 <template>

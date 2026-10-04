@@ -20,6 +20,8 @@ const tag = computed(() => props.ribbon ? ribbonOf(props.post, levelName) : null
     <img
       v-if="post.cover"
       :src="post.cover.url"
+      :srcset="srcsetOf(post.cover)"
+      sizes="(max-width: 768px) 45vw, 360px"
       :alt="post.title"
       :width="post.cover.width"
       :height="post.cover.height"

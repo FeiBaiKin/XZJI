@@ -9,7 +9,7 @@ const color = computed(() => icon.value?.color ?? fallbackColor(props.post.id))
 
 <template>
   <span class="app-tile" :style="{ '--c': color }">
-    <img v-if="icon" :src="icon.url" alt="" :width="icon.width" :height="icon.height" loading="lazy" class="size-full object-cover">
+    <img v-if="icon" :src="icon.url" :srcset="srcsetOf(icon)" sizes="96px" alt="" :width="icon.width" :height="icon.height" loading="lazy" class="size-full object-cover">
     <span v-else class="text-[.45em] font-bold leading-none" aria-hidden="true">{{ post.title.slice(0, 1) }}</span>
   </span>
 </template>

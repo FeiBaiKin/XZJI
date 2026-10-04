@@ -620,16 +620,54 @@ wallet_ledger            余额流水（只增不改，是余额的唯一依据�
 
 ## 9. 性能目标
 
-| 指标 | 目标 |
-|---|---|
-| 后端常驻内存 | < 100MB（不含 MySQL） |
-| 前台 Nuxt 常驻内存 | < 200MB |
-| 最低配置 | 分机部署时每台 1 核 1G；单机部署 1 核 2G |
-| 命中页面缓存时的前台响应 | < 10ms |
-| 命中缓存时的后端公开接口 | < 5ms |
-| 未命中缓存时的详情页服务端渲染 | < 100ms（前后端在同一机房） |
-| 首屏 JS（gzip 后） | < 100KB |
-| Lighthouse 移动端性能评分 | ≥ 90 |
+| 指标 | 目标 | M5 实测 | 结论 |
+|---|---|---|---|
+| 后端常驻内存 | < 100MB（不含 MySQL） | 29.1MB（压测后；空载 20.1MB） | 达标 |
+| 前台 Nuxt 常驻内存 | < 200MB | 107.4MB | 达标 |
+| 最低配置 | 分机部署时每台 1 核 1G；单机部署 1 核 2G | — | 按此配置部署 |
+| 命中页面缓存时的前台响应 | < 10ms | 并发 1：0.6ms；并发 10：3.9ms；并发 50：18.8ms | 低并发达标，高并发见 9.3 |
+| 命中缓存时的后端公开接口 | < 5ms | 并发 1：0.2ms；并发 10：1.0ms；并发 50：5.0ms | 达标 |
+| 未命中缓存时的详情页服务端渲染 | < 100ms（前后端在同一机房） | 平均 25.2ms，中位 24.3ms，P90 35.7ms | 达标 |
+| 首屏 JS（gzip 后） | < 100KB | 100.7KB（首页 20 个 chunk） | 超 0.7KB，见 9.3 |
+| Lighthouse 移动端性能评分 | ≥ 90 | 首页 97、资源详情页 96（各跑 3 次取中位数） | 达标 |
+
+### 9.1 测试环境与数据量
+
+- 机器：Windows 11 IoT Enterprise LTSC（26100），i7-12700H（14 核 20 线程），15.7GB 内存，NVMe SSD
+- 版本：Go 1.27.1、Node 24.21.0、MariaDB 12.3，数据库与前后端同机
+- 数据量：`xzji_dev` 灌入 10015 篇内容（已发布且到发布时间的 9716 篇）、13222 条下载地址、19847 条内容标签关联、5004 个隐藏块、16 张图片（含各档 WebP 缩略图），由 `server/tools/seed` 生成
+- 压测用生产构建：后端 `task build:server` 的 `server/bin/xzji.exe`，前台 `task build:web` 后 `node web/.output/server/index.mjs`，都不是开发模式
+- Lighthouse 经一层 gzip 代理访问前台（模拟 `deploy/nginx/*.conf` 里的 `gzip on`）：Nitro 自身不压缩响应，直接访问 `.output` 会按未压缩体积计分，首页只有 80 分。这一层代理只是把 Nginx 的职责补上，生产部署本来就有
+
+### 9.2 测试命令
+
+```
+# 后端接口命中缓存（先访问一次预热）
+hey -n 5000 -c 50 "http://127.0.0.1:8080/api/v1/posts?pageSize=20"
+
+# 前台首页命中缓存（先访问一次预热）
+hey -n 3000 -c 50 http://127.0.0.1:3000/
+
+# 详情页未命中缓存：先清空页面缓存，再依次请求 30 个不同的内容 ID，统计 time_total
+curl -X POST -H "X-Purge-Timestamp: <ts>" -H "X-Purge-Signature: <sig>" http://127.0.0.1:3000/_internal/purge
+curl -w "%{time_total}\n" http://127.0.0.1:3000/<id>.html
+
+# 常驻内存（Windows）
+Get-Process xzji | Select-Object WorkingSet64
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*output/server/index.mjs*' }
+
+# Lighthouse 移动端（默认 mobile 仿真 + 4 倍 CPU 降速 + 慢速 4G），首页和资源详情页各 3 次
+npx lighthouse http://127.0.0.1:3100/ --port=9222 --only-categories=performance --output=json --output-path=home.json
+npx lighthouse http://127.0.0.1:3100/1.html --port=9222 --only-categories=performance --output=json --output-path=detail.json
+```
+
+### 9.3 结论与偏差说明
+
+- **命中页面缓存的响应**：单连接 0.6ms、并发 10 时 3.9ms，都远低于 10ms；并发 50 时 18.8ms 是排队延迟——单进程 Node 在这台机器上的吞吐上限约 2600 req/s，50 个连接排队等待就产生了十几毫秒。这是容量问题，不是单请求耗时问题。生产环境由 Nginx 承接连接与静态资源，前台可用 `pm2 -i` 或多实例水平扩展，必要时把 Nginx 的 `proxy_cache` 放在 Nuxt 前面。
+- **后端接口命中缓存**：同样受回环排队影响，并发 50 时的 5.0ms 只是刚过线；单连接的 0.2ms 才反映真实处理耗时。
+- **首屏 JS 100.7KB**：已确认首屏 20 个 chunk 里没有 `uqr`、Element Plus 等只在弹窗或后台使用的依赖，全部是 Vue 3 + Vue Router + Nuxt 运行时代码加本项目代码，属于框架基线。再降需要减少运行时能力（例如换更轻的渲染方案），不为 0.7KB 动。
+- **图片处理时的内存**：上传 3000×2000（600 万像素）图片时，逐档编码 WebP 会让后端瞬时峰值到 118MB（优化前 171MB）。已做两件事压下来：每个档位编码后立即回收临时内存、同一时刻只处理一张图片。这是低频管理操作的瞬时值，不进常驻内存，上传完成后进程马上回落到 20MB。`media.variants` 只写有缩小价值的档位，原图宽度不够的跳过，不做放大。
+- **Lighthouse 的 80 分与 97 分之别**：直接用 `node .output/server/index.mjs` 访问时首页 80 分，因为 Nitro 不压缩响应，48KB 的 HTML 和 57KB 的 CSS 都按原样传输；补上 Nginx 的 gzip（`deploy/nginx/*.conf` 里已经开好）后首页升到 97、详情页 96。也就是说**部署时前台前面必须有开 gzip 的 Nginx**，这不是可选项。TBT 只有 80–110ms，说明问题从来不在 JS 执行，而在传输体积。
 
 M5 阶段用压测工具和 Lighthouse 实际测量，并把结果补充到本文档。
 

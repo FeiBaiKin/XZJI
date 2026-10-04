@@ -66,7 +66,8 @@ SELECT * FROM link_reports WHERE id = ?;
 UPDATE link_reports SET status = ?, handled_at = ? WHERE id = ?;
 
 -- name: SetPostCommentCount :exec
-UPDATE posts SET comment_count = ? WHERE id = ?;
+-- updated_at 保持原值，否则“最近更新”和 sitemap 的 lastmod 会随评论一起变
+UPDATE posts SET comment_count = ?, updated_at = updated_at WHERE id = ?;
 
 -- name: ListPostTitles :many
 SELECT id, title FROM posts WHERE id IN (sqlc.slice(ids));

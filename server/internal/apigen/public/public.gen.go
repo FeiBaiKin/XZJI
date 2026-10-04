@@ -703,7 +703,17 @@ type Image struct {
 	Color  *string `json:"color,omitempty"`
 	Height int     `json:"height"`
 	Url    string  `json:"url"`
-	Width  int     `json:"width"`
+
+	// Variants 各尺寸缩略图（WebP），按宽度从小到大；没有时直接用 url 的原图
+	Variants *[]ImageVariant `json:"variants,omitempty"`
+	Width    int             `json:"width"`
+}
+
+// ImageVariant defines model for ImageVariant.
+type ImageVariant struct {
+	Height int    `json:"height"`
+	Url    string `json:"url"`
+	Width  int    `json:"width"`
 }
 
 // LedgerEntry defines model for LedgerEntry.
@@ -1183,6 +1193,22 @@ type SessionState struct {
 	User *User `json:"user,omitempty"`
 }
 
+// SitemapData defines model for SitemapData.
+type SitemapData struct {
+	// Categories 全部分类的 slug
+	Categories []string      `json:"categories"`
+	Posts      []SitemapPost `json:"posts"`
+
+	// Tags 有已发布内容的标签的 slug
+	Tags []string `json:"tags"`
+}
+
+// SitemapPost defines model for SitemapPost.
+type SitemapPost struct {
+	Id        int64     `json:"id"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // Tag defines model for Tag.
 type Tag struct {
 	Id        int64  `json:"id"`
@@ -1524,6 +1550,12 @@ type ServerInterface interface {
 	// GetUnlockState 当前用户的解锁情况
 	// (GET /posts/{id}/unlocked)
 	GetUnlockState(c *gin.Context, id PostIdPath)
+	// RecordPostView 上报一次浏览量
+	// (POST /posts/{id}/view)
+	RecordPostView(c *gin.Context, id int64)
+	// GetSitemap sitemap 数据
+	// (GET /seo/sitemap)
+	GetSitemap(c *gin.Context)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(c *gin.Context)
@@ -2357,6 +2389,44 @@ func (siw *ServerInterfaceWrapper) GetUnlockState(c *gin.Context) {
 	siw.Handler.GetUnlockState(c, id)
 }
 
+// RecordPostView operation middleware
+func (siw *ServerInterfaceWrapper) RecordPostView(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RecordPostView(c, id)
+}
+
+// GetSitemap operation middleware
+func (siw *ServerInterfaceWrapper) GetSitemap(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSitemap(c)
+}
+
 // GetHome operation middleware
 func (siw *ServerInterfaceWrapper) GetHome(c *gin.Context) {
 
@@ -2461,10 +2531,12 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.PATCH(options.BaseURL+"/me", wrapper.UpdateMe)
 	router.POST(options.BaseURL+"/me/password", wrapper.ChangePassword)
 	router.GET(options.BaseURL+"/site/home", wrapper.GetHome)
+	router.GET(options.BaseURL+"/seo/sitemap", wrapper.GetSitemap)
 	router.GET(options.BaseURL+"/categories", wrapper.ListCategories)
 	router.GET(options.BaseURL+"/posts", wrapper.ListPosts)
 	router.GET(options.BaseURL+"/posts/:id", wrapper.GetPost)
 	router.GET(options.BaseURL+"/posts/:id/related", wrapper.ListRelatedPosts)
+	router.POST(options.BaseURL+"/posts/:id/view", wrapper.RecordPostView)
 	router.GET(options.BaseURL+"/tags", wrapper.ListTags)
 	router.GET(options.BaseURL+"/tags/:slug", wrapper.GetTag)
 	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
@@ -4102,6 +4174,43 @@ func (response GetUnlockState404JSONResponse) VisitGetUnlockStateResponse(w http
 	return err
 }
 
+type RecordPostViewRequestObject struct {
+	Id int64 `json:"id"`
+}
+
+type RecordPostViewResponseObject interface {
+	VisitRecordPostViewResponse(w http.ResponseWriter) error
+}
+
+type RecordPostView204Response struct {
+}
+
+func (response RecordPostView204Response) VisitRecordPostViewResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GetSitemapRequestObject struct {
+}
+
+type GetSitemapResponseObject interface {
+	VisitGetSitemapResponse(w http.ResponseWriter) error
+}
+
+type GetSitemap200JSONResponse SitemapData
+
+func (response GetSitemap200JSONResponse) VisitGetSitemapResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHomeRequestObject struct {
 }
 
@@ -4282,6 +4391,12 @@ type StrictServerInterface interface {
 	// GetUnlockState 当前用户的解锁情况
 	// (GET /posts/{id}/unlocked)
 	GetUnlockState(ctx context.Context, request GetUnlockStateRequestObject) (GetUnlockStateResponseObject, error)
+	// RecordPostView 上报一次浏览量
+	// (POST /posts/{id}/view)
+	RecordPostView(ctx context.Context, request RecordPostViewRequestObject) (RecordPostViewResponseObject, error)
+	// GetSitemap sitemap 数据
+	// (GET /seo/sitemap)
+	GetSitemap(ctx context.Context, request GetSitemapRequestObject) (GetSitemapResponseObject, error)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(ctx context.Context, request GetHomeRequestObject) (GetHomeResponseObject, error)
@@ -5243,6 +5358,56 @@ func (sh *strictHandler) GetUnlockState(ctx *gin.Context, id PostIdPath) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetUnlockStateResponseObject); ok {
 		if err := validResponse.VisitGetUnlockStateResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordPostView operation middleware
+func (sh *strictHandler) RecordPostView(ctx *gin.Context, id int64) {
+	var request RecordPostViewRequestObject
+
+	request.Id = id
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordPostView(ctx, request.(RecordPostViewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordPostView")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RecordPostViewResponseObject); ok {
+		if err := validResponse.VisitRecordPostViewResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSitemap operation middleware
+func (sh *strictHandler) GetSitemap(ctx *gin.Context) {
+	var request GetSitemapRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSitemap(ctx, request.(GetSitemapRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSitemap")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSitemapResponseObject); ok {
+		if err := validResponse.VisitGetSitemapResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

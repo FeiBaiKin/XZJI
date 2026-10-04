@@ -100,6 +100,12 @@ func (h *Handler) ListRelatedPosts(ctx context.Context, req pubapi.ListRelatedPo
 	return pubapi.ListRelatedPosts200JSONResponse{Items: toCards(posts)}, nil
 }
 
+// RecordPostView 只把上报交给内存计数，不查库：内容不存在时也返回 204，避免被用来探测内容。
+func (h *Handler) RecordPostView(ctx context.Context, req pubapi.RecordPostViewRequestObject) (pubapi.RecordPostViewResponseObject, error) {
+	h.Content.RecordView(req.Id, ginCtx(ctx).ClientIP())
+	return pubapi.RecordPostView204Response{}, nil
+}
+
 func (h *Handler) ListTags(ctx context.Context, req pubapi.ListTagsRequestObject) (pubapi.ListTagsResponseObject, error) {
 	tags, err := h.Content.HotTags(ctx, deref(req.Params.Limit))
 	if err != nil {
@@ -146,6 +152,13 @@ func toImage(m *media.Media) *pubapi.Image {
 	img := &pubapi.Image{Url: m.URL, Width: m.Width, Height: m.Height}
 	if m.Color != "" {
 		img.Color = &m.Color
+	}
+	if len(m.Variants) > 0 {
+		vs := make([]pubapi.ImageVariant, len(m.Variants))
+		for i, v := range m.Variants {
+			vs[i] = pubapi.ImageVariant{Url: v.URL, Width: v.Width, Height: v.Height}
+		}
+		img.Variants = &vs
 	}
 	return img
 }

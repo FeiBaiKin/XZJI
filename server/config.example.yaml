@@ -47,6 +47,16 @@ media:
   max_size_mb: 10
   serve: true # 由后端直接提供上传文件（开发用），生产改为 false 交给 Nginx
 
+cache:
+  size: 2000 # 公开接口响应的缓存条目上限，超过后淘汰最久未使用的
+  ttl: 10m # 兜底过期时间；内容变更时后端会清空缓存，不依赖它
+
+frontend:
+  # 内容变更后要通知清除缓存的前台服务器地址；分机部署时改成前台的内网地址
+  purge_urls: [http://127.0.0.1:3000]
+  # 清除通知的 HMAC 密钥，要和前台环境的 NUXT_PURGE_SECRET 一致；开发留空也可以
+  purge_secret: ""
+
 # 加密数据库里敏感配置（后台填写的支付私钥等）的密钥文件，不存在时自动生成。
 # 备份时单独保管；丢失后需要在后台重新填写支付参数
 secret_key_file: data/secret.key

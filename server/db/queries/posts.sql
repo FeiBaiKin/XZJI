@@ -13,6 +13,15 @@ WHERE id = ?;
 -- name: GetPost :one
 SELECT * FROM posts WHERE id = ?;
 
+-- name: AddPostViews :exec
+-- updated_at 保持原值，浏览量变化不算内容更新
+UPDATE posts SET view_count = view_count + ?, updated_at = updated_at WHERE id = ?;
+
+-- name: CountPostsPublishedBetween :one
+-- 定时发布：统计发布时间落在区间内的已发布内容，到点后要清缓存
+SELECT COUNT(*) FROM posts
+WHERE status = 'published' AND published_at > sqlc.arg(after) AND published_at <= sqlc.arg(before);
+
 -- name: UpdatePostStatus :execrows
 UPDATE posts SET status = sqlc.arg(to_status) WHERE id = ? AND status = sqlc.arg(from_status);
 

@@ -23,15 +23,18 @@ import (
 	"xzji/internal/module/auth"
 	"xzji/internal/module/comment"
 	"xzji/internal/module/content"
+	"xzji/internal/module/frontsync"
 	"xzji/internal/module/media"
 	"xzji/internal/module/membership"
 	"xzji/internal/module/order"
 	"xzji/internal/module/payment"
 	"xzji/internal/module/session"
+	"xzji/internal/module/seo"
 	"xzji/internal/module/setting"
 	"xzji/internal/module/user"
 	"xzji/internal/module/verifycode"
 	"xzji/internal/module/wallet"
+	"xzji/internal/platform/cache"
 	platformdb "xzji/internal/platform/db"
 	"xzji/internal/platform/mail"
 	"xzji/internal/platform/ratelimit"
@@ -49,15 +52,19 @@ type Services struct {
 	Auth     *auth.Service
 	AdminLog *adminlog.Service
 	Limiter  *ratelimit.Memory
+	Cache    cache.Cache
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service
 	Access   *access.Service
 	Wallet   *wallet.Service
 	Orders   *order.Service
 	Payment  *payment.Service
+	// Frontsync 内容变更后清后端缓存并通知前台
+	Frontsync *frontsync.Service
 }
 
 func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.Config) (*Services, error) {
@@ -68,7 +75,8 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 		Sessions: session.NewService(q),
 		AdminLog: adminlog.NewService(q),
 		Limiter:  ratelimit.NewMemory(),
-		Media:    media.NewService(q, storage.NewLocal(mediaCfg.Dir), mediaCfg.BaseURL, int64(mediaCfg.MaxSizeMB)<<20),
+		Cache:    cache.NewLRU(cfg.Cache.Size, cfg.Cache.TTL),
+		Media:    media.NewService(q, storage.NewLocal(mediaCfg.Dir), mediaCfg.BaseURL, int64(mediaCfg.MaxSizeMB)<<20, log),
 	}
 	s.Home = setting.NewHomeService(s.Settings, s.Media)
 	users, err := user.NewService(q, user.NewHasher(4), s.Sessions, s.AdminLog)
@@ -88,11 +96,14 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 	s.Members = membership.NewService(q, s.Users, s.AdminLog)
 	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog, s.Limiter, cfg.Location())
 	s.Comments = comment.NewService(q, s.Content, s.Users, s.Members, s.Settings, s.Limiter)
+	s.Frontsync = frontsync.NewService(s.Cache, cfg.Frontend.PurgeURLs, cfg.Frontend.PurgeSecret, log)
+	s.Comments.SetPurger(s.Frontsync)
 	s.Wallet = wallet.NewService(db, s.Users, s.AdminLog)
 	s.Orders = order.NewService(db, s.Content, s.Members, s.Wallet, s.AdminLog, s.Limiter, cfg.Location())
 	s.Access = access.NewService(s.Members, s.Comments, s.Orders)
 	s.Content.SetViewerResolver(s.Access)
 	s.Orders.SetViewerResolver(s.Access)
+	s.Seo = seo.NewService(s.Content)
 	box, err := secret.LoadOrCreate(cfg.SecretKeyFile)
 	if err != nil {
 		return nil, err
@@ -106,7 +117,7 @@ func NewRouter(cfg *config.Config, db *sql.DB, log *slog.Logger, s *Services) (*
 		Config: cfg, DB: db, Log: log,
 		Settings: s.Settings, Auth: s.Auth, Users: s.Users, Sessions: s.Sessions,
 		Media: s.Media, Content: s.Content, Home: s.Home, Members: s.Members, Comments: s.Comments,
-		Orders: s.Orders, Payment: s.Payment, Wallet: s.Wallet,
+		Orders: s.Orders, Payment: s.Payment, Wallet: s.Wallet, Cache: s.Cache, Purger: s.Frontsync, Seo: s.Seo,
 	})
 }
 
@@ -146,6 +157,19 @@ func Serve(ctx context.Context, cfg *config.Config) error {
 	go scheduler.Every(ctx, log, "清理过期会员", time.Hour, svc.Members.CleanupExpired)
 	go scheduler.Every(ctx, log, "支付补单", time.Minute, svc.Payment.Reconcile)
 	go scheduler.Every(ctx, log, "关闭超时订单", time.Minute, svc.Payment.CloseExpired)
+	go scheduler.Every(ctx, log, "写入浏览量", time.Minute, svc.Content.FlushViews)
+	// 定时发布的内容到点后要立刻出现在前台，否则要等缓存兜底过期
+	lastPublishCheck := time.Now().UTC()
+	go scheduler.Every(ctx, log, "定时发布清缓存", time.Minute, func(ctx context.Context) error {
+		now := time.Now().UTC()
+		due, err := svc.Content.HasDuePublished(ctx, lastPublishCheck, now)
+		lastPublishCheck = now
+		if err != nil || !due {
+			return err
+		}
+		svc.Frontsync.Purge()
+		return nil
+	})
 	if cfg.Pay.Mock {
 		log.Warn("模拟支付已开启：微信、支付宝不连真实渠道，只能用于开发环境")
 	}
@@ -179,6 +203,10 @@ func Serve(ctx context.Context, cfg *config.Config) error {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("停止服务：%w", err)
+	}
+	// 退出前把内存里还没写库的浏览量补上
+	if err := svc.Content.FlushViews(shutdownCtx); err != nil {
+		log.Error("写入浏览量失败", "error", err)
 	}
 	log.Info("服务已停止")
 	return nil

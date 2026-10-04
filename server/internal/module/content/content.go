@@ -266,13 +266,18 @@ type Service struct {
 	audit   Auditor
 	viewers ViewerResolver
 	limiter ratelimit.Limiter
+	views   *viewCounter
 	// loc 统计“每天”下载次数时的时区
 	loc *time.Location
 	now func() time.Time
 }
 
 func NewService(db *sql.DB, media MediaLookup, users UserLookup, audit Auditor, limiter ratelimit.Limiter, loc *time.Location) *Service {
-	return &Service{db: db, q: dbgen.New(db), media: media, users: users, audit: audit, limiter: limiter, loc: loc, now: time.Now}
+	q := dbgen.New(db)
+	return &Service{
+		db: db, q: q, media: media, users: users, audit: audit, limiter: limiter,
+		views: newViewCounter(q, limiter), loc: loc, now: time.Now,
+	}
 }
 
 // SetViewerResolver access.Service 依赖评论模块，评论模块又依赖本模块，所以装配后再注入。

@@ -10,6 +10,39 @@ import (
 	"database/sql"
 )
 
+const addPostViews = `-- name: AddPostViews :exec
+UPDATE posts SET view_count = view_count + ?, updated_at = updated_at WHERE id = ?
+`
+
+type AddPostViewsParams struct {
+	ViewCount int32
+	ID        int64
+}
+
+// updated_at 保持原值，浏览量变化不算内容更新
+func (q *Queries) AddPostViews(ctx context.Context, arg AddPostViewsParams) error {
+	_, err := q.db.ExecContext(ctx, addPostViews, arg.ViewCount, arg.ID)
+	return err
+}
+
+const countPostsPublishedBetween = `-- name: CountPostsPublishedBetween :one
+SELECT COUNT(*) FROM posts
+WHERE status = 'published' AND published_at > ? AND published_at <= ?
+`
+
+type CountPostsPublishedBetweenParams struct {
+	After  sql.NullTime
+	Before sql.NullTime
+}
+
+// 定时发布：统计发布时间落在区间内的已发布内容，到点后要清缓存
+func (q *Queries) CountPostsPublishedBetween(ctx context.Context, arg CountPostsPublishedBetweenParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPostsPublishedBetween, arg.After, arg.Before)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPost = `-- name: CreatePost :execlastid
 INSERT INTO posts (
   type, title, summary, summary_auto, content_html, toc, cover_media_id, category_id, author_id,

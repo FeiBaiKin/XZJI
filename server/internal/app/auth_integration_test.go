@@ -63,7 +63,8 @@ type env struct {
 	mailer *fakeMailer
 }
 
-func newEnv(t *testing.T) *env {
+// newEnv 装配一套完整的服务，可选的 opts 用来改配置（例如把清除通知指向假的“前台服务器”）。
+func newEnv(t *testing.T, opts ...func(*config.Config)) *env {
 	t.Helper()
 	db := testutil.DB(t)
 	log := slog.New(slog.NewTextHandler(testLog{t}, &slog.HandlerOptions{Level: slog.LevelError}))
@@ -76,6 +77,9 @@ func newEnv(t *testing.T) *env {
 		Pay:      config.Pay{Mock: true},
 
 		SecretKeyFile: filepath.Join(t.TempDir(), "secret.key"),
+	}
+	for _, opt := range opts {
+		opt(cfg)
 	}
 	mailer := &fakeMailer{sent: map[string][]mail.Message{}}
 	svc, err := NewServices(db, mailer, log, cfg)
@@ -116,6 +120,7 @@ func (e *env) browser(t *testing.T) *browser {
 type resp struct {
 	status int
 	body   map[string]any
+	header http.Header
 }
 
 func (r resp) code() string {
@@ -166,7 +171,7 @@ func (b *browser) send(method, path string, body io.Reader, withCSRF bool, heade
 		b.t.Fatal(err)
 	}
 	defer res.Body.Close()
-	out := resp{status: res.StatusCode, body: map[string]any{}}
+	out := resp{status: res.StatusCode, body: map[string]any{}, header: res.Header}
 	raw, _ := io.ReadAll(res.Body)
 	if len(raw) > 0 {
 		_ = json.Unmarshal(raw, &out.body)

@@ -68,6 +68,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
+// 浏览量只能在浏览器端上报：命中页面缓存时服务端不执行详情页渲染
+onMounted(() => { void api.POST('/posts/{id}/view', { params: { path: { id } } }) })
+
 // 解锁情况只在浏览器端获取；发表评论后重新获取（不审核时评论可见的内容会立即解锁）
 const { state: unlock, refresh: refreshUnlock } = useUnlock(id)
 const route = useRoute()
@@ -92,6 +95,43 @@ useSeoMeta({
   ogImage: () => image.value,
 })
 useHead({ meta: [{ name: 'keywords', content: () => post.value.seoKeywords || undefined }] })
+
+// 结构化数据：文章用 Article，资源用 SoftwareApplication；面包屑由 CrumbNav 输出。
+// 只放公开字段，隐藏块正文和下载地址不会出现在这里。
+const { public: { siteUrl } } = useRuntimeConfig()
+useJsonLd(() => {
+  const p = post.value
+  const url = siteUrl + postUrl(p.id)
+  const cover = p.cover?.url ?? res.value?.icon?.url
+  const author = { '@type': 'Person', name: p.author.nickname }
+  if (p.type === 'resource') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: p.title,
+      url,
+      image: cover,
+      softwareVersion: res.value?.version || undefined,
+      operatingSystem: res.value?.platform || undefined,
+      applicationCategory: category.value?.name,
+      datePublished: p.publishedAt,
+      dateModified: p.updatedAt,
+      author,
+      offers: p.price > 0 ? { '@type': 'Offer', price: yuan(p.price), priceCurrency: 'CNY', url } : undefined,
+    }
+  }
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: p.title,
+    url,
+    image: cover,
+    description: p.seoDescription || p.summary,
+    datePublished: p.publishedAt,
+    dateModified: p.updatedAt,
+    author,
+  }
+})
 </script>
 
 <template>

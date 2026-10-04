@@ -10,7 +10,7 @@ const category = computed(() => byId(props.post.category.id))
 <template>
   <NuxtLink :to="postUrl(post.id)" class="group grid grid-cols-[168px_minmax(0,1fr)] gap-4 border-b border-line py-4 last:border-b-0 max-md:grid-cols-[110px_minmax(0,1fr)] max-md:gap-3">
     <span class="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-lg text-white" :class="!post.cover && gradientOf(category?.color)">
-      <img v-if="post.cover" :src="post.cover.url" :alt="post.title" :width="post.cover.width" :height="post.cover.height" loading="lazy" class="absolute inset-0 size-full object-cover">
+      <img v-if="post.cover" :src="post.cover.url" :srcset="srcsetOf(post.cover)" sizes="220px" :alt="post.title" :width="post.cover.width" :height="post.cover.height" loading="lazy" class="absolute inset-0 size-full object-cover">
       <Icon v-else :name="category?.icon || 'book'" class="size-10 stroke-[1.7]" />
       <span class="absolute top-1.5 left-1.5 rounded bg-black/25 px-1.5 py-1 text-[11.5px] leading-none text-white">{{ post.category.name }}</span>
     </span>

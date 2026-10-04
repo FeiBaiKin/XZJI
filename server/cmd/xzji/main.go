@@ -30,6 +30,8 @@ const usage = `用法：
   xzji admin create -email <邮箱> [-nickname 昵称] [-promote]
                                                 创建管理员；邮箱已注册时加 -promote 把它设为管理员
   xzji admin passwd -email <邮箱>                重设账号密码，该账号所有会话失效
+  xzji media rebuild-variants [-c config.yaml] [-force]
+                                                给已有图片补生成缩略图（-force 连已有的重新生成）
   xzji version                                  查看版本
 `
 
@@ -49,6 +51,8 @@ func main() {
 		err = runMigrate(ctx, args)
 	case "admin":
 		err = runAdmin(ctx, args)
+	case "media":
+		err = runMedia(ctx, args)
 	case "version":
 		fmt.Println(buildinfo.Version)
 	case "help", "-h", "--help":

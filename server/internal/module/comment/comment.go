@@ -93,6 +93,11 @@ type BadgeLookup interface {
 	Badges(ctx context.Context, ids []int64) (map[int64]string, error)
 }
 
+// Purger 清空前台缓存，由 frontsync.Service 实现：评论审核通过后评论数会变，详情页缓存要失效。
+type Purger interface {
+	Purge()
+}
+
 type Service struct {
 	q        *dbgen.Queries
 	posts    PostLookup
@@ -100,11 +105,15 @@ type Service struct {
 	badges   BadgeLookup
 	settings *setting.Service
 	limiter  ratelimit.Limiter
+	purger   Purger
 }
 
 func NewService(q *dbgen.Queries, posts PostLookup, users UserLookup, badges BadgeLookup, settings *setting.Service, limiter ratelimit.Limiter) *Service {
 	return &Service{q: q, posts: posts, users: users, badges: badges, settings: settings, limiter: limiter}
 }
+
+// SetPurger comment 与 frontsync 互相依赖，装配后再注入。
+func (s *Service) SetPurger(p Purger) { s.purger = p }
 
 func (s *Service) Moderation(ctx context.Context) (Moderation, error) {
 	var m Moderation
@@ -193,6 +202,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Comment, error) 
 	if status == StatusApproved {
 		if err := s.refreshCount(ctx, in.PostID); err != nil {
 			return nil, err
+		}
+		// 评论数变了，前台缓存的详情页要立刻失效
+		if s.purger != nil {
+			s.purger.Purge()
 		}
 	}
 	return s.get(ctx, id)

@@ -24,7 +24,10 @@ type Config struct {
 	Auth     Auth   `yaml:"auth"`
 	Mail     Mail   `yaml:"mail"`
 	Media    Media  `yaml:"media"`
-	Pay      Pay    `yaml:"pay"`
+	Cache    Cache  `yaml:"cache"`
+	// Frontend 通知前台清空页面缓存
+	Frontend Frontend `yaml:"frontend"`
+	Pay      Pay      `yaml:"pay"`
 	// SecretKeyFile 加密数据库里敏感配置（支付私钥等）的密钥文件，不存在时自动生成；丢失后需要在后台重新填写这些配置
 	SecretKeyFile string `yaml:"secret_key_file"`
 }
@@ -92,6 +95,22 @@ type Pay struct {
 	Mock bool `yaml:"mock"`
 }
 
+// Cache 公开接口响应的缓存。
+type Cache struct {
+	// Size 缓存条目上限，超过后淘汰最久未使用的
+	Size int `yaml:"size"`
+	// TTL 兜底过期时间；收到后端的清除通知会立即清空，不依赖它
+	TTL time.Duration `yaml:"ttl"`
+}
+
+// Frontend 前台服务器。
+type Frontend struct {
+	// PurgeURLs 需要通知清除缓存的前台服务器地址，分机部署时是前台的内网地址
+	PurgeURLs []string `yaml:"purge_urls"`
+	// PurgeSecret 清除通知的 HMAC 密钥，必须与前台环境的 NUXT_PURGE_SECRET 一致
+	PurgeSecret string `yaml:"purge_secret"`
+}
+
 const (
 	EnvDev  = "dev"
 	EnvProd = "prod"
@@ -136,6 +155,9 @@ func defaults() *Config {
 		Log:      Log{Level: "info", Format: "text"},
 		Mail:     Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
 		Media:    Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
+		Cache:    Cache{Size: 2000, TTL: 10 * time.Minute},
+		// 默认按单机部署：前台与后端在同一台机器上
+		Frontend: Frontend{PurgeURLs: []string{"http://127.0.0.1:3000"}},
 
 		SecretKeyFile: "data/secret.key",
 	}
@@ -191,6 +213,17 @@ func (c *Config) validate() error {
 	if c.SecretKeyFile == "" {
 		errs = append(errs, errors.New("secret_key_file 不能为空"))
 	}
+	if c.Cache.Size < 1 {
+		errs = append(errs, errors.New("cache.size 需要大于 0"))
+	}
+	if c.Cache.TTL <= 0 {
+		errs = append(errs, errors.New("cache.ttl 需要大于 0"))
+	}
+	for _, u := range c.Frontend.PurgeURLs {
+		if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+			errs = append(errs, fmt.Errorf("frontend.purge_urls 里的 %q 必须是 http(s) 开头的完整地址", u))
+		}
+	}
 	if c.IsProd() {
 		if c.Pay.Mock {
 			errs = append(errs, errors.New("生产环境不能开启模拟支付（pay.mock）"))
@@ -200,6 +233,9 @@ func (c *Config) validate() error {
 		}
 		if c.Mail.Driver != "smtp" {
 			errs = append(errs, errors.New("生产环境必须配置 SMTP 发信（mail.driver: smtp），否则用户收不到验证码"))
+		}
+		if c.Frontend.PurgeSecret == "" {
+			errs = append(errs, errors.New("生产环境必须配置 frontend.purge_secret，否则前台缓存无法清除"))
 		}
 	}
 	return errors.Join(errs...)

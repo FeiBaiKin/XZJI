@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
@@ -14,6 +15,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -46,15 +48,17 @@ var (
 )
 
 type Media struct {
-	ID        int64
-	UserID    int64
-	Path      string
-	URL       string
-	Mime      string
-	Size      int64
-	Width     int
-	Height    int
-	Color     string
+	ID     int64
+	UserID int64
+	Path   string
+	URL    string
+	Mime   string
+	Size   int64
+	Width  int
+	Height int
+	Color  string
+	// Variants 各档缩略图，按宽度从小到大；没有缩略图时为空，前台退回原图
+	Variants  []Variant
 	CreatedAt time.Time
 }
 
@@ -63,6 +67,8 @@ type Store interface {
 	CreateMedia(ctx context.Context, arg dbgen.CreateMediaParams) (int64, error)
 	GetMedia(ctx context.Context, id int64) (dbgen.Media, error)
 	ListMediaByIDs(ctx context.Context, ids []int64) ([]dbgen.Media, error)
+	UpdateMediaVariants(ctx context.Context, arg dbgen.UpdateMediaVariantsParams) error
+	ListMediaForVariants(ctx context.Context) ([]dbgen.ListMediaForVariantsRow, error)
 }
 
 type Service struct {
@@ -70,21 +76,33 @@ type Service struct {
 	storage storage.Storage
 	baseURL string
 	maxSize int64
+	log     *slog.Logger
 	now     func() time.Time
 }
 
 // NewService baseURL 为上传文件的对外地址前缀，末尾不带 /。
-func NewService(q Store, st storage.Storage, baseURL string, maxSize int64) *Service {
-	return &Service{q: q, storage: st, baseURL: baseURL, maxSize: maxSize, now: time.Now}
+func NewService(q Store, st storage.Storage, baseURL string, maxSize int64, log *slog.Logger) *Service {
+	return &Service{q: q, storage: st, baseURL: baseURL, maxSize: maxSize, log: log, now: time.Now}
 }
 
 func (s *Service) BaseURL() string { return s.baseURL }
 
 func (s *Service) fromRow(r dbgen.Media) Media {
-	return Media{
+	m := Media{
 		ID: r.ID, UserID: r.UserID, Path: r.Path, URL: s.baseURL + "/" + r.Path,
 		Mime: r.Mime, Size: r.Size, Width: int(r.Width), Height: int(r.Height), Color: r.Color, CreatedAt: r.CreatedAt,
 	}
+	if len(r.Variants) > 0 {
+		var vs []Variant
+		if err := json.Unmarshal(r.Variants, &vs); err != nil {
+			s.log.Warn("解析缩略图信息失败", "path", r.Path, "error", err)
+		}
+		for i := range vs {
+			vs[i].URL = s.baseURL + "/" + vs[i].Path
+		}
+		m.Variants = vs
+	}
+	return m
 }
 
 // Upload 校验并保存一张图片。只读取到大小上限为止，超出即拒绝。
@@ -111,11 +129,18 @@ func (s *Service) Upload(ctx context.Context, userID int64, r io.Reader) (Media,
 	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxSide || cfg.Height > maxSide {
 		return Media{}, ErrDimensions
 	}
-	var color string
-	if cfg.Width*cfg.Height <= colorMaxPixels {
-		if img, _, err := image.Decode(bytes.NewReader(data)); err == nil {
-			color = DominantColor(img)
+
+	// 同一张图只解码一次，主色和缩略图共用；解不开时按没有主色、没有缩略图处理
+	wantColor, wantVariants := cfg.Width*cfg.Height <= colorMaxPixels, canMakeVariants(mime, cfg.Width, cfg.Height)
+	var img image.Image
+	if wantColor || wantVariants {
+		if decoded, _, err := image.Decode(bytes.NewReader(data)); err == nil {
+			img = decoded
 		}
+	}
+	var color string
+	if wantColor && img != nil {
+		color = DominantColor(img)
 	}
 
 	name := make([]byte, 16)
@@ -126,9 +151,16 @@ func (s *Service) Upload(ctx context.Context, userID int64, r io.Reader) (Media,
 	if err := s.storage.Put(ctx, key, data); err != nil {
 		return Media{}, err
 	}
+	var variants []Variant
+	if wantVariants && img != nil {
+		if variants, err = s.makeVariants(ctx, img, key); err != nil {
+			s.log.Warn("生成缩略图失败，前台将退回原图", "path", key, "error", err)
+			variants = nil
+		}
+	}
 	id, err := s.q.CreateMedia(ctx, dbgen.CreateMediaParams{
 		UserID: userID, Path: key, Mime: mime, Size: int64(len(data)),
-		Width: int32(cfg.Width), Height: int32(cfg.Height), Color: color,
+		Width: int32(cfg.Width), Height: int32(cfg.Height), Color: color, Variants: encodeVariants(variants),
 	})
 	if err != nil {
 		_ = s.storage.Delete(ctx, key)
