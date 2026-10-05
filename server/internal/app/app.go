@@ -128,6 +128,9 @@ func NewRouter(cfg *config.Config, db *sql.DB, log *slog.Logger, s *Services) (*
 func Serve(ctx context.Context, cfg *config.Config) error {
 	log := NewLogger(cfg.Log)
 	slog.SetDefault(log)
+	for _, w := range cfg.Warnings() {
+		log.Warn(w)
+	}
 
 	db, err := platformdb.Open(ctx, cfg.DB)
 	if err != nil {

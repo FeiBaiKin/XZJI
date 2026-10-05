@@ -242,6 +242,22 @@ func (c *Config) validate() error {
 		if c.Frontend.PurgeSecret == "" {
 			errs = append(errs, errors.New("生产环境必须配置 frontend.purge_secret，否则前台缓存无法清除"))
 		}
+		// 报错而不是告警：前台一定是 https，Cookie 又开了 cookie_secure，http 来源的浏览器请求
+		// 拿不到会话，列进来只会让真正的来源问题被掩盖。
+		for _, o := range c.CORS.AllowOrigins {
+			if !strings.HasPrefix(o, "https://") {
+				errs = append(errs, fmt.Errorf("生产环境 cors.allow_origins 里的 %q 必须是 https 地址", o))
+			}
+		}
 	}
 	return errors.Join(errs...)
+}
+
+// Warnings 生产环境下不致命但会损失能力的配置项，启动时打印出来提醒。
+func (c *Config) Warnings() []string {
+	if !c.IsProd() || !c.Media.Serve {
+		return nil
+	}
+	// 只告警不报错：图片仍能访问，只是走了后端而不是 Nginx，少了长期缓存，也占着后端连接。
+	return []string{"生产环境 media.serve 应为 false，上传目录交给 Nginx 直接提供图片（见 deploy/nginx/）"}
 }

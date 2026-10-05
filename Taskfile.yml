@@ -120,3 +120,10 @@ tasks:
   build:web:
     desc: 构建前台，产物在 web/.output
     cmds: [pnpm --filter @xzji/web build]
+
+  release:
+    desc: 构建并打包部署产物到 dist/（后端 Linux 包和前台包各带 .sha256）
+    deps: [build:admin, build:server:linux, build:web]
+    dir: server
+    cmds:
+      - go run ./tools/release -version {{.VERSION}}

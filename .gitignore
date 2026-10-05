@@ -5,6 +5,7 @@ node_modules/
 .output/
 .nuxt/
 .data/
+/dist/
 *.tsbuildinfo
 /server/bin/
 

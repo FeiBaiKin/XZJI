@@ -1,13 +1,20 @@
-# 生产环境后端配置样例，复制为 /opt/xzji/server/config.yaml 后修改
+# 生产环境后端配置样例，复制为 /opt/xzji/server/config.yaml 后修改。
+# 逐项检查这里标了“必改”的地方；配置里有数据库密码，文件权限设成 600，只给运行服务的账号读。
 env: prod
 timezone: Asia/Shanghai
 
 http:
-  addr: 127.0.0.1:8080 # 分机部署时改为 0.0.0.0:8080 并用防火墙限制来源
+  # 单机部署保持 127.0.0.1 由本机 Nginx 转发；分机部署改为 0.0.0.0:8080（或只监听内网网卡），
+  # 并用防火墙限制 8080 只允许本机和前台服务器的内网 IP 访问。
+  addr: 127.0.0.1:8080
+  # 只信任这些来源传过来的 X-Real-IP。Nginx 与后端同机时保持 127.0.0.1；
+  # Nginx 在别的机器上时，改成那台机器的内网 IP。填错会导致限流按 Nginx 的 IP 统计。
   trusted_proxies: [127.0.0.1, "::1"]
 
 db:
+  # 必改：数据库账号密码与库名，见 deploy/sql/create-database.sql
   dsn: xzji:请替换为数据库密码@tcp(127.0.0.1:3306)/xzji
+  # 分机部署时数据库仍在本机；数据库单独一台机器时把上面的 127.0.0.1 换掉，并放开 3306 的来源限制
   max_open_conns: 20
   max_idle_conns: 10
   conn_max_lifetime: 30m
@@ -18,27 +25,36 @@ log:
   format: json
 
 cors:
+  # 必改：允许跨域访问接口的来源，只写前台域名，必须是 https（http 来源拿不到 Cookie，
+  # 生产环境会直接报错）。多个域名时每行一个，前后台不同域名就把后台域名也加上。
   allow_origins:
     - https://www.example.com
 
 auth:
+  # 必改：Cookie 作用的域（前面带点，www 与 api 共享登录状态）
   cookie_domain: .example.com
+  # 生产环境必须为 true，否则会话 Cookie 会在 http 下明文传输
   cookie_secure: true
 
 mail:
+  # 生产环境必须是 smtp，否则用户收不到验证码和找回密码邮件
   driver: smtp
   smtp:
     host: smtp.example.com
     port: 465
     implicit_tls: true
     username: noreply@example.com
-    password: "" # 建议用环境变量 XZJI_SMTP_PASSWORD
+    password: "" # 必改：建议用环境变量 XZJI_SMTP_PASSWORD 提供，不要写进配置文件
     from: XZJI <noreply@example.com>
 
 media:
+  # 上传目录，相对路径以服务的 WorkingDirectory 为准；分机/面板部署时写成绝对路径
   dir: data/uploads
-  base_url: https://img.example.com # 图片域名，由 Nginx 直接提供 data/uploads
+  # 必改：图片域名，由 Nginx 直接提供 data/uploads 里的文件
+  base_url: https://img.example.com
+  # 与 Nginx 的 client_max_body_size 保持一致（deploy/nginx/single.conf 里是 20m）
   max_size_mb: 10
+  # 生产环境交给 Nginx 提供图片；设为 true 时后端也能提供，但会丢掉 Nginx 的长期缓存和 gzip
   serve: false
 
 cache:
@@ -47,12 +63,14 @@ cache:
   ttl: 10m # 兜底过期时间；内容变更时后端会清空缓存，不依赖它
 
 frontend:
-  # 内容变更后要通知清除缓存的前台服务器地址；分机部署时改成前台的内网地址
+  # 必改：内容变更后要通知清除缓存的前台服务器地址。
+  # 单机部署就是 127.0.0.1:3000；分机部署改成前台服务器的内网地址（http 即可，只走内网）。
   purge_urls: [http://127.0.0.1:3000]
-  # 清除通知的 HMAC 密钥，必须与前台环境的 NUXT_PURGE_SECRET 一致，可用 openssl rand -hex 32 生成
+  # 必改：清除通知的 HMAC 密钥，必须与前台环境的 NUXT_PURGE_SECRET 一致，可用 openssl rand -hex 32 生成
   purge_secret: 请替换为随机密钥
 
-# 加密后台填写的支付私钥等敏感配置，首次启动自动生成；请和数据库备份分开保管
+# 必改（可选）：加密后台填写的支付私钥等敏感配置，首次启动自动生成。
+# 这个文件丢了就要在后台重新填写所有支付参数，所以别和数据库备份放在同一个地方。
 secret_key_file: data/secret.key
 
 pay:
