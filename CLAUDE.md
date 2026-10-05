@@ -1,69 +1,74 @@
 # XZJI 开发约定
 
-垂直资源站程序：Go 后端（接口 + 内嵌后台页面）+ Nuxt 前台（服务端渲染）+ Vue 后台。
-方案与业务规则以 `docs/phase1-tech-plan.md` 为准；前台视觉以 `design/` 下的设计稿和 `design/xzji.css` 为准。
+垂直资源站，基于 WordPress 的自研主题。方案以 `docs/wp-theme-plan.md` 为准；视觉以 `design/` 下的设计稿和 `design/xzji.css` 为准。
+
+## 两条硬原则
+
+1. **能交给 WordPress 的，一律不自研。** WP 核心有的（用户、评论、媒体、分类法、回收站、区块编辑器、REST API、后台）直接用；成熟插件有的（SEO、缓存、SMTP、备份、安全、图片优化）装插件。
+2. **主题只做两件事**：本站的外观，以及 WP 生态里确实没有、又不值得为它装一整套插件的最小业务胶水。
+
+动手写代码前先按这个顺序问一遍：WP 核心有没有 → 成熟插件有没有 → 主题写最小实现。跳过前两步直接开写，就是 v1 走过的弯路。
 
 ## 目录
 
 ```
-api/             接口契约（public.yaml 前台与 App，admin.yaml 后台）——接口的唯一依据
-server/          Go 后端
-  cmd/xzji/        入口：serve / migrate / version
-  db/migrations/   goose 迁移 SQL（嵌入程序）
-  db/queries/      sqlc 查询 SQL
-  internal/
-    module/<名称>/   业务模块：model / repo / service 及测试
-    httpapi/         路由、中间件、public 与 admin 接口实现、后台页面托管
-    platform/        基础设施（db 等）
-    apigen/ dbgen/   生成代码，禁止手改
-web/             Nuxt 4 前台（app/ 为源码目录）
-admin/           Vue 3 + Element Plus 后台，构建后嵌入后端程序
-packages/api-client/  从契约生成的 TS 类型与请求客户端，web 和 admin 共用
-deploy/          Nginx、systemd、建库 SQL 等部署样例
+theme/xzji/      WordPress 主题（首版唯一产物）
+design/          设计稿与 design/xzji.css——主题的视觉基准，只读参考
+docs/            方案与文档
+  wp-theme-plan.md  现行方案
+  archive/          v1 自研方案的全部文档（已封存）
 ```
 
-## 常用命令（go-task）
+**v1 存量**：`server/`（Go）、`web/`（Nuxt）、`admin/`（Vue）、`api/`、`packages/`、`deploy/`、`dist/`、`Taskfile.yml`、`pnpm-workspace.yaml`、`package.json`。这是已冻结的 Go + Nuxt 自研版本，**只读参考，不构建、不维护、不改动**；完整代码在 `archive/v1` 分支。
 
-- `task dev:server` / `task dev:web` / `task dev:admin`：启动三端（8080 / 3000 / 5173）
-- `task gen`：重新生成接口代码与数据库访问代码
-- `task migrate -- status`、`task migrate:create -- add_users`
-- `task test`：go vet + go test + 前端类型检查
-- `task build`：构建后台并嵌入后端，构建后端与前台
-- 首次环境：`task tools`、`task install`，复制 `server/config.example.yaml` 为 `server/config.yaml`
-- 集成测试连接 `server/.env.test` 中的 `XZJI_TEST_DB_DSN`（库名必须以 `_test` 结尾，测试会清空它），复制 `.env.test.example` 后修改
-- 创建管理员：`cd server && go run ./cmd/xzji admin create -email 你的邮箱`
-- 支付：开发环境在 `config.yaml` 设 `pay.mock: true`，微信、支付宝走模拟渠道，支付弹窗出现“模拟支付成功”按钮；真实渠道参数在后台“支付设置”填写，私钥用 `secret_key_file` 加密存库
+## 主题开发
 
-## 必须遵守的规则
+- **经典主题（PHP 模板），不引入构建工具**。CSS 和 JS 是原生文件，改完即生效；不装 Node 工具链，不用 Tailwind。
+- 模板层级用 WP 约定：`front-page.php`、`single-resource.php`、`category.php`、`taxonomy-platform.php`、`search.php`、`404.php`，公共片段放 `template-parts/`。
+- 逻辑放 `inc/`，`functions.php` 只做引导；模板文件只做展示，不写业务逻辑。
+- 前缀：函数、钩子、选项、文章类型、分类法、meta key 一律带 `xzji_` 前缀，避免与插件冲突。
+- 文本域统一 `xzji`，面向用户的字符串用 `__()` / `esc_html__()` 包起来。
 
-**接口**
-- 新增或修改接口，先改 `api/*.yaml`，再 `task gen`，最后写实现。不允许绕过契约手写路由。
-- 需要登录的接口在契约里声明 `security`，`task gen:api` 会据此生成 `SecuredOperations`，由路由统一拦截未登录请求；不要在 handler 里自己判断。
-- 前台接口（`/api/v1`）只能做向后兼容的变更；不兼容变更走新版本路径。
-- 错误统一返回 `{"error":{"code","message"}}`，在 `httpapi/apierr` 定义业务错误；内部错误不向客户端暴露细节。
+**输出与安全**
 
-**数据库**
-- 表结构只能通过新增迁移文件修改，已经发布的迁移文件不再改动。
-- 查询写在 `db/queries/*.sql` 由 sqlc 生成；后台多条件筛选可用 squirrel 拼接，必须参数绑定。不用 ORM。
-- 金额一律 BIGINT 存"分"；时间存 UTC（连接已强制 UTC）；字符集 utf8mb4。
-- 余额只能通过写流水变动，同一事务内先写 `wallet_ledger` 再改 `wallets.balance`（用 `wallet.Service.ChangeTx`）。
-- 跨模块的事务（如支付成功后发放权益）由 service 提供接收 `*sql.Tx` 的方法，加锁顺序固定为订单 → 钱包 → 会员/已购，避免死锁。
-- 订单状态更新必须带原状态条件（`WHERE id=? AND status='pending'`），以影响行数判断是否成功，保证幂等。
+- 所有输出转义：文本 `esc_html()`、属性 `esc_attr()`、URL `esc_url()`、允许 HTML 处 `wp_kses_post()`。不允许直接 `echo` 变量。
+- 表单和所有改数据的请求带 `wp_nonce_field()` / `check_admin_referer()`。
+- 入库前校验：`sanitize_text_field()`、`absint()`、`sanitize_key()`，按字段类型选。
+- 数据库查询用 `$wpdb->prepare()`，不拼接 SQL；能用 `WP_Query` / `get_posts()` 就不手写 SQL。
+- **受保护内容不能出现在未解锁访客的 HTML 里**。付费墙在服务端判断——`the_content` 过滤里求值短代码，无权时只输出占位符和购买按钮，不输出内容本身。不允许用 CSS 或 JS 隐藏来充当付费墙。改完必须**查看网页源代码**确认，只看页面表现不算验证通过。
 
-**模块边界**
-- 业务模块之间只通过 service 调用，不直接读写其他模块的表。
-- handler 只做参数转换和调用 service，业务逻辑放在 service。
+**缓存**
 
-**前台**
-- 服务端渲染只渲染公开内容，调用接口时不带用户身份；个人数据、隐藏内容、下载地址在浏览器端请求接口获取。
-- 付费内容永远不能出现在服务端渲染的 HTML 里。
-- 页面样式用 Tailwind 实现；配色、圆角、阴影、渐变等设计变量以 `design/xzji.css` 为参照映射到 Tailwind 主题，组件外观对照设计稿还原。
+- 不要假设页面每次都重新渲染。付费解锁依赖登录态，缓存插件必须配成登录用户不命中页面缓存。
+- 内容变更后用 `clean_post_cache()` 或缓存插件的清理钩子，别指望改完页面立刻更新。
 
-**测试**
-- 访问规则、价格计算、会员时长与升级折算、钱包流水必须有表驱动单元测试。
-- 涉及金额的代码测试不通过不合并。
+**字段与内容**
 
-**代码风格**
-- 注释、提交信息、文档用中文；技术名词、命令、配置键名保持原文。
+- ACF 字段组用 PHP 注册（`acf_add_local_field_group`），定义进版本库，不从后台导出 JSON。
+- 短代码：`[xzji_hide]` 登录后可见、`[xzji_paid]` 购买后可见。
+- 资源用自定义文章类型 `resource`，文章用内置 `post`，两者共用 `category` 与 `post_tag`；平台是仅挂 `resource` 的分类法 `platform`。
+
+**支付**
+
+- 金额一律用「分」存储，展示时格式化。
+- 回调必须验签；订单状态更新带原状态条件（`WHERE ... AND status = 'pending'`），以影响行数判断是否成功，重复回调直接返回成功、不重复发放。
+- 订单 30 分钟过期；补单以易支付 `api.php` 查单为准。
+
+## 视觉
+
+- 配色、圆角、阴影、渐变、间距一律以 `design/xzji.css` 顶部那段 CSS 变量为准，不凭感觉调。
+- `design/xzji.css`、`design/xzji.js`、`design/icons.svg` 迁入主题后**原样不动**；主题自己的补充样式单独放 `assets/css/theme.css`，保持基准文件干净。
+- 每个页面与 `design/` 对应页面逐页比对。
+
+## 代码风格
+
+- 注释、提交信息、文档用中文；技术名词、命令、配置键名、WP 函数名保持原文。
 - 注释精炼，只说明用途和不显而易见的原因。
-- 改动提交前运行 `task test`，改过契约或 SQL 再运行 `task check:gen`。
+- 遵循 WordPress PHP 编码标准：函数名全小写下划线、Yoda 条件、大括号不换行。
+- 提交前自查：`php -l` 过语法、输出是否都转义、付费内容有没有泄漏到源码里。
+
+## 测试与验收
+
+- 在真实 WordPress 环境里走通，不用 mock 代替实际验证。
+- 支付相关改动必须用 1 分钱真钱走一次完整流程（下单 → 支付 → 回调 → 解锁），验证步骤写进提交说明。
+- 涉及金额的代码，测试不通过不合并。
