@@ -235,7 +235,9 @@ theme/xzji/
 
 ### 6.4 视觉资产
 
-- `design/xzji.css`（698 行）、`design/xzji.js`（94 行）、`design/icons.svg` 原样迁入主题 `assets/`，**不改写**。主题自己的补充样式单独放 `assets/css/theme.css`，保持基准文件干净，方便日后与设计稿比对。
+- `design/xzji.css`（698 行）和 `design/icons.svg`（48 个图标）原样迁入主题 `assets/`，**不改写**。主题自己的补充样式单独放 `assets/css/theme.css`，保持基准文件干净，方便日后与设计稿比对。
+- **`design/xzji.js` 不能原样迁入**（2026-10-06 实测发现）：它是设计稿的**预览脚本**，94 行里有三段是演示专用的——顶部那条页面切换导航、按 `#hash` 在首页与详情之间切页、以及代码画出来的假二维码占位图。只有弹窗（`data-open` / `data-close`）、标签页（`data-tabs` / `data-tab` / `data-pane`）和单选组（`data-pick`）这三段是生产用得上的，摘到 `assets/js/theme.js` 里。二维码将来由支付接口返回真实内容，不在前端画。
+- **图标要内联，不要外链**（同次实测发现）：`<use href="icons.svg#i-search">` 这种外链写法受同源策略限制——本机开发时 `localhost` 和 `127.0.0.1` 就会被判成跨域、图标全部加载失败，生产环境也平白多一次请求。正确做法是在页脚把整张精灵图内联一次（5.6KB），页面里用 `<use href="#i-search">` 引用。
 - 设计变量以 `design/xzji.css` 顶部那段 CSS 变量为准：主题色 `#2F6BFF`、圆角 `10px`、七个渐变（`--jb-blue` / `--jb-red` / `--jb-orange` / `--jb-green` / `--jb-purple` / `--jb-vip` / `--jb-gold`）。
 - v1 的 Tailwind 映射（`web/app/assets/css/main.css`）不再需要，主题不引入构建工具。
 
