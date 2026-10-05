@@ -99,6 +99,8 @@ type Pay struct {
 type Cache struct {
 	// Size 缓存条目上限，超过后淘汰最久未使用的
 	Size int `yaml:"size"`
+	// MaxBytes 缓存占用的总字节上限，与 Size 同时生效；单条响应最大 1MB，只限条数会占满内存
+	MaxBytes int64 `yaml:"max_bytes"`
 	// TTL 兜底过期时间；收到后端的清除通知会立即清空，不依赖它
 	TTL time.Duration `yaml:"ttl"`
 }
@@ -155,7 +157,7 @@ func defaults() *Config {
 		Log:      Log{Level: "info", Format: "text"},
 		Mail:     Mail{Driver: "log", SMTP: SMTP{Port: 465, ImplicitTLS: true}},
 		Media:    Media{Dir: "data/uploads", BaseURL: "http://localhost:8080/uploads", MaxSizeMB: 10, Serve: true},
-		Cache:    Cache{Size: 2000, TTL: 10 * time.Minute},
+		Cache:    Cache{Size: 2000, MaxBytes: 32 << 20, TTL: 10 * time.Minute},
 		// 默认按单机部署：前台与后端在同一台机器上
 		Frontend: Frontend{PurgeURLs: []string{"http://127.0.0.1:3000"}},
 
@@ -215,6 +217,9 @@ func (c *Config) validate() error {
 	}
 	if c.Cache.Size < 1 {
 		errs = append(errs, errors.New("cache.size 需要大于 0"))
+	}
+	if c.Cache.MaxBytes < 1 {
+		errs = append(errs, errors.New("cache.max_bytes 需要大于 0"))
 	}
 	if c.Cache.TTL <= 0 {
 		errs = append(errs, errors.New("cache.ttl 需要大于 0"))

@@ -4,6 +4,7 @@ package content
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
@@ -272,11 +273,11 @@ type Service struct {
 	now func() time.Time
 }
 
-func NewService(db *sql.DB, media MediaLookup, users UserLookup, audit Auditor, limiter ratelimit.Limiter, loc *time.Location) *Service {
+func NewService(db *sql.DB, media MediaLookup, users UserLookup, audit Auditor, limiter ratelimit.Limiter, loc *time.Location, log *slog.Logger) *Service {
 	q := dbgen.New(db)
 	return &Service{
 		db: db, q: q, media: media, users: users, audit: audit, limiter: limiter,
-		views: newViewCounter(q, limiter), loc: loc, now: time.Now,
+		views: newViewCounter(q, limiter, log), loc: loc, now: time.Now,
 	}
 }
 

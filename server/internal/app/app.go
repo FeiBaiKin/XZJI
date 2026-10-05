@@ -75,7 +75,7 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 		Sessions: session.NewService(q),
 		AdminLog: adminlog.NewService(q),
 		Limiter:  ratelimit.NewMemory(),
-		Cache:    cache.NewLRU(cfg.Cache.Size, cfg.Cache.TTL),
+		Cache:    cache.NewLRU(cfg.Cache.Size, cfg.Cache.TTL, cache.WithMaxBytes(cfg.Cache.MaxBytes)),
 		Media:    media.NewService(q, storage.NewLocal(mediaCfg.Dir), mediaCfg.BaseURL, int64(mediaCfg.MaxSizeMB)<<20, log),
 	}
 	s.Home = setting.NewHomeService(s.Settings, s.Media)
@@ -94,7 +94,7 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 	s.Codes = verifycode.NewService(q, mailer, s.Limiter, siteName, log)
 	s.Auth = auth.NewService(s.Users, s.Sessions, s.Codes, s.Limiter)
 	s.Members = membership.NewService(q, s.Users, s.AdminLog)
-	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog, s.Limiter, cfg.Location())
+	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog, s.Limiter, cfg.Location(), log)
 	s.Comments = comment.NewService(q, s.Content, s.Users, s.Members, s.Settings, s.Limiter)
 	s.Frontsync = frontsync.NewService(s.Cache, cfg.Frontend.PurgeURLs, cfg.Frontend.PurgeSecret, log)
 	s.Comments.SetPurger(s.Frontsync)
