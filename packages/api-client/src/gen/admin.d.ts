@@ -371,6 +371,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/site": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 站点设置 */
+        get: operations["getSiteSettings"];
+        /** 修改站点设置 */
+        put: operations["updateSiteSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/membership/levels": {
         parameters: {
             query?: never;
@@ -1062,6 +1080,27 @@ export interface components {
             banners: components["schemas"]["BannerInput"][];
             /** @description 公告，按换行分段 */
             notice: string;
+        };
+        SiteSettings: {
+            /** @description 页脚简介，显示在页脚站点名称下方 */
+            footerAbout: string;
+            /** @description ICP 备案号，如 京ICP备00000000号-1 */
+            icp: string;
+            /** @description 公安备案号，可留空 */
+            policeIcp: string;
+            /** @description 用户协议正文，HTML */
+            termsHtml: string;
+            /** @description 隐私政策正文，HTML */
+            privacyHtml: string;
+        };
+        SiteSettingsInput: {
+            footerAbout: string;
+            icp: string;
+            policeIcp: string;
+            /** @description 用户协议正文，与内容正文使用同一套过滤 */
+            termsHtml: string;
+            /** @description 隐私政策正文，与内容正文使用同一套过滤 */
+            privacyHtml: string;
         };
         AdminLink: {
             /** Format: int64 */
@@ -2208,6 +2247,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getSiteSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 站点设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateSiteSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description 修改后的站点设置 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteSettings"];
                 };
             };
             400: components["responses"]["BadRequest"];

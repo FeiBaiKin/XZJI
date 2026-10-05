@@ -1,5 +1,40 @@
 import type { CategoryNode, MembershipLevel } from '~/utils/content'
 
+export interface SiteInfo {
+  footerAbout: string
+  icp: string
+  policeIcp: string
+}
+
+// 工信部备案查询地址，所有 ICP 备案号都链到这里
+export const icpUrl = 'https://beian.miit.gov.cn/'
+
+// 页脚用的站点信息，在后台“站点设置”里填写；每个页面渲染时只请求一次
+export async function useSiteInfo() {
+  const api = useApi()
+  const { data } = await useAsyncData('siteInfo', async () => {
+    const { data } = await api.GET('/site/info')
+    return data ?? { footerAbout: '', icp: '', policeIcp: '' }
+  })
+  return data
+}
+
+// 公安备案号的查询地址要的是备案号里的数字，例如 京公网安备11010502000000号 → 11010502000000
+export function policeUrl(policeIcp: string) {
+  const code = policeIcp.replace(/\D/g, '')
+  return code ? `https://beian.mps.gov.cn/#/query/webSearch?code=${code}` : ''
+}
+
+// 用户协议和隐私政策的正文，未填写时是空字符串
+export async function useSiteDocuments() {
+  const api = useApi()
+  const { data } = await useAsyncData('siteDocuments', async () => {
+    const { data } = await api.GET('/site/documents')
+    return data ?? { terms: '', privacy: '' }
+  })
+  return data
+}
+
 // 分类树在页头、页脚和各列表页共用，同一次渲染只请求一次
 export async function useCategories() {
   const api = useApi()

@@ -33,6 +33,7 @@ type Deps struct {
 	CSRF     *authn.CSRF
 	Content  *content.Service
 	Home     *setting.HomeService
+	Site     *setting.SiteService
 	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service

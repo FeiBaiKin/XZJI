@@ -113,6 +113,23 @@ func outputHTML(stored, mediaBase string) string {
 	return strings.ReplaceAll(stored, `src="`+mediaToken, `src="`+mediaBase+"/")
 }
 
+// SanitizeBody 过滤富文本，供用户协议、隐私政策等非内容正文复用同一套白名单。
+func (s *Service) SanitizeBody(raw string) (string, error) {
+	p, err := processHTML(raw, s.media.BaseURL(), "doc-")
+	if err != nil {
+		return "", err
+	}
+	return p.HTML, nil
+}
+
+// RenderBody 把入库的富文本还原成可以输出的 HTML。
+func (s *Service) RenderBody(stored string) string {
+	if stored == "" {
+		return ""
+	}
+	return outputHTML(stored, s.media.BaseURL())
+}
+
 func autoSummary(text string) string {
 	return truncate(text, autoSummaryLen)
 }

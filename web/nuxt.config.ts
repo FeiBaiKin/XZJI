@@ -29,6 +29,8 @@ export default defineNuxtConfig({
     '/category/**': { cache: { maxAge: 600 } },
     '/tag/**': { cache: { maxAge: 600 } },
     '/vip': { cache: { maxAge: 600 } },
+    '/terms': { cache: { maxAge: 600 } },
+    '/privacy': { cache: { maxAge: 600 } },
     // 搜索结果跟着查询串变化，短缓存就够
     '/search': { cache: { maxAge: 60 } },
     // 用户中心、登录相关页面不需要 SEO，只在浏览器端渲染

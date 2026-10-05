@@ -16,6 +16,8 @@ const maxCacheBody = 1 << 20
 // 其余接口一律不缓存：解锁状态和评论带个人身份，auth、me、orders、pay 是个人数据，写请求也不在此列。
 var cachedRoutes = map[string]bool{
 	"/api/v1/site/home":         true,
+	"/api/v1/site/info":         true,
+	"/api/v1/site/documents":    true,
 	"/api/v1/categories":        true,
 	"/api/v1/posts":             true,
 	"/api/v1/posts/:id":         true,

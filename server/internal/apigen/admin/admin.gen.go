@@ -1183,6 +1183,37 @@ type SetMembershipRequest struct {
 	LevelId   int64      `json:"levelId"`
 }
 
+// SiteSettings defines model for SiteSettings.
+type SiteSettings struct {
+	// FooterAbout 页脚简介，显示在页脚站点名称下方
+	FooterAbout string `json:"footerAbout"`
+
+	// Icp ICP 备案号，如 京ICP备00000000号-1
+	Icp string `json:"icp"`
+
+	// PoliceIcp 公安备案号，可留空
+	PoliceIcp string `json:"policeIcp"`
+
+	// PrivacyHtml 隐私政策正文，HTML
+	PrivacyHtml string `json:"privacyHtml"`
+
+	// TermsHtml 用户协议正文，HTML
+	TermsHtml string `json:"termsHtml"`
+}
+
+// SiteSettingsInput defines model for SiteSettingsInput.
+type SiteSettingsInput struct {
+	FooterAbout string `json:"footerAbout"`
+	Icp         string `json:"icp"`
+	PoliceIcp   string `json:"policeIcp"`
+
+	// PrivacyHtml 隐私政策正文，与内容正文使用同一套过滤
+	PrivacyHtml string `json:"privacyHtml"`
+
+	// TermsHtml 用户协议正文，与内容正文使用同一套过滤
+	TermsHtml string `json:"termsHtml"`
+}
+
 // SystemStatus defines model for SystemStatus.
 type SystemStatus struct {
 	Database DatabaseStatus `json:"database"`
@@ -1464,6 +1495,9 @@ type UpdateHomeSettingsJSONRequestBody = HomeSettingsInput
 // UpdatePaymentSettingsJSONRequestBody defines body for UpdatePaymentSettings for application/json ContentType.
 type UpdatePaymentSettingsJSONRequestBody = PaymentSettingsInput
 
+// UpdateSiteSettingsJSONRequestBody defines body for UpdateSiteSettings for application/json ContentType.
+type UpdateSiteSettingsJSONRequestBody = SiteSettingsInput
+
 // CreateTagJSONRequestBody defines body for CreateTag for application/json ContentType.
 type CreateTagJSONRequestBody = TagInput
 
@@ -1610,6 +1644,12 @@ type ServerInterface interface {
 	// UpdatePaymentSettings 修改支付设置
 	// (PUT /settings/payment)
 	UpdatePaymentSettings(c *gin.Context)
+	// GetSiteSettings 站点设置
+	// (GET /settings/site)
+	GetSiteSettings(c *gin.Context)
+	// UpdateSiteSettings 修改站点设置
+	// (PUT /settings/site)
+	UpdateSiteSettings(c *gin.Context)
 	// GetSystemStatus 系统状态
 	// (GET /system/status)
 	GetSystemStatus(c *gin.Context)
@@ -2671,6 +2711,32 @@ func (siw *ServerInterfaceWrapper) UpdatePaymentSettings(c *gin.Context) {
 	siw.Handler.UpdatePaymentSettings(c)
 }
 
+// GetSiteSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetSiteSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSiteSettings(c)
+}
+
+// UpdateSiteSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSiteSettings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateSiteSettings(c)
+}
+
 // GetSystemStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSystemStatus(c *gin.Context) {
 
@@ -3003,6 +3069,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/platforms", wrapper.ListPlatforms)
 	router.GET(options.BaseURL+"/settings/home", wrapper.GetHomeSettings)
 	router.PUT(options.BaseURL+"/settings/home", wrapper.UpdateHomeSettings)
+	router.GET(options.BaseURL+"/settings/site", wrapper.GetSiteSettings)
+	router.PUT(options.BaseURL+"/settings/site", wrapper.UpdateSiteSettings)
 	router.GET(options.BaseURL+"/membership/levels", wrapper.ListMembershipLevels)
 	router.POST(options.BaseURL+"/membership/levels", wrapper.CreateMembershipLevel)
 	router.DELETE(options.BaseURL+"/membership/levels/:id", wrapper.DeleteMembershipLevel)
@@ -5164,6 +5232,91 @@ func (response UpdatePaymentSettings401JSONResponse) VisitUpdatePaymentSettingsR
 	return err
 }
 
+type GetSiteSettingsRequestObject struct {
+}
+
+type GetSiteSettingsResponseObject interface {
+	VisitGetSiteSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetSiteSettings200JSONResponse SiteSettings
+
+func (response GetSiteSettings200JSONResponse) VisitGetSiteSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSiteSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSiteSettings401JSONResponse) VisitGetSiteSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSiteSettingsRequestObject struct {
+	Body *UpdateSiteSettingsJSONRequestBody
+}
+
+type UpdateSiteSettingsResponseObject interface {
+	VisitUpdateSiteSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateSiteSettings200JSONResponse SiteSettings
+
+func (response UpdateSiteSettings200JSONResponse) VisitUpdateSiteSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSiteSettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateSiteSettings400JSONResponse) VisitUpdateSiteSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSiteSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateSiteSettings401JSONResponse) VisitUpdateSiteSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSystemStatusRequestObject struct {
 }
 
@@ -5828,6 +5981,12 @@ type StrictServerInterface interface {
 	// UpdatePaymentSettings 修改支付设置
 	// (PUT /settings/payment)
 	UpdatePaymentSettings(ctx context.Context, request UpdatePaymentSettingsRequestObject) (UpdatePaymentSettingsResponseObject, error)
+	// GetSiteSettings 站点设置
+	// (GET /settings/site)
+	GetSiteSettings(ctx context.Context, request GetSiteSettingsRequestObject) (GetSiteSettingsResponseObject, error)
+	// UpdateSiteSettings 修改站点设置
+	// (PUT /settings/site)
+	UpdateSiteSettings(ctx context.Context, request UpdateSiteSettingsRequestObject) (UpdateSiteSettingsResponseObject, error)
 	// GetSystemStatus 系统状态
 	// (GET /system/status)
 	GetSystemStatus(ctx context.Context, request GetSystemStatusRequestObject) (GetSystemStatusResponseObject, error)
@@ -7106,6 +7265,61 @@ func (sh *strictHandler) UpdatePaymentSettings(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(UpdatePaymentSettingsResponseObject); ok {
 		if err := validResponse.VisitUpdatePaymentSettingsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSiteSettings operation middleware
+func (sh *strictHandler) GetSiteSettings(ctx *gin.Context) {
+	var request GetSiteSettingsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSiteSettings(ctx, request.(GetSiteSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSiteSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSiteSettingsResponseObject); ok {
+		if err := validResponse.VisitGetSiteSettingsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSiteSettings operation middleware
+func (sh *strictHandler) UpdateSiteSettings(ctx *gin.Context) {
+	var request UpdateSiteSettingsRequestObject
+
+	var body UpdateSiteSettingsJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSiteSettings(ctx, request.(UpdateSiteSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSiteSettings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateSiteSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateSiteSettingsResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

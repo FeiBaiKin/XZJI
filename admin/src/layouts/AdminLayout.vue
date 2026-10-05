@@ -32,6 +32,7 @@ async function onCommand(cmd: string) {
         </el-menu-item-group>
         <el-menu-item-group title="运营">
           <el-menu-item index="/settings/home">首页设置</el-menu-item>
+          <el-menu-item index="/settings/site">站点设置</el-menu-item>
         </el-menu-item-group>
         <el-menu-item-group title="用户">
           <el-menu-item index="/users">用户管理</el-menu-item>

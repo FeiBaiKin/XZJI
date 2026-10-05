@@ -11,6 +11,9 @@ import { HiddenAwareDocument, HiddenBlock } from './hiddenBlock'
 
 const model = defineModel<string>({ required: true })
 
+// allowHidden 关掉“隐藏内容”按钮：用户协议、隐私政策这类公开文档用不到
+const { allowHidden = true } = defineProps<{ allowHidden?: boolean }>()
+
 const languages = ['plaintext', 'bash', 'nginx', 'php', 'javascript', 'typescript', 'html', 'css', 'json', 'sql', 'python', 'go', 'yaml', 'ini']
 
 const editor = useEditor({
@@ -132,7 +135,7 @@ function blockValue() {
       <span class="sep" />
       <button type="button" title="插入图片" @click="fileInput?.click()">图片</button>
       <button type="button" title="插入表格" @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">表格</button>
-      <button type="button" title="插入只有满足条件才能看到的内容" class="hidden-btn" @click="editor.chain().focus().insertHiddenBlock().run()">隐藏内容</button>
+      <button v-if="allowHidden" type="button" title="插入只有满足条件才能看到的内容" class="hidden-btn" @click="editor.chain().focus().insertHiddenBlock().run()">隐藏内容</button>
       <span class="sep" />
       <button type="button" title="撤销" :disabled="!editor.can().undo()" @click="editor.chain().focus().undo().run()">撤销</button>
       <button type="button" title="重做" :disabled="!editor.can().redo()" @click="editor.chain().focus().redo().run()">重做</button>

@@ -213,6 +213,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/site/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 站点信息
+         * @description 页脚用的站点信息，在后台“站点设置”中修改。
+         */
+        get: operations["getSiteInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/site/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 用户协议与隐私政策
+         * @description 站长填写的正文，未填写时返回空字符串，前台显示“站长尚未填写”。
+         */
+        get: operations["getSiteDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sitemap": {
         parameters: {
             query?: never;
@@ -831,6 +871,20 @@ export interface components {
             banners: components["schemas"]["Banner"][];
             /** @description 公告，按换行分段 */
             notice: string;
+        };
+        SiteInfo: {
+            /** @description 页脚简介 */
+            footerAbout: string;
+            /** @description ICP 备案号 */
+            icp: string;
+            /** @description 公安备案号，未填写时为空字符串 */
+            policeIcp: string;
+        };
+        SiteDocuments: {
+            /** @description 用户协议正文（HTML），未填写时为空字符串 */
+            terms: string;
+            /** @description 隐私政策正文（HTML），未填写时为空字符串 */
+            privacy: string;
         };
         SitemapData: {
             posts: components["schemas"]["SitemapPost"][];
@@ -1804,6 +1858,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Home"];
+                };
+            };
+        };
+    };
+    getSiteInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 站点信息 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteInfo"];
+                };
+            };
+        };
+    };
+    getSiteDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 两份文档的正文 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDocuments"];
                 };
             };
         };

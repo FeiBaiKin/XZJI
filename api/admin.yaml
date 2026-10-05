@@ -655,6 +655,46 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /settings/site:
+    get:
+      operationId: getSiteSettings
+      summary: 站点设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      responses:
+        "200":
+          description: 站点设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updateSiteSettings
+      summary: 修改站点设置
+      tags: [settings]
+      security:
+        - adminCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsInput"
+      responses:
+        "200":
+          description: 修改后的站点设置
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /membership/levels:
     get:
       operationId: listMembershipLevels
@@ -2022,6 +2062,43 @@ components:
         notice:
           type: string
           description: 公告，按换行分段
+
+    SiteSettings:
+      type: object
+      required: [footerAbout, icp, policeIcp, termsHtml, privacyHtml]
+      properties:
+        footerAbout:
+          type: string
+          description: 页脚简介，显示在页脚站点名称下方
+        icp:
+          type: string
+          description: ICP 备案号，如 京ICP备00000000号-1
+        policeIcp:
+          type: string
+          description: 公安备案号，可留空
+        termsHtml:
+          type: string
+          description: 用户协议正文，HTML
+        privacyHtml:
+          type: string
+          description: 隐私政策正文，HTML
+
+    SiteSettingsInput:
+      type: object
+      required: [footerAbout, icp, policeIcp, termsHtml, privacyHtml]
+      properties:
+        footerAbout:
+          type: string
+        icp:
+          type: string
+        policeIcp:
+          type: string
+        termsHtml:
+          type: string
+          description: 用户协议正文，与内容正文使用同一套过滤
+        privacyHtml:
+          type: string
+          description: 隐私政策正文，与内容正文使用同一套过滤
 
     AdminLink:
       type: object

@@ -53,6 +53,7 @@ type Deps struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Site     *setting.SiteService
 	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service
@@ -110,7 +111,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	pubHandler := public.NewHandler(public.Deps{
 		DB: d.DB, Log: d.Log, Auth: d.Auth, Users: d.Users, Realm: pubRealm, CSRF: pubCSRF,
-		Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
+		Content: d.Content, Home: d.Home, Site: d.Site, Members: d.Members, Comments: d.Comments,
 		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet, Seo: d.Seo,
 	})
 	pubapi.RegisterHandlersWithOptions(r,
@@ -128,7 +129,7 @@ func NewRouter(d Deps) (*gin.Engine, error) {
 
 	adminHandler := admin.NewHandler(admin.Deps{
 		DB: d.DB, Log: d.Log, Settings: d.Settings, Auth: d.Auth, Users: d.Users, Realm: adminRealm, CSRF: adminCSRF,
-		Media: d.Media, Content: d.Content, Home: d.Home, Members: d.Members, Comments: d.Comments,
+		Media: d.Media, Content: d.Content, Home: d.Home, Site: d.Site, Members: d.Members, Comments: d.Comments,
 		Orders: d.Orders, Payment: d.Payment, Wallet: d.Wallet,
 	})
 	adminapi.RegisterHandlersWithOptions(r,

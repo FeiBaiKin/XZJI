@@ -22,6 +22,7 @@ export const router = createRouter({
         { path: 'ledger', name: 'ledger', component: () => import('../views/Ledger.vue'), meta: { title: '余额流水' } },
         { path: 'settings/payment', name: 'settings-payment', component: () => import('../views/PaymentSettings.vue'), meta: { title: '支付设置' } },
         { path: 'settings/home', name: 'settings-home', component: () => import('../views/HomeSettings.vue'), meta: { title: '首页设置' } },
+        { path: 'settings/site', name: 'settings-site', component: () => import('../views/SiteSettings.vue'), meta: { title: '站点设置' } },
         { path: 'users', name: 'users', component: () => import('../views/Users.vue'), meta: { title: '用户管理' } },
       ],
     },

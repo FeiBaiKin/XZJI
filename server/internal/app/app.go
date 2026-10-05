@@ -56,6 +56,7 @@ type Services struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Site     *setting.SiteService
 	Seo      *seo.Service
 	Members  *membership.Service
 	Comments *comment.Service
@@ -95,6 +96,8 @@ func NewServices(db *sql.DB, mailer mail.Sender, log *slog.Logger, cfg *config.C
 	s.Auth = auth.NewService(s.Users, s.Sessions, s.Codes, s.Limiter)
 	s.Members = membership.NewService(q, s.Users, s.AdminLog)
 	s.Content = content.NewService(db, s.Media, s.Users, s.AdminLog, s.Limiter, cfg.Location(), log)
+	// 协议正文复用内容正文的白名单过滤
+	s.Site = setting.NewSiteService(s.Settings, s.Content)
 	s.Comments = comment.NewService(q, s.Content, s.Users, s.Members, s.Settings, s.Limiter)
 	s.Frontsync = frontsync.NewService(s.Cache, cfg.Frontend.PurgeURLs, cfg.Frontend.PurgeSecret, log)
 	s.Comments.SetPurger(s.Frontsync)
@@ -116,7 +119,7 @@ func NewRouter(cfg *config.Config, db *sql.DB, log *slog.Logger, s *Services) (*
 	return httpapi.NewRouter(httpapi.Deps{
 		Config: cfg, DB: db, Log: log,
 		Settings: s.Settings, Auth: s.Auth, Users: s.Users, Sessions: s.Sessions,
-		Media: s.Media, Content: s.Content, Home: s.Home, Members: s.Members, Comments: s.Comments,
+		Media: s.Media, Content: s.Content, Home: s.Home, Site: s.Site, Members: s.Members, Comments: s.Comments,
 		Orders: s.Orders, Payment: s.Payment, Wallet: s.Wallet, Cache: s.Cache, Purger: s.Frontsync, Seo: s.Seo,
 	})
 }

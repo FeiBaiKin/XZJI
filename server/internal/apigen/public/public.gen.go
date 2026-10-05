@@ -1193,6 +1193,27 @@ type SessionState struct {
 	User *User `json:"user,omitempty"`
 }
 
+// SiteDocuments defines model for SiteDocuments.
+type SiteDocuments struct {
+	// Privacy 隐私政策正文（HTML），未填写时为空字符串
+	Privacy string `json:"privacy"`
+
+	// Terms 用户协议正文（HTML），未填写时为空字符串
+	Terms string `json:"terms"`
+}
+
+// SiteInfo defines model for SiteInfo.
+type SiteInfo struct {
+	// FooterAbout 页脚简介
+	FooterAbout string `json:"footerAbout"`
+
+	// Icp ICP 备案号
+	Icp string `json:"icp"`
+
+	// PoliceIcp 公安备案号，未填写时为空字符串
+	PoliceIcp string `json:"policeIcp"`
+}
+
 // SitemapData defines model for SitemapData.
 type SitemapData struct {
 	// Categories 全部分类的 slug
@@ -1556,9 +1577,15 @@ type ServerInterface interface {
 	// GetSitemap sitemap 数据
 	// (GET /seo/sitemap)
 	GetSitemap(c *gin.Context)
+	// GetSiteDocuments 用户协议与隐私政策
+	// (GET /site/documents)
+	GetSiteDocuments(c *gin.Context)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(c *gin.Context)
+	// GetSiteInfo 站点信息
+	// (GET /site/info)
+	GetSiteInfo(c *gin.Context)
 	// ListTags 热门标签
 	// (GET /tags)
 	ListTags(c *gin.Context, params ListTagsParams)
@@ -2427,6 +2454,19 @@ func (siw *ServerInterfaceWrapper) GetSitemap(c *gin.Context) {
 	siw.Handler.GetSitemap(c)
 }
 
+// GetSiteDocuments operation middleware
+func (siw *ServerInterfaceWrapper) GetSiteDocuments(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSiteDocuments(c)
+}
+
 // GetHome operation middleware
 func (siw *ServerInterfaceWrapper) GetHome(c *gin.Context) {
 
@@ -2438,6 +2478,19 @@ func (siw *ServerInterfaceWrapper) GetHome(c *gin.Context) {
 	}
 
 	siw.Handler.GetHome(c)
+}
+
+// GetSiteInfo operation middleware
+func (siw *ServerInterfaceWrapper) GetSiteInfo(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetSiteInfo(c)
 }
 
 // ListTags operation middleware
@@ -2531,6 +2584,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.PATCH(options.BaseURL+"/me", wrapper.UpdateMe)
 	router.POST(options.BaseURL+"/me/password", wrapper.ChangePassword)
 	router.GET(options.BaseURL+"/site/home", wrapper.GetHome)
+	router.GET(options.BaseURL+"/site/info", wrapper.GetSiteInfo)
+	router.GET(options.BaseURL+"/site/documents", wrapper.GetSiteDocuments)
 	router.GET(options.BaseURL+"/seo/sitemap", wrapper.GetSitemap)
 	router.GET(options.BaseURL+"/categories", wrapper.ListCategories)
 	router.GET(options.BaseURL+"/posts", wrapper.ListPosts)
@@ -4211,6 +4266,27 @@ func (response GetSitemap200JSONResponse) VisitGetSitemapResponse(w http.Respons
 	return err
 }
 
+type GetSiteDocumentsRequestObject struct {
+}
+
+type GetSiteDocumentsResponseObject interface {
+	VisitGetSiteDocumentsResponse(w http.ResponseWriter) error
+}
+
+type GetSiteDocuments200JSONResponse SiteDocuments
+
+func (response GetSiteDocuments200JSONResponse) VisitGetSiteDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHomeRequestObject struct {
 }
 
@@ -4221,6 +4297,27 @@ type GetHomeResponseObject interface {
 type GetHome200JSONResponse Home
 
 func (response GetHome200JSONResponse) VisitGetHomeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSiteInfoRequestObject struct {
+}
+
+type GetSiteInfoResponseObject interface {
+	VisitGetSiteInfoResponse(w http.ResponseWriter) error
+}
+
+type GetSiteInfo200JSONResponse SiteInfo
+
+func (response GetSiteInfo200JSONResponse) VisitGetSiteInfoResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4397,9 +4494,15 @@ type StrictServerInterface interface {
 	// GetSitemap sitemap 数据
 	// (GET /seo/sitemap)
 	GetSitemap(ctx context.Context, request GetSitemapRequestObject) (GetSitemapResponseObject, error)
+	// GetSiteDocuments 用户协议与隐私政策
+	// (GET /site/documents)
+	GetSiteDocuments(ctx context.Context, request GetSiteDocumentsRequestObject) (GetSiteDocumentsResponseObject, error)
 	// GetHome 首页运营位
 	// (GET /site/home)
 	GetHome(ctx context.Context, request GetHomeRequestObject) (GetHomeResponseObject, error)
+	// GetSiteInfo 站点信息
+	// (GET /site/info)
+	GetSiteInfo(ctx context.Context, request GetSiteInfoRequestObject) (GetSiteInfoResponseObject, error)
 	// ListTags 热门标签
 	// (GET /tags)
 	ListTags(ctx context.Context, request ListTagsRequestObject) (ListTagsResponseObject, error)
@@ -5415,6 +5518,30 @@ func (sh *strictHandler) GetSitemap(ctx *gin.Context) {
 	}
 }
 
+// GetSiteDocuments operation middleware
+func (sh *strictHandler) GetSiteDocuments(ctx *gin.Context) {
+	var request GetSiteDocumentsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSiteDocuments(ctx, request.(GetSiteDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSiteDocuments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSiteDocumentsResponseObject); ok {
+		if err := validResponse.VisitGetSiteDocumentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHome operation middleware
 func (sh *strictHandler) GetHome(ctx *gin.Context) {
 	var request GetHomeRequestObject
@@ -5432,6 +5559,30 @@ func (sh *strictHandler) GetHome(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetHomeResponseObject); ok {
 		if err := validResponse.VisitGetHomeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSiteInfo operation middleware
+func (sh *strictHandler) GetSiteInfo(ctx *gin.Context) {
+	var request GetSiteInfoRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSiteInfo(ctx, request.(GetSiteInfoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSiteInfo")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetSiteInfoResponseObject); ok {
+		if err := validResponse.VisitGetSiteInfoResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

@@ -260,6 +260,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/Home"
 
+  /site/info:
+    get:
+      operationId: getSiteInfo
+      summary: 站点信息
+      description: 页脚用的站点信息，在后台“站点设置”中修改。
+      tags: [site]
+      responses:
+        "200":
+          description: 站点信息
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteInfo"
+
+  /site/documents:
+    get:
+      operationId: getSiteDocuments
+      summary: 用户协议与隐私政策
+      description: 站长填写的正文，未填写时返回空字符串，前台显示“站长尚未填写”。
+      tags: [site]
+      responses:
+        "200":
+          description: 两份文档的正文
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteDocuments"
+
   /seo/sitemap:
     get:
       operationId: getSitemap
@@ -1252,6 +1280,31 @@ components:
         notice:
           type: string
           description: 公告，按换行分段
+
+    SiteInfo:
+      type: object
+      required: [footerAbout, icp, policeIcp]
+      properties:
+        footerAbout:
+          type: string
+          description: 页脚简介
+        icp:
+          type: string
+          description: ICP 备案号
+        policeIcp:
+          type: string
+          description: 公安备案号，未填写时为空字符串
+
+    SiteDocuments:
+      type: object
+      required: [terms, privacy]
+      properties:
+        terms:
+          type: string
+          description: 用户协议正文（HTML），未填写时为空字符串
+        privacy:
+          type: string
+          description: 隐私政策正文（HTML），未填写时为空字符串
 
     SitemapData:
       type: object

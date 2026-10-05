@@ -37,6 +37,7 @@ type Deps struct {
 	Media    *media.Service
 	Content  *content.Service
 	Home     *setting.HomeService
+	Site     *setting.SiteService
 	Members  *membership.Service
 	Comments *comment.Service
 	Orders   *order.Service

@@ -12,10 +12,12 @@ const pageParams: { path: RegExp, keep: string[] }[] = [
   { path: /^\/search\/?$/, keep: ['q', 'page'] },
   // 分类列表的筛选与排序
   { path: /^\/category\//, keep: ['platform', 'sort', 'access'] },
-  // 首页、内容详情 /{id}.html、标签页、会员页都不读查询参数
+  // 首页、内容详情 /{id}.html、标签页、会员页、协议页都不读查询参数
   { path: /^\/(?:\d+\.html)?$/, keep: [] },
   { path: /^\/tag\//, keep: [] },
   { path: /^\/vip\/?$/, keep: [] },
+  { path: /^\/terms\/?$/, keep: [] },
+  { path: /^\/privacy\/?$/, keep: [] },
 ]
 
 export default defineEventHandler((event) => {

@@ -168,7 +168,7 @@ function switchTab(t: 'login' | 'register') {
           <span class="mt-1 block text-xs text-muted">需要同时包含字母和数字</span>
         </label>
         <label class="flex items-center gap-2 text-[13px]">
-          <input v-model="reg.agree" type="checkbox" class="size-[15px] accent-theme">我已阅读并同意<a href="#" class="text-theme">《用户协议》</a>和<a href="#" class="text-theme">《隐私政策》</a>
+          <input v-model="reg.agree" type="checkbox" class="size-[15px] accent-theme">我已阅读并同意<a href="/terms" target="_blank" rel="noopener" class="text-theme">《用户协议》</a>和<a href="/privacy" target="_blank" rel="noopener" class="text-theme">《隐私政策》</a>
         </label>
         <p v-if="regError" role="alert" class="rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger">{{ regError }}</p>
         <button type="submit" class="btn h-11 w-full bg-jb-blue text-[15px]" :disabled="regBusy">{{ regBusy ? '注册中…' : '注册' }}</button>
